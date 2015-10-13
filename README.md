@@ -1,6 +1,4 @@
 # nagiosUI
-Nagios UI
-
 Features:
 * quick acknowledgement
 * instant acknowledgement
