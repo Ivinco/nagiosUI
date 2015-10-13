@@ -1,5 +1,6 @@
 # nagiosUI
 Features:
+* XML and XSLT-based
 * quick acknowledgement
 * instant acknowledgement
 * instant scheduling a downtime
