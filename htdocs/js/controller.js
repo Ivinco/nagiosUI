@@ -41,8 +41,6 @@ Search.autoReloadData = function() {
 		Search.emptyHosts();
 		
 		Search.autoRefresh = true;
-		//console.log('refresh');
-		//console.log(Search.currentReload);
 	}
 	
 	clearTimeout(reloadTimer);
@@ -412,6 +410,7 @@ Search.getServerLocalTimeDialog = function() {
 			yearStart:      parseInt(new Date(currentServerDate).format('yyyy')),
 			yearEnd:        parseInt(new Date(currentServerDate).format('yyyy')) + 3,
 			scrollMonth:    false,
+			dayOfWeekStart: 1,
 		});
 	});
 }
