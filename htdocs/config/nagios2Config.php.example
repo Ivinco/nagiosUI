@@ -5,6 +5,7 @@ $getNotesUrls_cacheFile   = '/domain/tmp/nagios_notes_url.cache';
 $getDepends_cacheFile     = '/domain/tmp/nagios_depends.cache';
 $alertsPercentile_global  = '/domain/tmp/nagios_percentile/alerts_critical_50pct';
 $durationsFromFile_global = '/domain/tmp/nagios_percentile/durations';
+$xmlArchive               = '/domain/log/nagios_xml_output/';
 $nagiosConfigFile         = '/cgi-bin/config.cgi';
 $nagiosPostFile           = '/cgi-bin/cmd.cgi';
 $nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&amp;style=hostdetail';

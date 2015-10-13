@@ -81,8 +81,8 @@ ob_start("ob_gzhandler");
 header('Content-Type: application/xml');
 
 if (isset($_GET['file'])) {
-	$files = glob("/boardreader/log/nagios_xml_output/".$_GET['file']."*.log");
-	if (count($files) == 1 and preg_match('/\/boardreader\/log\/nagios_xml_output\/\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
+	$files = glob($xmlArchive.$_GET['file']."*.log");
+	if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
 		echo file_get_contents($files[0]);
 		exit;
 	}

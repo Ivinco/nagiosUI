@@ -41,8 +41,8 @@ Search.autoReloadData = function() {
 		Search.emptyHosts();
 		
 		Search.autoRefresh = true;
-		console.log('refresh');
-		console.log(Search.currentReload);
+		//console.log('refresh');
+		//console.log(Search.currentReload);
 	}
 	
 	clearTimeout(reloadTimer);
@@ -288,14 +288,20 @@ Search.AcknowledgeItCustomService = function() {
 	var request             = Search.returnAckRequest(acknowledgeItObject);
 		request['com_data'] = $('input[name="ack_comment_extension"]').val();
 
-	$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-		if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-			alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-		}
-		
-		acknowledgeItObject = null;
-		$('#dialogAck').dialog('close');
-	});
+	$.when.apply($, [Search.sendAjax(request)])
+		.then(
+			function() {},
+			function(data, textStatus, jqXHR) {
+				alert('server error: '+ jqXHR);
+			}
+		)
+		.always(
+			function () {
+				acknowledgeItObject = null;
+				$('input[name="ack_comment_extension"]').val('');
+				$('#dialogAck').dialog('close');
+			}
+		);
 }
 Search.AcknowledgeItMassServices = function() {
 	if (!Search.tableLength) {
@@ -316,13 +322,19 @@ Search.AcknowledgeItMassServices = function() {
 		itemsList.push(Search.sendAjax(request));
 	});
 	
-	$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-		if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-			alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-		}
-		
-		$('#dialogAck').dialog('close');
-	});
+	$.when.apply($, itemsList)
+		.then(
+			function() {},
+			function(data, textStatus, jqXHR) {
+				alert('server error: '+ jqXHR);
+			}
+		)
+		.always(
+			function () {
+				$('input[name="ack_comment_extension"]').val('');
+				$('#dialogAck').dialog('close');
+			}
+		);
 }
 Search.AcknowledgeItHandlePopup = function() {
 	var $form = $('form[name="acknowledge"]');
@@ -448,28 +460,35 @@ Search.ScheduleDowntimeServices = function() {
 		return;
 	}
 	
-	$.when.apply($, [Search.getServerLocalTime()]).then(function(data, textStatus, jqXHR) {
-		if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-			alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-		}
-		else {
-			var button    = $('#'+ Search.sdButtonId),
-				itemsList = [];
-			
-			button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-			
-			$('#mainTable >tbody >tr[role]').each(function () {
-				itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this))));
-			});
-			
-			$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-				if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-					alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				}
-				button.removeAttr('disabled').removeClass('ui-state-disabled');
-			});
-		}
-	});
+	$.when.apply($, [Search.getServerLocalTime()])
+		.then(
+			function() {
+				var button    = $('#'+ Search.sdButtonId),
+					itemsList = [];
+				
+				button.attr('disabled', 'disabled').addClass('ui-state-disabled');
+				
+				$('#mainTable >tbody >tr[role]').each(function () {
+					itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this))));
+				});
+				
+				$.when.apply($, itemsList)
+					.then(
+						function() {},
+						function(data, textStatus, jqXHR) {
+							alert('server error: '+ jqXHR);
+						}
+					)
+					.always(
+						function () {
+							button.removeAttr('disabled').removeClass('ui-state-disabled');
+						}
+					);
+			},
+			function(data, textStatus, jqXHR) {
+				alert('server error: '+ jqXHR);
+			}
+		);
 	
 	return true;
 }
@@ -484,26 +503,32 @@ Search.ScheduleDowntimeCustomService = function() {
 		return;
 	}
 	
-	$.when.apply($, [Search.getServerLocalTime()]).then(function(data, textStatus, jqXHR) {
-		if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-			alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-		}
-		else {
-			var button = sheduleItObject.find('.scheduleIt');
+	$.when.apply($, [Search.getServerLocalTime()])
+		.then(
+			function() {
+				var button = sheduleItObject.find('.scheduleIt');
 			
-			button.hide();
-			
-			$.when.apply($, [Search.sendAjax(Search.getScheduleDowntimeRequest(sheduleItObject))]).then(function(data, textStatus, jqXHR) {
-				if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-					alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				}
-				else {
-					sheduleItObject = null;
-				}
-				button.show();
-			});
-		}
-	});
+				button.hide();
+				
+				$.when.apply($, [Search.sendAjax(Search.getScheduleDowntimeRequest(sheduleItObject))])
+					.then(
+						function() {
+							sheduleItObject = null;
+						},
+						function(data, textStatus, jqXHR) {
+							alert('server error: '+ jqXHR);
+						}
+					)
+					.always(
+						function () {
+							button.show();
+						}
+					);
+			},
+			function(data, textStatus, jqXHR) {
+				alert('server error: '+ jqXHR);
+			}
+		);
 	
 	return true;	
 }
@@ -579,10 +604,10 @@ Search.returnDowntimeRequest = function(down_id) {
 
 Search.sendAjax = function(reqData) {		
 	return $.ajax({
+		crossDomain: true,
 		url:    $('#nagiosPostFile').html(),
 		method: 'POST',
 		data:   reqData,
-		sucess: function(data){}
 	});
 }
 
@@ -604,6 +629,7 @@ Search.countRecordsPlus = function(buttonID) {
 }
 
 Search.init = function() {
+	$.support.cors = true;
 	var typingTimer,
 		doneTypingInterval = ($('#mainTable tr').length > 1000) ? 350 : 0,
 		refreshValues      = [],
@@ -661,21 +687,25 @@ Search.init = function() {
 			
 		button.hide();
 			
-		$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				button.show();
-			}
-			else {
-				Search.countRecordsMinus(Search.currentTab);
-				Search.allDataTable.row(rowRemove).remove().draw();
-				Search.emptyHosts();
-			}
-			
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = true;
-		});
+		$.when.apply($, [Search.sendAjax(request)])
+			.then(
+				function() {
+					Search.countRecordsMinus(Search.currentTab);
+					Search.allDataTable.row(rowRemove).remove().draw();
+					Search.emptyHosts();
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					button.show();
+				}
+			)
+			.always(
+				function () {
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	
 	$('#mainTable').on('click', '.quickAck', function () {
@@ -687,20 +717,25 @@ Search.init = function() {
 		button.hide();
 		request['com_data'] = 'temp';
 		
-		$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				button.show();
-			}
-			else {
-				button.removeClass('quickAck').addClass('quickUnAck');
-				button.attr('alt', Search.currentUser + ' unack').attr('title', Search.currentUser + ' unack').attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg').show();
-			}
-			
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = true;
-		});
+		
+		$.when.apply($, [Search.sendAjax(request)])
+			.then(
+				function() {
+					button.removeClass('quickAck').addClass('quickUnAck');
+					button.attr('alt', Search.currentUser + ' unack').attr('title', Search.currentUser + ' unack').attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg').show();
+				},
+				function(data, textStatus, jqXHR) {
+					button.show();
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	$(document).on('click', '#'+ Search.quickAckButtonId, function () {
 		Search.autoRefresh = false;
@@ -719,28 +754,34 @@ Search.init = function() {
 		$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').each(function () {
 			var request = Search.sendAjax(Search.returnAckRequest($(this).closest('tr')));
 				request['com_data'] = 'temp';
+				
 			itemsList.push(request);
 		}); 
 		
-		$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-			}
-			else {
-				$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck')
+		$.when.apply($, itemsList)
+			.then(
+				function() {
+					$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck')
 					.attr('alt', Search.currentUser + ' unack')
 					.attr('title', Search.currentUser + ' unack')
 					.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
 					.removeClass('quickAck')
 					.addClass('quickUnAck')
 					.show();
-			}
-			
-			button.removeAttr('disabled').removeClass('ui-state-disabled');
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = true;
-		});
+				},
+				function(data, textStatus, jqXHR) {
+					$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').show();
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					button.removeAttr('disabled').removeClass('ui-state-disabled');
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	
 	$('#mainTable').on('click', '.quickUnAck', function () {
@@ -751,20 +792,24 @@ Search.init = function() {
 			
 		button.hide();
 		
-		$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				button.show();
-			}
-			else {
-				button.removeClass('quickUnAck').addClass('quickAck');
-				button.attr('alt', 'Quick Acknowledge').attr('title', 'Quick Acknowledge').attr('src', 'images/ok.png').show();
-			}
-			
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = true;
-		});
+		$.when.apply($, [Search.sendAjax(request)])
+			.then(
+				function() {
+					button.removeClass('quickUnAck').addClass('quickAck');
+					button.attr('alt', 'Quick Acknowledge').attr('title', 'Quick Acknowledge').attr('src', 'images/ok.png').show();
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					button.show();
+				}
+			)
+			.always(
+				function () {
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	$(document).on('click', '#'+ Search.quickUnAckButtonId, function () {
 		Search.autoRefresh = false;
@@ -781,28 +826,33 @@ Search.init = function() {
 		$('#mainTable tbody .icons.quickUnAck').hide();
 		
 		$('#mainTable tbody .icons.quickUnAck').each(function () {
-			itemsList.push(Search.returnUnAckRequest($(this).closest('tr')));
+			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
 		});
 		
-		$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-			}
-			else {
-				$('#mainTable tbody .icons.quickUnAck')
-					.attr('alt', 'Quick Acknowledge')
-					.attr('title', 'Quick Acknowledge')
-					.attr('src', 'images/ok.png')
-					.removeClass('quickUnAck')
-					.addClass('quickAck')
-					.show();
-			}
-			
-			button.removeAttr('disabled').removeClass('ui-state-disabled');
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = true;
-		});
+		$.when.apply($, itemsList)
+			.then(
+				function() {
+					$('#mainTable tbody .icons.quickUnAck')
+						.attr('alt', 'Quick Acknowledge')
+						.attr('title', 'Quick Acknowledge')
+						.attr('src', 'images/ok.png')
+						.removeClass('quickUnAck')
+						.addClass('quickAck')
+						.show();
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					$('#mainTable tbody .icons.quickUnAck').show();
+				}
+			)
+			.always(
+				function () {
+					button.removeAttr('disabled').removeClass('ui-state-disabled');
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	
 	$('#mainTable').on('click', '.unAckThis', function () {
@@ -814,36 +864,40 @@ Search.init = function() {
 			
 		button.hide();
 		
-		$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				button.show();
-			}
-			else {
-				var newRow = thisRow.clone();
-					newRow.find('.unAckThis').closest('li').remove();
-					newRow.find('.comment span.ack').html('');
-				
-				var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
-				
-				if (!statusText) {
-					statusText = '__normal__';
-					Search.countRecordsPlus('normal');
-				}
-				
-				newRow.find('.comment span').first().text(statusText);
+		$.when.apply($, [Search.sendAjax(request)])
+			.then(
+				function() {
+					var newRow = thisRow.clone();
+						newRow.find('.unAckThis').closest('li').remove();
+						newRow.find('.comment span.ack').html('');
 					
-				Search.countRecordsMinus('acked');
-				Search.allDataTable.row.add(newRow);
-				Search.allDataTable.row(thisRow).remove();
-				Search.allDataTable.draw();
-				Search.emptyHosts();
-			}
-			
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = false;
-		});
+					var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
+					
+					if (!statusText) {
+						statusText = '__normal__';
+						Search.countRecordsPlus('normal');
+					}
+					
+					newRow.find('.comment span').first().text(statusText);
+						
+					Search.countRecordsMinus('acked');
+					Search.allDataTable.row.add(newRow);
+					Search.allDataTable.row(thisRow).remove();
+					Search.allDataTable.draw();
+					Search.emptyHosts();
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					button.show();
+				}
+			)
+			.always(
+				function () {
+					Search.filterDataTable();
+					Search.emptyHosts();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	$(document).on('click', '#'+ Search.unackButtonId, function () {
 		Search.autoRefresh = false;
@@ -860,42 +914,46 @@ Search.init = function() {
 		$('#mainTable tbody .icons.unAckThis').hide();
 		
 		$('#mainTable tbody .icons.unAckThis').each(function () {
-			itemsList.push(Search.returnUnAckRequest($(this).closest('tr')));
+			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
 		});
 		
-		$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-				button.show();
-			}
-			else {
-				$('#mainTable tbody .icons.unAckThis').each(function () {
-					var newRow = $(this).closest('tr').clone();
-						newRow.find('.unAckThis').closest('li').remove();
-						newRow.find('.comment span.ack').html('');
-					
-					var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
-					
-					if (!statusText) {
-						statusText = '__normal__';
-						Search.countRecordsPlus('normal');
-					}
-			
-					newRow.find('.comment span').first().text(statusText);
-					
-					Search.countRecordsMinus('acked');
-					Search.allDataTable.row.add(newRow);
-					Search.allDataTable.row($(this).closest('tr')).remove();
-					Search.allDataTable.draw();
+		$.when.apply($, itemsList)
+			.then(
+				function() {
+					$('#mainTable tbody .icons.unAckThis').each(function () {
+						var newRow = $(this).closest('tr').clone();
+							newRow.find('.unAckThis').closest('li').remove();
+							newRow.find('.comment span.ack').html('');
+						
+						var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
+						
+						if (!statusText) {
+							statusText = '__normal__';
+							Search.countRecordsPlus('normal');
+						}
+				
+						newRow.find('.comment span').first().text(statusText);
+						
+						Search.countRecordsMinus('acked');
+						Search.allDataTable.row.add(newRow);
+						Search.allDataTable.row($(this).closest('tr')).remove();
+						Search.allDataTable.draw();
+						Search.emptyHosts();
+					});
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					$('#mainTable tbody .icons.unAckThis').show();
+				}
+			)
+			.always(
+				function () {
+					button.removeAttr('disabled').removeClass('ui-state-disabled');
+					Search.filterDataTable();
 					Search.emptyHosts();
-				});
-			}
-			
-			button.removeAttr('disabled').removeClass('ui-state-disabled');
-			Search.filterDataTable();
-			Search.emptyHosts();
-			Search.autoRefresh = false;
-		});
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	
 	$('#hosts').on("click", function() {
@@ -910,15 +968,19 @@ Search.init = function() {
 		
 		button.hide();
 		
-		$.when.apply($, [Search.sendAjax(request)]).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-			}
-			
-			button.show();
-			
-			Search.autoRefresh = true;
-		});
+		$.when.apply($, [Search.sendAjax(request)])
+			.then(
+				function() {},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					button.show();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	$(document).on('click', '#'+ Search.recheckButtonId, function () {
 		Search.autoRefresh = false;
@@ -932,20 +994,26 @@ Search.init = function() {
 			itemsList = [];
 			
 		button.attr('disabled', 'disabled').addClass('ui-state-disabled');
+		$('#mainTable tbody .icons.recheckIt').hide();
 		
 		$('#mainTable >tbody >tr[role]').each(function () {
 			itemsList.push(Search.sendAjax(Search.returnRecheckRequest($(this))));
 		});
 		
-		$.when.apply($, itemsList).then(function(data, textStatus, jqXHR) {
-			if (!(jqXHR && jqXHR.status && jqXHR.status == 200) && !data) {
-				alert((jqXHR && jqXHR.status) ? 'server error: '+ jqXHR.status : 'server error');
-			}
-			
-			button.removeAttr('disabled').removeClass('ui-state-disabled');
-			
-			Search.autoRefresh = true;
-		});
+		$.when.apply($, itemsList)
+			.then(
+				function() {},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					button.removeAttr('disabled').removeClass('ui-state-disabled');
+					$('#mainTable tbody .icons.recheckIt').show();
+					Search.autoRefresh = true;
+				}
+			);
 	});
 	
 	$('#mainTable').on('click', '.acknowledgeIt', function () {		
