@@ -1,0 +1,18 @@
+<?php
+
+$statusFile_global        = '/var/log/nagios/status.dat';
+$getNotesUrls_cacheFile   = '/domain/tmp/nagios_notes_url.cache';
+$getDepends_cacheFile     = '/domain/tmp/nagios_depends.cache';
+$alertsPercentile_global  = '/domain/tmp/nagios_percentile/alerts_critical_50pct';
+$durationsFromFile_global = '/domain/tmp/nagios_percentile/durations';
+$nagiosConfigFile         = '/cgi-bin/config.cgi';
+$nagiosPostFile           = '/cgi-bin/cmd.cgi';
+$nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&amp;style=hostdetail';
+
+function hostUrl($host) {
+	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;
+}
+
+function serviceUrl($host, $service) {
+	return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
+}
