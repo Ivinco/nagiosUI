@@ -235,8 +235,8 @@ echo '	<alert state="'. $state .'" origState="'. $origState .'">
 		<ack_author>'.         (isset($ackAndSchedMatches[$host][$service]) ?                     $ackAndSchedMatches[$host][$service]['ackAuthor']   : '') .'</ack_author>
 		<sched_comment>'.      $schedComment.'</sched_comment>
 		<ack_comment>'.        $ackComment .'</ack_comment>
-		<sched_comment_date>'. (isset($ackAndSchedMatches[$host][$service]) ? date('M j H:i', $ackAndSchedMatches[$host][$service]['schedCommentDate']) : '') .'</sched_comment_date>
-		<ack_comment_date>'.   (isset($ackAndSchedMatches[$host][$service]) ? date('M j H:i', $ackAndSchedMatches[$host][$service]['ackCommentDate']) : '') .'</ack_comment_date>
+		<sched_comment_date>'. (isset($ackAndSchedMatches[$host][$service]) ? date('M j H:i', intval($ackAndSchedMatches[$host][$service]['schedCommentDate'])) : '') .'</sched_comment_date>
+		<ack_comment_date>'.   (isset($ackAndSchedMatches[$host][$service]) ? date('M j H:i', intval($ackAndSchedMatches[$host][$service]['ackCommentDate'])) : '') .'</ack_comment_date> 
 		<last_check>'.         date('m-d-Y H:i:s', $attrs['last_check']) .'</last_check>
 		<durationSec>'.        $durationSec .'</durationSec>
 		<duration>'.           $duration .'</duration>
