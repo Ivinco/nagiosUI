@@ -15,3 +15,6 @@ Features:
 * instant real-time search/filtering
 * instant javascript-based sorting
 * background refresh (you can choose how frequently)
+* 50% percentile duration
+* it shows only 1 alert if the whole host is down
+* services dependency
