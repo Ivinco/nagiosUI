@@ -197,7 +197,7 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 
 #mainTable { table-layout: fixed; }
 #mainTable .host,               #mainTable .host-th { width: 70px !important; white-space: nowrap; }
-#mainTable .service,            #mainTable .service-th { width: 245px !important; word-break: break-all; }
+#mainTable .service,            #mainTable .service-th { width: 310px !important; word-break: break-all; }
 #mainTable .status,             #mainTable .status-th { width: 45px !important; white-space: nowrap; }
 #mainTable .last_check,         #mainTable .last_check-th { width: 83px !important; white-space: nowrap; }
 #mainTable .duration-sec,       #mainTable .duration-sec-th { width: 0px !important; display: none; } 
