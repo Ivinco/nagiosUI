@@ -137,7 +137,7 @@ $durationsFromFile = @unserialize(file_get_contents($durationsFromFile_global));
 
 echo '<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="alerts.xsl"?>
-<alerts sort="1" user="'. (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '') .'" nagios-config-file="'. $nagiosConfigFile .'" nagios-post-file="'. $nagiosPostFile .'" nagios-full-list-url="'. $nagiosFullHostUrl .'">
+<alerts sort="1" user="'. (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '') .'" nagios-config-file="'. $nagiosConfigFile .'" nagios-post-file="'. $nagiosPostFile .'" nagios-full-list-url="'. $nagiosFullHostUrl .'" update-time="'. filemtime($statusFile_global) .'">
 ';
 
 $notesUrls = getNotesUrls();

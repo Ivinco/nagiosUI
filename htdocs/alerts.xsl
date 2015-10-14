@@ -34,9 +34,9 @@
             <input type="radio" id="EMERGENCY" name="radio"/><label for="EMERGENCY">EMERGENCY (<em></em>)</label>
             <input type="radio" id="hosts" name="radio"/><label for="hosts">Hosts</label>
         </div>
-		<div id="refreshTime">
+		<div id="refreshTime" style="display: none;">
 			<select name="files" id="refreshTimeSelect">
-				<option value="15">Refresh: Auto</option>
+				<option value="off">Refresh: Auto</option>
 				<option value="now">Refresh: Now</option>
 				<optgroup label="---">
                     <option value="10">Refresh: 10 sec</option>
@@ -143,6 +143,9 @@
 	<div id="nagiosConfigFile" style="display: none;"><xsl:value-of select="alerts/@nagios-config-file" /></div>
 	<div id="nagiosPostFile" style="display: none;"><xsl:value-of select="alerts/@nagios-post-file" /></div>
 	<div id="nagiosFullListUrl" style="display: none;"><xsl:value-of select="alerts/@nagios-full-list-url" /></div>
+	<div id="updateTime" style="display: none;"><xsl:value-of select="alerts/@update-time" /></div>
+	<div id="messages"></div>
+	
 </div>
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
 	<script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>

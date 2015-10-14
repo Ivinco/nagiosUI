@@ -22,6 +22,35 @@ var Search = {}
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId;
 	Search.autoRefresh        = true;
 	Search.currentUser        = $('#userName').text();
+	Search.updateTime         = $('#updateTime').text();;
+
+Search.getContent = function(timestamp) {
+    $.ajax({
+        type:    'GET',
+        url:     'update.php',
+        data:    {'timestamp' : timestamp},
+        success: function(data){
+			Search.updateTime = data;
+			
+			var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
+			
+			Search.allDataTable.clear().draw();
+			
+			$(newData).find('tr[class]').each(function(){
+				$('#mainTable tbody').append($(this));	
+				Search.allDataTable.row.add($(this));
+			});
+			
+			Search.countRecords();
+			Search.filterDataTable();
+			Search.emptyHosts();
+			
+			
+            $('#messages').html(Search.updateTime);
+            Search.getContent(Search.updateTime);
+        }
+    });
+}
 
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {
@@ -1061,7 +1090,9 @@ Search.init = function() {
 		$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')').attr('selected', 'selected');
 	}
 	
-	reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+
+	//reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+	Search.getContent(Search.updateTime);
 	
 	$('#refreshTimeSelect').selectmenu({
 		select: function (event, data) {
