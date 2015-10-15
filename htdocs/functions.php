@@ -13,7 +13,7 @@ function returnDataList($isHash) {
 	global $nagiosPostFile;
 	global $nagiosFullHostUrl;
 
-$xmlContent .= '<?xml version="1.0" encoding="UTF-8"?>
+$xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="alerts.xsl"?>
 <alerts sort="1">
 ';
@@ -242,12 +242,12 @@ $xmlContent .= '
 
 
 function duration($seconds, $withSeconds = true) {
-	$d = floor($seconds / 86400);
-	$h = floor(($seconds - $d * 86400) / 3600);
-	$m = floor(($seconds - $d * 86400 - $h * 3600) / 60);
-	$s = $seconds - $d * 86400 - $h * 3600 - $m * 60;
+	$d   = floor($seconds / 86400);
+	$h   = floor(($seconds - $d * 86400) / 3600);
+	$m   = floor(($seconds - $d * 86400 - $h * 3600) / 60);
+	$s   = $seconds - $d * 86400 - $h * 3600 - $m * 60;
 	$out = "{$d}d {$h}h {$m}m";
-	if ($withSeconds) $out .= " {$s}s";
+	$out.= ($withSeconds) ? " {$s}s" : "";
 	return $out;
 }
 

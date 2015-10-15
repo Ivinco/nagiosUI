@@ -36,8 +36,7 @@
         </div>
 		<div id="refreshTime">
 			<select name="files" id="refreshTimeSelect">
-				<option value="15">Refresh: Auto</option>
-				<option value="now">Refresh: Now</option>
+				<option value="auto">Refresh: Auto</option>
 				<optgroup label="---">
                     <option value="10">Refresh: 10 sec</option>
 					<option value="20">Refresh: 20 sec</option>

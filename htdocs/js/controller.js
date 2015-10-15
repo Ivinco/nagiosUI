@@ -23,31 +23,40 @@ var Search = {}
 	Search.autoRefresh        = true;
 	Search.currentUser        = $('#userName').text();
 	Search.updateHash         = $('#updateHash').text();
-	Search.disableAutoRefresh = true;
+	Search.backgroundReload   = true;
 
-Search.getContent = function(hash) {
-    $.ajax({
-        type:    'GET',
-        url:     'update.php',
-        data:    {'hash' : hash},
-        success: function(data){
-			Search.updateHash = data;
-			
-			var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
-			
-			Search.allDataTable.clear().draw();
-			
-			$(newData).find('tr[class]').each(function(){
-				$('#mainTable tbody').append($(this));	
-				Search.allDataTable.row.add($(this));
-			});
-			
-			Search.countRecords();
-			Search.filterDataTable();
-			Search.emptyHosts();
-            Search.getContent(Search.updateHash);
-        },
-    });
+Search.getContent = function() {
+	if (Search.autoRefresh) {
+		Search.autoRefresh = false;
+		$.ajax({
+			type:    'GET',
+			url:     'update.php',
+			data:    {'hash' : Search.updateHash},
+			success: function(data){
+				Search.updateHash = data;
+				
+				var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
+				
+				Search.allDataTable.clear().draw();
+				
+				$(newData).find('tr[class]').each(function(){
+					$('#mainTable tbody').append($(this));	
+					Search.allDataTable.row.add($(this));
+				});
+				
+				Search.countRecords();
+				Search.filterDataTable();
+				Search.emptyHosts();
+				
+				Search.autoRefresh = true;
+				
+				if (Search.backgroundReload) {
+					clearTimeout(reloadTimer);
+					reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
+				}
+			},
+		});
+	}
 }
 
 Search.autoReloadData = function() {
@@ -655,7 +664,6 @@ Search.countRecordsPlus = function(buttonID) {
 }
 
 Search.init = function() {
-	$.support.cors = true;
 	var typingTimer,
 		doneTypingInterval = ($('#mainTable tr').length > 1000) ? 350 : 0,
 		refreshValues      = [],
@@ -1089,9 +1097,8 @@ Search.init = function() {
 	}
 	
 
-	if (Search.disableAutoRefresh) {
-		$('#refreshTime').hide();
-		Search.getContent(Search.updateHash);
+	if (Search.currentReload == 'auto') {
+		reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 	} else {
 		reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 	}
@@ -1099,13 +1106,15 @@ Search.init = function() {
 	
 	$('#refreshTimeSelect').selectmenu({
 		select: function (event, data) {
-			if (data.item.value == 'now') {
+			if (data.item.value == 'auto') {
+				Search.backgroundReload = true;
 				clearTimeout(reloadTimer);
-				Search.autoReloadData();
-				$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
-				$('#refreshTimeSelect').selectmenu('refresh');
+				localStorage.setItem('currentReloadNew', data.item.value);
+				reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 				return;
 			}
+			
+			Search.backgroundReload = false;
 			
 			if (data.item.value == 'custom') {
 				var reload = prompt('Enter page reload time (minutes):', '');
