@@ -55,6 +55,11 @@ Search.getContent = function() {
 					reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 				}
 			},
+			error: function() {
+				Search.autoRefresh = true;
+				clearTimeout(reloadTimer);
+				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
+			}
 		});
 	}
 }
