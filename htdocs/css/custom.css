@@ -201,9 +201,9 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #mainTable .status,             #mainTable .status-th { width: 45px !important; white-space: nowrap; }
 #mainTable .last_check,         #mainTable .last_check-th { width: 83px !important; white-space: nowrap; }
 #mainTable .duration-sec,       #mainTable .duration-sec-th { width: 0px !important; display: none; } 
-#mainTable .duration,           #mainTable .duration-th { width: 55px !important; white-space: nowrap; } 
+#mainTable .duration,           #mainTable .duration-th { width: 70px !important; white-space: nowrap; } 
 #mainTable .status_information, #mainTable .status_information-th { width: auto !important; }
-#mainTable .comment { width: 250px !important; } 
+#mainTable .comment { width: 250px !important; display: none; } 
 
 #ext_search img { display: inline-block; margin: 3px 3px 0 3px; width: 19px; cursor: pointer; }
 

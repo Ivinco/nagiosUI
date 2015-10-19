@@ -134,7 +134,7 @@
             </xsl:for-each>
         </tbody>
     </table>
-	<div id="lastUpdated"></div>
+	<div id="lastUpdated">&amp;</div>
     <div id="openDialogServerTime"></div>
 	<div id="timeShift"></div>
 	<div id="downtimeComment"></div>

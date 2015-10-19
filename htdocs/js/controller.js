@@ -996,7 +996,7 @@ Search.init = function() {
 	});
 	
 	$('#hosts').on("click", function() {
-        window.open($('#nagiosFullListUrl').html(), '_blank');
+        window.open($('#nagiosFullListUrl').html().replace('&amp;', '&'), '_blank');
 	});
 	
 	$('#mainTable').on('click', '.recheckIt', function () {

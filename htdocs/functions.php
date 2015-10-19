@@ -163,7 +163,18 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 				$origState      = '';
 				$serviceEncoded = urlencode($service);
 				$pluginOutput   = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
-				$notesUrl       = isset($notesUrls[$service])?$notesUrls[$service]:'';
+				$notesUrl       = '';
+				
+				if (isset($notesUrls[$service])) {
+					if (preg_match("/zabbix_redirect/", $notesUrls[$service])) {
+						if (preg_match("/host={$host}/", $notesUrls[$service])) {
+							$notesUrl = $notesUrls[$service];
+						}
+					} else {
+						$notesUrl = $notesUrls[$service];
+					}
+				}
+				
 				
 				if ($criticalPercentileDuration && $criticalPercentileDuration > 60*4 && (!isset($attrs['acked']) || !$attrs['acked']) && (!isset($attrs['scheduled']) || !$attrs['scheduled'])) {
 					$durationSec = $criticalPercentileDuration * 60;
