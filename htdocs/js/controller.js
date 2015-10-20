@@ -3,7 +3,7 @@ if (!localStorage.getItem('currentTabNew')) {
 }
 
 if (!localStorage.getItem('currentReloadNew')) {
-	localStorage.setItem('currentReloadNew', '15');
+	localStorage.setItem('currentReloadNew', 'auto');
 }
 
 var Search = {}
@@ -27,7 +27,6 @@ var Search = {}
 
 Search.getContent = function() {
 	if (Search.autoRefresh) {
-		Search.autoRefresh = false;
 		$.ajax({
 			type:    'GET',
 			url:     'update.php',
@@ -48,15 +47,12 @@ Search.getContent = function() {
 				Search.filterDataTable();
 				Search.emptyHosts();
 				
-				Search.autoRefresh = true;
-				
 				if (Search.backgroundReload) {
 					clearTimeout(reloadTimer);
 					reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 				}
 			},
 			error: function() {
-				Search.autoRefresh = true;
 				clearTimeout(reloadTimer);
 				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
 			}
@@ -196,7 +192,9 @@ Search.addDialogJs = function() {
 			Search.SchedItHideIcons($(this).attr('data-call'));
 		},
 		close:    function() {
-			reloadTimer = setTimeout(function () { location.reload(); }, Search.currentReload*1000);
+			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
+			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+			
 			Search.SchedItShowIcons();
 			$('#sched_finish_date_time').datetimepicker('destroy');
 			$('#openDialogServerTime').html('');
@@ -246,7 +244,9 @@ Search.addDialogJs = function() {
 			Search.AcknowledgeItHideIcons($(this).attr('data-call'));
 		},
 		close:    function() {
-			reloadTimer = setTimeout(function () { location.reload(); }, Search.currentReload*1000);
+			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
+			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+
 			Search.AcknowledgeItShowIcons();
 			Search.autoRefresh = true;
 		},
@@ -1104,7 +1104,8 @@ Search.init = function() {
 
 	if (Search.currentReload == 'auto') {
 		reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-	} else {
+	}
+	else {
 		reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 	}
 	
