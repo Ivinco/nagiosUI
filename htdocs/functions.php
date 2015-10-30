@@ -12,6 +12,7 @@ function returnDataList($isHash) {
 	global $nagiosConfigFile;
 	global $nagiosPostFile;
 	global $nagiosFullHostUrl;
+	global $xmlArchive;
 
 $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="alerts.xsl"?>
