@@ -193,7 +193,6 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 				$ackedStatus  = (int)$attrs['acked'];
 				
 				if ($ackedStatus && $ackAndSchedMatches[$host][$service]['ackComment'] == 'temp') {
-					$ackedStatus = 0;
 					$ackComment  = $ackAndSchedMatches[$host][$service]['ackComment'];
 				}
 				

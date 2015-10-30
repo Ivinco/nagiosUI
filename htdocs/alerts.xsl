@@ -78,7 +78,7 @@
 						<div class="likeTable">
 							<ul>
 								<li><a href="{service-url}"><xsl:value-of select="service"/></a></li>
-								<xsl:if test="acked=1">
+								<xsl:if test="acked=1 and ack_comment != 'temp'">
 									<li><img class="icons unAckThis" src="images/ack.gif" alt="Unacknowledge this Service" title="Unacknowledge this Service" /></li>
 								</xsl:if>
 								<xsl:if test="sched=1">
@@ -116,8 +116,8 @@
                     <td class="status_information {@state}"><xsl:copy-of select="status_information"/></td>
                     <td class="comment {@state}">
                         <span>
-                            <xsl:if test="acked=0 and sched=0">__normal__</xsl:if>
-                            <xsl:if test="acked=1">__acked__</xsl:if>
+                            <xsl:if test="(acked=0 and sched=0) or (acked=1 and ack_comment = 'temp')">__normal__</xsl:if>
+                            <xsl:if test="acked=1 and ack_comment != 'temp'">__acked__</xsl:if>
                             <xsl:if test="sched=1">__sched__</xsl:if>
                         </span>
                         <span class="ack">
