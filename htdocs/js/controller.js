@@ -756,7 +756,6 @@ Search.init = function() {
 		button.hide();
 		request['com_data'] = 'temp';
 		
-		
 		$.when.apply($, [Search.sendAjax(request)])
 			.then(
 				function() {
@@ -791,10 +790,10 @@ Search.init = function() {
 		$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').hide();
 		
 		$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').each(function () {
-			var request = Search.sendAjax(Search.returnAckRequest($(this).closest('tr')));
+			var request = Search.returnAckRequest($(this).closest('tr'));
 				request['com_data'] = 'temp';
-				
-			itemsList.push(request);
+
+			itemsList.push(Search.sendAjax(request));
 		}); 
 		
 		$.when.apply($, itemsList)
