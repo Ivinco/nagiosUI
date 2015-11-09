@@ -210,10 +210,13 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #radio em { font-style: normal; }
 
 
+#mainTable .group-list { cursor: pointer; }
+#mainTable .group-list > td { border-top: 1px solid #000; }
+#mainTable .group-list-bottom > td { border-bottom: 1px solid #000; }
 
-
-
-
+#mainTable thead td {
+    padding: 3px 3px;
+}
 
 
 

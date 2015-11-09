@@ -77,7 +77,7 @@
                     <td class="service {@state}">
 						<div class="likeTable">
 							<ul>
-								<li><a href="{service-url}"><xsl:value-of select="service"/></a></li>
+								<li><a href="{service-url}" class="service-name"><xsl:value-of select="service"/></a></li>
 								<xsl:if test="acked=1 and ack_comment != 'temp'">
 									<li><img class="icons unAckThis" src="images/ack.gif" alt="Unacknowledge this Service" title="Unacknowledge this Service" /></li>
 								</xsl:if>
@@ -128,7 +128,7 @@
                             <xsl:if test="sched_comment != ''">'<xsl:copy-of select="sched_comment"/>' by <xsl:value-of select="sched_author"/></xsl:if>
                             <xsl:if test="sched_comment_date != ''"><br />added: <xsl:copy-of select="sched_comment_date"/></xsl:if>
                         </span>
-                     </td>
+                    </td>
                 </tr>
                 
             </xsl:for-each>

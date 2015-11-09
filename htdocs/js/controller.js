@@ -5,12 +5,17 @@ if (!localStorage.getItem('currentTabNew')) {
 if (!localStorage.getItem('currentReloadNew')) {
 	localStorage.setItem('currentReloadNew', 'auto');
 }
+var tmpTab    = localStorage.getItem('currentTabNew'),
+	tmpReload = localStorage.getItem('currentReloadNew');
+	
+localStorage.clear();
+localStorage.setItem('currentTabNew', tmpTab);
+localStorage.setItem('currentReloadNew', tmpReload);
 
 var Search = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
 	Search.reloadCustomText   = 'Refresh: Custom';
-	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true });
 	Search.searchInput        = $('#mainTable_filter input');
 	Search.tableLength        = 0;
 	Search.recheckButtonId    = 'recheck_button';
@@ -24,6 +29,163 @@ var Search = {}
 	Search.currentUser        = $('#userName').text();
 	Search.updateHash         = $('#updateHash').text();
 	Search.backgroundReload   = true;
+	Search.allDataTable       = $('#mainTable').DataTable({
+									'paging'      : false,
+									'ordering'    : true,
+									'drawCallback': function (settings) {
+										var rows       = this.api().rows({ page: 'current' }).nodes(),
+											columnData = getGroupNormalServices(rows),
+											counts     = getGroupNormalServicesCount(columnData);
+										
+										getGroupGroupedData(rows, counts);
+										getGroupAdditionalData(columnData);
+									}
+								});
+
+function getGroupAdditionalData(allColumnData) {
+	var columnData = $.unique(allColumnData);
+										
+	for (var i = 0; i < columnData.length; i++) {
+		var groupNameSmall     = columnData[i].replace(/\s/g, '-').toLowerCase(),
+			status             = [],
+			statusText         = [];
+			statusFinalText    = [];
+			last_check         = [],
+			last_checkText     = '',
+			duration           = [],
+			durationText       = '',
+			status_information = [];
+											
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"]:not(.group-list)').each(function() {
+			status.push($(this).find('td.status').clone().children().remove().end().text().replace(/\s/g, ''));
+			last_check.push($(this).find('td.last_check').text());
+			duration.push($(this).find('td.duration').text());
+			status_information.push($(this).find('td.status_information status_information').text());
+		});
+											
+		for (var a = 0; a < duration.length; a++) {
+			if (getSeconds(duration[a]) > getSeconds(durationText)) {
+				durationText = duration[a];
+			}
+		}
+											
+		for (var b = 0; b < last_check.length; b++) {
+			if (!last_checkText || last_check[b] < last_checkText) {
+				last_checkText = last_check[b];
+			}
+		}
+											
+		for (var c = 0; c < status.length; c++) {
+			if (status[c] == 'CRITICAL') {
+				statusText[0] = status[c];
+			}
+			else if (status[c] == 'UNKNOWN') {
+				statusText[1] = status[c];
+			}
+			else if (status[c] == 'WARNING') {
+				statusText[2] = status[c];
+			}
+			else {
+				statusText[3] = status[c];
+			}
+		}
+											
+		for (var d = 0; d < statusText.length; d++) {
+			if (statusText[d]) {
+				statusFinalText.push(statusText[d]);
+			}
+		}
+											
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status').text(statusFinalText[0]).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.last_check').text(last_checkText).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.duration').text(durationText).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status_information').text(status_information[0]).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.service').addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.comment').addClass(statusFinalText[0]);
+	}
+	
+	quickAckUnAckGroup();
+}
+
+function getGroupGroupedData(rows, counts) {
+	var last = null;
+	
+	for (var i = 0; i < rows.length; i++) {
+		var row = rows[i];
+											
+		if ($(row).text().search('__normal__') >= 0) {
+			var groupName      = $(row).find('.service-name').text(),
+				groupNameSmall = groupName.replace(/\s/g, '-').toLowerCase();
+													
+			if (counts[groupName] > 1 && last != groupName) {
+				var isOpen  = localStorage.getItem(Search.currentTab + '_' + groupNameSmall),
+					trClass = 'group-list group-list-bottom';
+													
+				if (isOpen) {
+					trClass += ' open';
+				}
+													
+				$(rows).eq(i).before(
+					'<tr class="'+ trClass +'" data-group="' + groupNameSmall + '">' +
+					'	<td class="host" style="text-align: center; font-size: 12px; font-weight: bold;">' + counts[groupName] + '</td>' +
+					'	<td class="service">' +
+					'		<div class="likeTable">' +
+					'			<ul>' +
+					'				<li>' + groupName + '</li>' +
+					'				<li class="quickAckUnAckIcon"><img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge"></li>' +
+					'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
+					'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
+					'				<li><img class="icons recheckItGroup" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status"></li>' +
+					'			</ul>' +
+					'		</div>' +
+					'	</td>' +
+					'	<td class="status"></td>' +
+					'	<td class="last_check"></td>' +
+					'	<td class="duration-sec" style="display: none;"></td>' +
+					'	<td class="duration"></td>' +
+					'	<td class="status_information"></td>' +
+					'	<td class="comment"></td>' +
+					'</tr>'
+				);
+			}
+			
+			
+												
+			if (counts[groupName] > 1) {
+				var rowHide = $(rows).eq(i);
+					rowHide.attr('data-group', groupNameSmall);
+	
+				if (!localStorage.getItem(Search.currentTab + '_' + groupNameSmall)) {
+					rowHide.css('display', 'none');
+				}
+			}
+												
+			last = groupName;
+		}
+	}
+}
+
+function getGroupNormalServicesCount(columnData) {
+	var counts = [];
+										
+	for (var i = 0; i < columnData.length; i++) {
+		counts[columnData[i]] = 1 + (counts[columnData[i]] || 0);
+	}
+	
+	return counts;
+}
+
+function getGroupNormalServices (rows) {
+	var columnData = [];
+	
+	$(rows).each(function() {
+		if ($(this).text().search('__normal__') >= 0) {
+			columnData.push($(this).find('.service-name').text());
+		}
+	});
+	
+	return columnData;
+}
 
 Search.getContent = function() {
 	if (Search.autoRefresh) {
@@ -44,7 +206,7 @@ Search.getContent = function() {
 				});
 				
 				Search.countRecords();
-				Search.filterDataTable();
+				Search.filterDataTable(true);
 				Search.emptyHosts();
 				
 				if (Search.backgroundReload) {
@@ -74,7 +236,7 @@ Search.autoReloadData = function() {
         });
 		
 		Search.countRecords();
-		Search.filterDataTable();
+		Search.filterDataTable(true);
 		Search.emptyHosts();
 		
 		Search.autoRefresh = true;
@@ -84,8 +246,11 @@ Search.autoReloadData = function() {
 	reloadTimer = setTimeout(function () { Search.autoReloadData(''); }, Search.currentReload*1000);
 }
 
-Search.filterDataTable = function() {
+Search.filterDataTable = function(reloadAllData) {
+	Search.reorderData(reloadAllData);
 	Search.allDataTable.order((Search.currentTab == 'acked' || Search.currentTab == 'sched') ? [[1,'asc'],[0,'asc']] : [[2,'asc'],[4,'desc']]).draw();
+	$('#mainTable tbody tr[data-group]').remove();
+	
 	Search.tableLength = $('#mainTable >tbody >tr[role]').length;
 	Search.emptyHosts();
 	Search.extension();
@@ -122,7 +287,7 @@ Search.addParameterToUrl = function(parameter, value) {
 Search.emptyHosts = function () {
     var prevHost = '';
         
-	$('td.host').each(function() {
+	$('tbody td.host').each(function() {
 		$(this).css('visibility', ($(this).find('a').text() == prevHost) ? 'hidden' : 'visible');
 			
         prevHost = $(this).find('a').text();
@@ -189,13 +354,17 @@ Search.addDialogJs = function() {
 		open:     function() {
 			Search.autoRefresh = false;
 			Search.getServerLocalTimeDialog();
-			Search.SchedItHideIcons($(this).attr('data-call'));
+			
+			if (sheduleItGroupObject) { Search.SchedItHideIconsGroup(); }
+			else { Search.SchedItHideIcons($(this).attr('data-call')); }
 		},
 		close:    function() {
 			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 			
-			Search.SchedItShowIcons();
+			if (sheduleItGroupObject) { Search.SchedItShowIconsGroup();	}
+			else { Search.SchedItShowIcons();}
+			
 			$('#sched_finish_date_time').datetimepicker('destroy');
 			$('#openDialogServerTime').html('');
 			Search.autoRefresh = true;
@@ -241,13 +410,23 @@ Search.addDialogJs = function() {
 		width:    400,
 		open:     function() {
 			Search.autoRefresh = false;
-			Search.AcknowledgeItHideIcons($(this).attr('data-call'));
+			if (acknowledgeItGroupObject) {
+				Search.AcknowledgeItHideIconsGroup();
+			}
+			else {
+				Search.AcknowledgeItHideIcons($(this).attr('data-call'));
+			}
 		},
 		close:    function() {
 			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
 			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 
-			Search.AcknowledgeItShowIcons();
+			if (acknowledgeItGroupObject) {
+				Search.AcknowledgeItShowIconsGroup();
+			}
+			else {
+				Search.AcknowledgeItShowIcons();
+			}
 			Search.autoRefresh = true;
 		},
 		closeOnEscape: true,				
@@ -272,8 +451,13 @@ Search.addDialogJs = function() {
 			}
 		]
 	});
+}
+Search.SchedItHideIconsGroup = function(dataCall) {
+	if (!sheduleItGroupObject) {
+		return;
+	}
 	
-	
+	$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt, #mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleItGroup').hide();
 }
 Search.SchedItHideIcons = function(dataCall) {
 	if ('custom' == dataCall) {
@@ -293,6 +477,11 @@ Search.SchedItShowIcons = function() {
 	$('#'+ Search.sdButtonId).removeAttr('disabled').removeClass('ui-state-disabled');
 	$('#mainTable img.scheduleIt').show();
 }
+Search.SchedItShowIconsGroup = function() {
+	$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt, #mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleItGroup').show();
+	
+	sheduleItGroupObject = null;
+}
 Search.AcknowledgeItHideIcons = function(dataCall) {
 	if ('custom' == dataCall) {
 		if (!acknowledgeItObject) {
@@ -309,11 +498,24 @@ Search.AcknowledgeItHideIcons = function(dataCall) {
 		$('#dialogAck p.validateTips').html('All matched alerts will be acknowledged in nagios.');
 	}
 }
+Search.AcknowledgeItHideIconsGroup = function() {
+	if (!acknowledgeItGroupObject) {
+		return;
+	}
+	
+	$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt, #mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeItGroup').hide();
+}
 Search.AcknowledgeItShowIcons = function() {
 	$('#'+ Search.ackButtonId).removeAttr('disabled').removeClass('ui-state-disabled');
 	$('#mainTable img.acknowledgeIt').show();
 	$('#dialogAck p.validateTips').html('');
 }
+Search.AcknowledgeItShowIconsGroup = function() {
+	$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt, #mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeItGroup').show();
+	
+	acknowledgeItGroupObject = null;
+}
+
 Search.AcknowledgeItCustomService = function() {
 	if (!acknowledgeItObject) {
 		console.log("no row were found: acknowledge service won't be run");
@@ -343,7 +545,7 @@ Search.AcknowledgeItCustomService = function() {
 		);
 }
 Search.AcknowledgeItMassServices = function() {
-	if (!Search.tableLength) {
+	if ((!acknowledgeItGroupObject && !Search.tableLength) || (acknowledgeItGroupObject && !$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt').length)) {
 		console.log("no rows were found: acknowledge service won't be run");
 		return;
 	}
@@ -354,12 +556,22 @@ Search.AcknowledgeItMassServices = function() {
 	
 	var itemsList = [];
 	
-	$('#mainTable >tbody >tr[role]').each(function () {
-		var request = Search.returnAckRequest($(this));
-			request['com_data'] = $('input[name="ack_comment_extension"]').val();
-			
-		itemsList.push(Search.sendAjax(request));
-	});
+	if (acknowledgeItGroupObject) {
+		$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt').each(function () {
+			var request = Search.returnAckRequest($(this).closest('tr'));
+				request['com_data'] = $('input[name="ack_comment_extension"]').val();
+				
+			itemsList.push(Search.sendAjax(request));
+		});
+	}
+	else {
+		$('#mainTable >tbody >tr[role]').each(function () {
+			var request = Search.returnAckRequest($(this));
+				request['com_data'] = $('input[name="ack_comment_extension"]').val();
+				
+			itemsList.push(Search.sendAjax(request));
+		});
+	}
 	
 	$.when.apply($, itemsList)
 		.then(
@@ -491,11 +703,11 @@ Search.getScheduleDowntimeRequest = function(row) {
 }
 
 Search.ScheduleDowntimeServices = function() {
-	if (!Search.tableLength) {
+	if ((!sheduleItGroupObject && !Search.tableLength) || (sheduleItGroupObject && !$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt').length)) {
 		console.log("no rows were found: schedule service won't be run");
 		return;
 	}
-		
+	
 	if (!Search.ScheduleDowntimeHandlePopup()) {
 		return;
 	}
@@ -508,9 +720,16 @@ Search.ScheduleDowntimeServices = function() {
 				
 				button.attr('disabled', 'disabled').addClass('ui-state-disabled');
 				
-				$('#mainTable >tbody >tr[role]').each(function () {
-					itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this))));
-				});
+				if (sheduleItGroupObject) {
+					$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt').each(function () {
+						itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this).closest('tr'))));
+					});
+				}
+				else {
+					$('#mainTable >tbody >tr[role]').each(function () {
+						itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this))));
+					});
+				}
 				
 				$.when.apply($, itemsList)
 					.then(
@@ -668,17 +887,48 @@ Search.countRecordsPlus = function(buttonID) {
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
 }
 
+Search.reorderData = function(reloadAllData) {
+	if (reloadAllData) {
+		$('#mainTable thead tr').not(':first').remove();
+	} else {
+		$('#mainTable thead tr').not(':first').hide();
+	}
+	
+	if (Search.currentTab == 'normal') {
+		Search.allDataTable.order([[1,'asc'], [2,'asc']]).draw();
+
+		$('#mainTable tr[data-group]').each(function() {
+			var newRow = $(this).clone(),
+				oldRow = $(this);
+			
+			$('#mainTable thead').append(newRow);
+			$(oldRow).remove();
+		});
+		
+		$('#mainTable tr[data-group]').hide();
+		$('#mainTable thead tr.group-list').removeClass('open').show();
+		
+		$('#mainTable tr[data-group]').each(function() {
+			if (localStorage.getItem(Search.currentTab + '_' + $(this).attr('data-group'))) {
+				$('#mainTable tr[data-group="'+ $(this).attr('data-group') +'"]').show();
+				$('#mainTable tr.group-list[data-group="'+ $(this).attr('data-group') +'"]').addClass('open');
+				$('#mainTable tr[data-group="'+  $(this).attr('data-group') +'"]:not(.group-list):last').addClass('group-list-bottom');
+			}
+		});
+		
+		$('#radio label[for="normal"] em').text($('#mainTable tr:contains("__normal__")').length);
+	}
+}
+
 Search.init = function() {
 	var typingTimer,
 		doneTypingInterval = ($('#mainTable tr').length > 1000) ? 350 : 0,
 		refreshValues      = [],
 		reloadValue        = (parseInt(Search.currentReload) > 0) ? parseInt(Search.currentReload) : Search.autoRefreshTime;
 
-	Search.countRecords(); 
-	
 	$('#' + Search.currentTab).attr('checked', 'checked');
 	$('#radio').buttonset();
-	
+	Search.countRecords();
 	Search.allDataTable.draw();
 	Search.searchInput.val(Search.getParameterByName('search')).trigger('keyup');
 	Search.filterDataTable();
@@ -686,6 +936,15 @@ Search.init = function() {
 	$('#loading').hide();
 	$('#infoHolder').show();
 	Search.searchInput.focus();
+	
+
+	Search.allDataTable.on('order.dt', function () {
+		$('#mainTable tbody tr[data-group]').remove();
+	});
+	
+	Search.allDataTable.on('search.dt', function () {
+		$('#mainTable tbody tr[data-group]').remove();
+	});
 	
 	Search.searchInput.unbind('propertychange change keyup input paste keydown').bind('propertychange change keyup input paste keydown', function (e) {
 		var val = $(this).val();
@@ -747,6 +1006,57 @@ Search.init = function() {
 			);
 	});
 	
+	$('#mainTable').on('click', 'thead .quickAckGroup', function () {
+		Search.autoRefresh = false;
+		
+		var dataGroup = $(this).closest('tr').attr('data-group'),
+			itemsList = [];
+		
+		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').length) {
+			console.log("no rows were found: quick ack won't be run");
+			Search.autoRefresh = true;
+			return;
+		}
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup').hide();
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').each(function () {
+			var request = Search.returnAckRequest($(this).closest('tr'));
+				request['com_data'] = 'temp';
+
+			itemsList.push(Search.sendAjax(request));
+		});
+		
+		
+		$.when.apply($, itemsList)
+			.then(
+				function() {
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup')
+					.attr('alt', Search.currentUser + ' unack')
+					.attr('title', Search.currentUser + ' unack')
+					.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
+					.removeClass('quickAck')
+					.removeClass('quickAckGroup')
+					.addClass('quickUnAck')
+					.show();
+					
+					$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickUnAck').removeClass('quickUnAck').addClass('quickUnAckGroup');
+				},
+				function(data, textStatus, jqXHR) {
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup').show();
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					Search.autoRefresh = true;
+					quickAckUnAckGroup();
+				}
+			);
+
+		
+		return false;
+	});
 	$('#mainTable').on('click', '.quickAck', function () {
 		Search.autoRefresh = false;
 		
@@ -769,9 +1079,8 @@ Search.init = function() {
 			)
 			.always(
 				function () {
-					Search.filterDataTable();
-					Search.emptyHosts();
 					Search.autoRefresh = true;
+					quickAckUnAckGroup();
 				}
 			);
 	});
@@ -780,6 +1089,7 @@ Search.init = function() {
 		
 		if (!$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').length) {
 			console.log("no rows were found: quick ack won't be run");
+			Search.autoRefresh = false;
 			return;
 		}
 		
@@ -815,13 +1125,58 @@ Search.init = function() {
 			.always(
 				function () {
 					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					Search.filterDataTable();
-					Search.emptyHosts();
 					Search.autoRefresh = true;
+					quickAckUnAckGroup();
 				}
 			);
 	});
 	
+	$('#mainTable').on('click', 'thead .quickUnAckGroup', function () {
+		Search.autoRefresh = false;
+		
+		var dataGroup = $(this).closest('tr').attr('data-group');
+			itemsList = [];
+		
+		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').length) {
+			console.log("no rows were found: quick unack won't be run");
+			Search.autoRefresh = true;
+			return;
+		}
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup').hide();
+
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').each(function () {
+			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
+		});
+		
+		$.when.apply($, itemsList)
+			.then(
+				function() {
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup')
+						.attr('alt', 'Quick Acknowledge')
+						.attr('title', 'Quick Acknowledge')
+						.attr('src', 'images/ok.png')
+						.removeClass('quickUnAck')
+						.removeClass('quickUnAckGroup')
+						.addClass('quickAck')
+						.show();
+						
+					$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAck').removeClass('quickAck').addClass('quickAckGroup');
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup').show();
+				}
+			)
+			.always(
+				function () {
+					Search.autoRefresh = true;
+					quickAckUnAckGroup();
+				}
+			);
+			
+		return false;
+	});
 	$('#mainTable').on('click', '.quickUnAck', function () {
 		Search.autoRefresh = false;
 		
@@ -843,9 +1198,8 @@ Search.init = function() {
 			)
 			.always(
 				function () {
-					Search.filterDataTable();
-					Search.emptyHosts();
 					Search.autoRefresh = true;
+					quickAckUnAckGroup();
 				}
 			);
 	});
@@ -886,9 +1240,8 @@ Search.init = function() {
 			.always(
 				function () {
 					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					Search.filterDataTable();
-					Search.emptyHosts();
 					Search.autoRefresh = true;
+					quickAckUnAckGroup();
 				}
 			);
 	});
@@ -998,6 +1351,40 @@ Search.init = function() {
         window.open($('#nagiosFullListUrl').html().replace('&amp;', '&'), '_blank');
 	});
 	
+	$('#mainTable').on('click', 'thead .recheckItGroup', function () {
+		Search.autoRefresh = false;
+		
+		var dataGroup = $(this).closest('tr').attr('data-group');
+			itemsList = [];
+		
+		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt').length) {
+			console.log("no rows were found: re-check won't be run");
+			Search.autoRefresh = true;
+			return;
+		}
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckItGroup').hide();
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt').each(function () {
+			itemsList.push(Search.sendAjax(Search.returnRecheckRequest($(this).closest('tr'))));
+		});
+		
+		$.when.apply($, itemsList)
+			.then(
+				function() {},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+				}
+			)
+			.always(
+				function () {
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckItGroup').show();
+					Search.autoRefresh = true;
+				}
+			);
+			
+		return false;
+	});
 	$('#mainTable').on('click', '.recheckIt', function () {
 		Search.autoRefresh = false;
 		
@@ -1054,6 +1441,12 @@ Search.init = function() {
 			);
 	});
 	
+	$('#mainTable').on('click', 'thead .acknowledgeItGroup', function () {
+		acknowledgeItGroupObject = $(this).closest('tr').attr('data-group');
+		$('#dialogAck').attr('data-call', 'mass').dialog('open');
+		
+		return false;
+	});
 	$('#mainTable').on('click', '.acknowledgeIt', function () {		
 		acknowledgeItObject = $(this).closest('tr');
 		$('#dialogAck').attr('data-call', 'custom').dialog('open');
@@ -1062,6 +1455,12 @@ Search.init = function() {
 		$('#dialogAck').attr('data-call', 'mass').dialog('open');
 	});
 	
+	$('#mainTable').on('click', 'thead .scheduleItGroup', function () {
+		sheduleItGroupObject = $(this).closest('tr').attr('data-group');
+		$('#dialog').attr('data-call', 'mass').dialog('open');
+		
+		return false;
+	});
 	$('#mainTable').on('click', '.scheduleIt', function () {
 		sheduleItObject = $(this).closest('tr');
 		$('#dialog').attr('data-call', 'custom').dialog('open');
@@ -1190,12 +1589,68 @@ Search.init = function() {
 		return this;
 	}
 
+	$(document).on('click', '.group-list', function () {
+		var attr = $(this).attr('data-group');
+		
+		if ($(this).hasClass('open')) {
+			localStorage.removeItem(Search.currentTab + '_' + attr);
+			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list)').removeClass('group-list-bottom').hide();
+			$(this).removeClass('open');
+		}
+		else {
+			localStorage.setItem(Search.currentTab + '_' + attr, true);
+			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list)').show();
+			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list):last').addClass('group-list-bottom');
+			$(this).addClass('open');
+		}
+		
+	});
+	
 	$('img').error(function(){
         $(this).attr('src', 'images/avatars/empty.jpeg');
 	});
-	
 }
 
 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 	return (Search.currentTab && (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0)) ? true : false;
 });
+
+function quickAckUnAckGroup() {
+	$('#mainTable thead tr.group-list[data-group]').each(function() {
+		var dataGroup = $(this).attr('data-group'),
+			unAckIcons  = [];
+			
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').each(function() {
+			if ($(this).find('.quickUnAck').length) {
+				unAckIcons.push($(this).find('.quickUnAck').clone());
+			}
+		});
+		
+		if ($('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').length == unAckIcons.length) {
+			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
+				.html(unAckIcons[0])
+				.find('.icons')
+				.attr('alt', 'Quick UnAcknowledge All')
+				.attr('title', 'Quick UnAcknowledge All')
+				.removeClass('quickUnAck')
+				.addClass('quickUnAckGroup');  
+		}
+		else {
+			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
+				.html('<img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge">');
+		}
+	});
+}
+
+function getSeconds(str) {
+	var seconds = 0,
+		days    = str.match(/(\d+)\s*d/),
+		hours   = str.match(/(\d+)\s*h/),
+		minutes = str.match(/(\d+)\s*m/);
+	
+	if (days) { seconds += parseInt(days[1])*86400; }
+	if (hours) { seconds += parseInt(hours[1])*3600; }
+	if (minutes) { seconds += parseInt(minutes[1])*60; }
+  
+  return seconds;
+}
