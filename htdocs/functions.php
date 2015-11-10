@@ -87,7 +87,7 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 				);
 			}
 			
-			$commentType = ($ackAndSchedMatches['entry_type'][$k] == 2) ? 'other' : (($ackAndSchedMatches['entry_type'][$k] == 4) ? 'ack' : 'sched');
+			$commentType = ($ackAndSchedMatches['entry_type'][$k] == 2) ? 'other' : (($ackAndSchedMatches['entry_type'][$k] == 4 || $ackAndSchedMatches['entry_type'][$k] == 1) ? 'ack' : 'sched');
 	
 			if ($commentType != 'other') {
 				$tmp[$host][$ackAndSchedMatches['service'][$k]][$commentType.'Author']      = $ackAndSchedMatches['author'][$k];
