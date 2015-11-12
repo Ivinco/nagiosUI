@@ -304,8 +304,8 @@ Search.filterDataTable = function() {
 	Search.allDataTable.order((Search.currentTab == 'acked' || Search.currentTab == 'sched') ? [[1,'asc'],[0,'asc']] : [[2,'asc'],[4,'desc']]).draw();
 	
 	Search.tableLength = $('#mainTable >tbody >tr[role]').length;
-	Search.emptyHosts();
 	Search.extension();
+	Search.emptyHosts();
 	
 	$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
 	$('.comment span.ack').toggle(Search.currentTab == 'acked');
@@ -315,7 +315,7 @@ Search.filterDataTable = function() {
 Search.emptyHosts = function () {
     var prevHost = '';
         
-	$('tbody td.host').each(function() {
+	$('tbody td.host:visible').each(function() {
 		$(this).css('visibility', ($(this).find('a').text() == prevHost) ? 'hidden' : 'visible');
 			
         prevHost = $(this).find('a').text();
@@ -945,6 +945,7 @@ Search.init = function() {
 	$('#loading').hide();
 	$('#infoHolder').show();
 	Search.searchInput.focus();
+	Search.emptyHosts();
 	$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
 	acknowledgeItGroupObject = null;
 	sheduleItGroupObject     = null;
