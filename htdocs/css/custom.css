@@ -214,11 +214,7 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #mainTable .group-list > td { border-top: 1px solid #000; }
 #mainTable .group-list-bottom > td { border-bottom: 1px solid #000; }
 
-#mainTable thead td {
-    padding: 3px 3px;
-}
-
-
-
+#mainTable thead td { padding: 3px 3px; }
+#mainTable .for-order { display: none; }
 
 

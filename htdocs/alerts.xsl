@@ -102,7 +102,13 @@
 						</div>
                     </td>
                     <td class="status {@state} orig{@origState}">
-                        <xsl:value-of select="status"/>
+                        <span class="for-order">
+							<xsl:if test="status = 'CRITICAL'">4</xsl:if>
+							<xsl:if test="status = 'UNKNOWN'">3</xsl:if>
+							<xsl:if test="status = 'WARNING'">2</xsl:if>
+							<xsl:if test="status = 'OK'">1</xsl:if>
+						</span>
+						<xsl:value-of select="status"/>
                         <xsl:if test="downtime_id != ''">
                             <span class="downtime_id">
                                 remove
@@ -110,9 +116,19 @@
                             </span>
                         </xsl:if>
                     </td>
-                    <td class="last_check {@state}"><xsl:value-of select="last_check"/></td>
+                    <td class="last_check {@state}">
+						<span class="for-order">
+							<xsl:value-of select="last_check_sec"/>
+						</span>
+						<xsl:value-of select="last_check"/>
+					</td>
                     <td class="duration-sec"><xsl:value-of select="durationSec"/></td>
-                    <td class="duration {@state}"><xsl:value-of select="duration"/></td>
+                    <td class="duration {@state}">
+						<span class="for-order">
+							<xsl:value-of select="durationSec9Digits"/>
+						</span>
+						<xsl:value-of select="duration"/>
+					</td>
                     <td class="status_information {@state}"><xsl:copy-of select="status_information"/></td>
                     <td class="comment {@state}">
                         <span>

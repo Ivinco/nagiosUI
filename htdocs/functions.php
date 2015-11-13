@@ -215,7 +215,9 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<sched_comment_date>'. $sched_comment_date .'</sched_comment_date>
 		<ack_comment_date>'.   $ack_comment_date .'</ack_comment_date> 
 		<last_check>'.         $last_check .'</last_check>
+		<last_check_sec>'.     $attrs['last_check'] .'</last_check_sec>
 		<durationSec>'.        $durationSec .'</durationSec>
+		<durationSec9Digits>'. sprintf('%09d', $durationSec) .'</durationSec9Digits>
 		<duration>'.           $duration .'</duration>
 		<attempt>'.            $attempt .'</attempt>
 		<status_information>'. $pluginOutput .'</status_information>
@@ -225,7 +227,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 			$verificateCheck .= $state . $origState . $host . $service . $serviceEncoded . $sched_author . $attempt;
 			$verificateCheck .= $notesUrl . $ackedStatus . $scheduled . $downtime_id . $ack_author . $pluginOutput;
 			$verificateCheck .= $schedComment . $ackComment . $sched_comment_date . $ack_comment_date;
-			$verificateCheck .= $last_check; // . $durationSec . $duration;
+			$verificateCheck .= $last_check;
 
 		}
 	}

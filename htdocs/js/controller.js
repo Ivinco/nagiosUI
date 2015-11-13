@@ -29,7 +29,13 @@ var Search = {}
 	Search.currentUser        = $('#userName').text();
 	Search.updateHash         = $('#updateHash').text();
 	Search.backgroundReload   = true;
-	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true });
+	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true});
+	Search.orderBy = {
+		'normal'   : [[2,'desc'],[4,'desc']],
+		'acked'    : [[1, 'asc'],[0, 'asc']],
+		'sched'    : [[1, 'asc'],[0, 'asc']],
+		'EMERGENCY': [[2,'desc'],[4,'desc']],
+	};
 
 
 function getGroupAdditionalData(allColumnData) {
@@ -48,8 +54,8 @@ function getGroupAdditionalData(allColumnData) {
 											
 		$('#mainTable tr[data-group="'+ groupNameSmall +'"]:not(.group-list)').each(function() {
 			status.push($(this).find('td.status').clone().children().remove().end().text().replace(/\s/g, ''));
-			last_check.push($(this).find('td.last_check').text());
-			duration.push($(this).find('td.duration').text());
+			last_check.push($(this).find('td.last_check').html());
+			duration.push($(this).find('td.duration').html());
 			status_information.push($(this).find('td.status_information status_information').text());
 		});
 											
@@ -87,8 +93,8 @@ function getGroupAdditionalData(allColumnData) {
 		}
 											
 		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status').text(statusFinalText[0]).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.last_check').text(last_checkText).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.duration').text(durationText).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.last_check').html(last_checkText).addClass(statusFinalText[0]);
+		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.duration').html(durationText).addClass(statusFinalText[0]);
 		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status_information').text(status_information[0]).addClass(statusFinalText[0]);
 		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.service').addClass(statusFinalText[0]);
 		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.comment').addClass(statusFinalText[0]);
@@ -208,8 +214,11 @@ Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
 	if (Search.currentTab == 'normal') {
+		var saveOrder = Search.orderBy[Search.currentTab];
+		
 		Search.allDataTable.order([[1,'asc'], [2,'asc'], [3, 'asc']]).draw();
 		
+		Search.orderBy[Search.currentTab] = saveOrder;
 		$('#mainTable tbody tr:contains("__normal__")').show();
 		
 		var rows       = $('#mainTable tbody tr:contains("__normal__")'),
@@ -301,7 +310,7 @@ Search.autoReloadData = function() {
 
 Search.filterDataTable = function() {
 	Search.reorderData();
-	Search.allDataTable.order((Search.currentTab == 'acked' || Search.currentTab == 'sched') ? [[1,'asc'],[0,'asc']] : [[2,'asc'],[4,'desc']]).draw();
+	Search.allDataTable.order(Search.orderBy[Search.currentTab]).draw();
 	
 	Search.tableLength = $('#mainTable >tbody >tr[role]').length;
 	Search.extension();
@@ -1641,9 +1650,7 @@ Search.init = function() {
 	$(document).on('submit','form[name="acknowledge"]',    function() { return false; });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
-	Search.allDataTable.on('search.dt', function() {
-
-	});
+	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; });
 }
 
 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
