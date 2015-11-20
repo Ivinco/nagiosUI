@@ -53,6 +53,12 @@
 				</optgroup>
 			</select>
 		</div>
+		<div id="normalGrouping">
+			<select name="files" id="grouping">
+				<option value="0">Grouping: Disabled</option>
+				<option value="1">Grouping: Enabled</option>
+			</select>
+		</div>
     </form>
     <table id="mainTable">
         <thead>

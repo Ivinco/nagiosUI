@@ -60,8 +60,6 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 		}
 	}
 	
-	
-	
 	$statusFile = file_get_contents($statusFile_global);
 	
 	preg_match_all($pregHostStatus, $statusFile, $downHostsMatches);

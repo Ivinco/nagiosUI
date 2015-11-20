@@ -186,9 +186,19 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 
 #refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
 #refreshTimeSelect-button { width: auto !important; min-width: 150px; }
-
+#refreshTimeSelect-button:focus { outline: 0; }
 #refreshTimeSelect-menu li { font-size: 14px; line-height: 18px; }
 #refreshTimeSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
+
+#normalGrouping { float: right; }
+#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 14px; line-height: 30px; padding: 0 2em 0 1em; }
+
+#grouping-button { width: 178px !important; }
+#grouping-button:focus { outline: 0; }
+#grouping-menu { width: 178px !important; }
+#grouping-menu li { font-size: 14px; line-height: 18px; }
+#grouping-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
+
 
 .ui-selectmenu-menu.ui-front.ui-selectmenu-open { left: auto; right: 8px; }
 #mainTable .comment span { display: none; }

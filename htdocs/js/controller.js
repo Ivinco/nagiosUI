@@ -4,17 +4,23 @@ if (!localStorage.getItem('currentTabNew')) {
 if (!localStorage.getItem('currentReloadNew')) {
 	localStorage.setItem('currentReloadNew', 'auto');
 }
+if (!localStorage.getItem('currentGroup')) {
+	localStorage.setItem('currentGroup', '0');
+}
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
-	tmpReload = localStorage.getItem('currentReloadNew');
+	tmpReload = localStorage.getItem('currentReloadNew'),
+	tmpGroup  = localStorage.getItem('currentGroup');
 	
 localStorage.clear();
 localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
+localStorage.setItem('currentGroup', tmpGroup);
 
 var Search = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
+	Search.currentGroup       = localStorage.getItem('currentGroup');
 	Search.reloadCustomText   = 'Refresh: Custom';
 	Search.searchInput        = $('#mainTable_filter input');
 	Search.tableLength        = 0;
@@ -255,7 +261,7 @@ Search.getContent = function() {
 			type:    'GET',
 			url:     'update.php',
 			data:    {'hash' : Search.updateHash},
-			success: function(data){
+			success: function(data){ 
 				Search.updateHash = data;
 				
 				var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
@@ -277,6 +283,10 @@ Search.getContent = function() {
 				}
 			},
 			error: function() {
+				clearTimeout(reloadTimer);
+				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
+			},
+            fail: function() {
 				clearTimeout(reloadTimer);
 				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
 			}
@@ -309,7 +319,12 @@ Search.autoReloadData = function() {
 
 
 Search.filterDataTable = function() {
-	Search.reorderData();
+	if (Search.currentGroup == 1) {
+		Search.reorderData();
+	} else {
+		$('#mainTable thead tr').not(':first').remove();
+		$('#mainTable tbody tr').show();
+	}
 	Search.allDataTable.order(Search.orderBy[Search.currentTab]).draw();
 	
 	Search.tableLength = $('#mainTable >tbody >tr[role]').length;
@@ -974,6 +989,7 @@ Search.init = function() {
 	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
 		$('td.host').css('visibility', 'visible');
+		$('#mainTable tbody tr').show();
 		
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
@@ -1541,7 +1557,16 @@ Search.init = function() {
 		reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 	}
 	
-	
+	$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
+	$('#grouping').selectmenu({
+		select: function (event, data) {
+			localStorage.setItem('currentGroup', data.item.value);
+			Search.currentGroup = localStorage.getItem('currentGroup');
+			$('#grouping option').removeAttr('selected');
+			$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
+			Search.filterDataTable();
+		}
+	});
 	$('#refreshTimeSelect').selectmenu({
 		select: function (event, data) {
 			if (data.item.value == 'auto') {
