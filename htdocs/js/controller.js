@@ -115,8 +115,10 @@ function getGroupGroupedData(rows, counts) {
 		var row = rows[i];
 											
 		if ($(row).text().search('__normal__') >= 0) {
-			var groupName      = $(row).find('.service-name').text(),
-				groupNameSmall = groupName.replace(/\s/g, '-').toLowerCase();
+			var groupName      = (Search.currentGroup == 1) ? $(row).find('.service-name').text() : $(row).find('.host').text(),
+				groupNameSmall = groupName.replace(/\s/g, '-').toLowerCase(),
+				hostValue      = (Search.currentGroup == 1) ? counts[groupName] : groupName,
+				serviceValue   = (Search.currentGroup == 1) ? groupName : counts[groupName];
 													
 			if (counts[groupName] > 1 && last != groupName) {
 				var isOpen  = localStorage.getItem(Search.currentTab + '_' + groupNameSmall),
@@ -128,11 +130,11 @@ function getGroupGroupedData(rows, counts) {
 													
 				$(rows).eq(i).before(
 					'<tr class="'+ trClass +'" data-group="' + groupNameSmall + '">' +
-					'	<td class="host" style="text-align: center; font-size: 12px; font-weight: bold;">' + counts[groupName] + '</td>' +
+					'	<td class="host" style="text-align: center; font-size: 12px; font-weight: bold;">' + hostValue + '</td>' +
 					'	<td class="service">' +
 					'		<div class="likeTable">' +
 					'			<ul>' +
-					'				<li>' + groupName + '</li>' +
+					'				<li>' + serviceValue + '</li>' +
 					'				<li class="quickAckUnAckIcon"><img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge"></li>' +
 					'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
 					'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
@@ -173,6 +175,17 @@ function getGroupNormalServices (rows) {
 	$(rows).each(function() {
 		if ($(this).text().search('__normal__') >= 0) {
 			columnData.push($(this).find('.service-name').text());
+		}
+	});
+	
+	return columnData;
+}
+function getGroupNormalHosts (rows) {
+	var columnData = [];
+	
+	$(rows).each(function() {
+		if ($(this).text().search('__normal__') >= 0) {
+			columnData.push($(this).find('.host').text());
 		}
 	});
 	
@@ -220,15 +233,15 @@ Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
 	if (Search.currentTab == 'normal') {
-		var saveOrder = Search.orderBy[Search.currentTab];
+		var saveOrder = Search.orderBy[Search.currentTab],
+			tmpOrder  = (Search.currentGroup == 1) ? [[1,'asc'], [2,'asc'], [3, 'asc']] : [[0,'asc'], [2,'asc'], [3, 'asc']];
 		
-		Search.allDataTable.order([[1,'asc'], [2,'asc'], [3, 'asc']]).draw();
-		
+		Search.allDataTable.order(tmpOrder).draw();
 		Search.orderBy[Search.currentTab] = saveOrder;
 		$('#mainTable tbody tr:contains("__normal__")').show();
 		
 		var rows       = $('#mainTable tbody tr:contains("__normal__")'),
-			columnData = getGroupNormalServices(rows),
+			columnData = (Search.currentGroup == 1) ? getGroupNormalServices(rows) : getGroupNormalHosts(rows),
 			counts     = getGroupNormalServicesCount(columnData);
 		
 		getGroupGroupedData(rows, counts);
@@ -240,6 +253,11 @@ Search.reorderData = function() {
 			$('#mainTable thead').append(newRow);
 		});
 		
+		if (Search.currentGroup == 2) {
+			$('#mainTable thead tr[data-group].group-list .host').css('text-align', 'left').css('font-weight', 'normal').css('font-size', '10.66px');
+			$('#mainTable thead tr[data-group].group-list .service').each(function() { $(this).find('li:first').css('text-align', 'center').css('font-weight', 'bold').css('font-size', '12px') });
+			$('#mainTable thead tr[data-group]:not(.group-list) .host').css('visibility', 'visible');
+		}
 		$('#mainTable tbody tr[data-group]').removeAttr('data-group').hide();
 		$('#mainTable thead tr[data-group]:not(.group-list)').hide();
 		$('#mainTable thead tr.group-list').removeClass('open');
@@ -319,8 +337,9 @@ Search.autoReloadData = function() {
 
 
 Search.filterDataTable = function() {
-	if (Search.currentGroup == 1) {
+	if (Search.currentGroup != 0) {
 		Search.reorderData();
+		quickAckUnAckGroup();
 	} else {
 		$('#mainTable thead tr').not(':first').remove();
 		$('#mainTable tbody tr').show();
@@ -933,7 +952,13 @@ Search.getHost = function(row) {
 	return (row.length && row.find('td.host a').html()) ? row.find('td.host a').html() : '';
 }
 Search.getLastCheck = function(row) {
-	return (row.length && row.find('td.last_check').html()) ? row.find('td.last_check').html() : '';
+	var returnData = '';
+	
+	if (row.length) {
+		row.find('td.last_check span').remove();
+		returnData = (row.find('td.last_check').text().trim()) ? row.find('td.last_check').text().trim() : '';
+	}
+	return returnData;
 } 
 
 
@@ -1463,7 +1488,7 @@ Search.init = function() {
 		
 		var button  = $(this),
 			request = Search.returnRecheckRequest(button.closest('tr'));
-		
+			
 		button.hide();
 		
 		$.when.apply($, [Search.sendAjax(request)])
@@ -1562,8 +1587,6 @@ Search.init = function() {
 		select: function (event, data) {
 			localStorage.setItem('currentGroup', data.item.value);
 			Search.currentGroup = localStorage.getItem('currentGroup');
-			$('#grouping option').removeAttr('selected');
-			$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
 			Search.filterDataTable();
 		}
 	});
