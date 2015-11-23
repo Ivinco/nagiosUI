@@ -56,8 +56,7 @@
 		<div id="normalGrouping">
 			<select name="files" id="grouping">
 				<option value="0">Grouping: Disabled</option>
-				<option value="1">Grouping: By Service</option>
-				<option value="2">Grouping: By Host</option>
+				<option value="1">Grouping: Enabled</option>
 			</select>
 		</div>
     </form>

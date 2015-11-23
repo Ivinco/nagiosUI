@@ -193,9 +193,9 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #normalGrouping { float: right; }
 #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 14px; line-height: 30px; padding: 0 2em 0 1em; }
 
-#grouping-button { width: 194px !important; }
+#grouping-button { width: 178px !important; }
 #grouping-button:focus { outline: 0; }
-#grouping-menu { width: 194px !important; }
+#grouping-menu { width: 178px !important; }
 #grouping-menu li { font-size: 14px; line-height: 18px; }
 #grouping-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 

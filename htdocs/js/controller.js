@@ -44,130 +44,157 @@ var Search = {}
 	};
 
 
-function getGroupAdditionalData(allColumnData) {
-	var columnData = $.unique(allColumnData);
-										
-	for (var i = 0; i < columnData.length; i++) {
-		var groupNameSmall     = columnData[i].replace(/\s/g, '-').toLowerCase(),
-			status             = [],
-			statusText         = [];
-			statusFinalText    = [];
-			last_check         = [],
-			last_checkText     = '',
-			duration           = [],
-			durationText       = '',
-			status_information = [];
-											
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"]:not(.group-list)').each(function() {
-			status.push($(this).find('td.status').clone().children().remove().end().text().replace(/\s/g, ''));
-			last_check.push($(this).find('td.last_check').html());
-			duration.push($(this).find('td.duration').html());
-			status_information.push($(this).find('td.status_information status_information').text());
+function getGroupNormalCount(columnData, limit) {
+	var counts       = [],
+		returnCounts = [];
+	
+	$.each(columnData, function(i, val) {
+		counts[columnData[i]] = 1 + (counts[columnData[i]] || 0);
+	});
+	
+	$.each(columnData, function(i, val) {
+		if (counts[columnData[i]] > limit) {
+			returnCounts[columnData[i]] = counts[columnData[i]];
+		}
+	});
+	
+	return returnCounts;
+}
+function getGroupNormalHeaders(rows, countsService, countsHost) {
+	var returnData    = [],
+		returnOrdered = {},
+		returnArray   = [];
+	
+	$(rows).each(function() {
+		var serviceName = $(this).find('.service-name').text(),
+			hostName    = $(this).find('.host').text();
+				
+		if ($(this).text().search('__normal__') >= 0 && (countsService[serviceName] || countsHost[hostName])) {
+			var type           = (countsService[serviceName]) ? 'service' : 'host',
+				host           = $(this).find('.host').text(),
+				service        = $(this).find('.service-name').text(),
+				count          = (countsService[serviceName]) ? countsService[serviceName] : countsHost[hostName],
+				statusOrder    = $(this).find('.status .for-order').text(),
+				status         = $(this).find('.status').text().trim().substr(1),
+				lastCheckOrder = $(this).find('.last_check .for-order').text(),
+				lastCheck      = $(this).find('.last_check').text().trim().substr(10),
+				durationOrder  = $(this).find('.duration .for-order').text(),
+				duration       = $(this).find('.duration').text().trim().substr(9),
+				information    = $(this).find('.status_information status_information').text(),
+				groupBy        = (countsService[serviceName]) ? service.replace(/\s/g, '-').toLowerCase() : host.replace(/\s/g, '-').toLowerCase();
+			
+			returnData.push({
+				'type':           type,
+				'service':        service,
+				'host':           host,
+				'count':          count,
+				'status':         status,
+				'statusOrder':    statusOrder,
+				'lastCheck':      lastCheck,
+				'lastCheckOrder': lastCheckOrder,
+				'duration':       duration,
+				'durationOrder':  durationOrder,
+				'information':    information,
+				'groupBy':        groupBy,
+			});
+		}
+	});
+	
+	$(returnData).each(function() {
+		if (!returnOrdered[$(this)[0].groupBy]) {
+			returnOrdered[$(this)[0].groupBy] = $(this)[0];
+		}
+		
+		if (returnOrdered[$(this)[0].groupBy].statusOrder < $(this)[0].statusOrder) {
+			returnOrdered[$(this)[0].groupBy].statusOrder = $(this)[0].statusOrder;
+			returnOrdered[$(this)[0].groupBy].status      = $(this)[0].status;
+		}
+
+		if (returnOrdered[$(this)[0].groupBy].durationOrder < $(this)[0].durationOrder) {
+			returnOrdered[$(this)[0].groupBy].durationOrder = $(this)[0].durationOrder;
+			returnOrdered[$(this)[0].groupBy].duration      = $(this)[0].duration;
+		}
+	});
+	
+	$.each(returnOrdered, function(){
+		returnArray.push($(this)[0]);
+	});
+	
+	returnArray.sort(function(a,b) {
+		if (parseInt(a.count) < parseInt(b.count)) {
+			return 1;
+		} else if (parseInt(a.count) > parseInt(b.count)) {
+		   return -1;
+		} else if (parseInt(a.statusOrder) < parseInt(b.statusOrder)) {
+			return 1;
+		} else if (parseInt(a.statusOrder) > parseInt(b.statusOrder)) {
+			return -1;
+		} else if (parseInt(a.durationOrder) < parseInt(b.durationOrder)) {
+			return 1;
+		} else if (parseInt(a.durationOrder) > parseInt(b.durationOrder)) {
+			return -1;
+		} else {
+			return 0;
+		}
+	});
+
+	return returnArray;
+}
+function getGroupNormalThead(rowsHeader) {
+	$(rowsHeader).each(function() {
+		var trClass        = $(this)[0].status,
+			groupNameSmall = $(this)[0].groupBy,
+			hostValue      = ($(this)[0].type != 'service') ? $(this)[0].host : $(this)[0].count,
+			serviceValue   = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].count,
+			css            = ' style="text-align: center; font-size: 12px; font-weight: bold;"',
+			contains       = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].host;
+		
+		$('#mainTable thead').append(
+			'<tr class="'+ trClass +' group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
+			'	<td class="host"'+ css +'>' + hostValue + '</td>' +
+			'	<td class="service '+ trClass +'"'+ css +'>' +
+			'		<div class="likeTable">' +
+			'			<ul>' +
+			'				<li>' + serviceValue + '</li>' +
+			'				<li class="quickAckUnAckIcon"><img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge"></li>' +
+			'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
+			'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
+			'				<li><img class="icons recheckItGroup" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status"></li>' +
+			'			</ul>' +
+			'		</div>' +
+			'	</td>' +
+			'	<td class="status '+ trClass +'">'+ $(this)[0].status +'</td>' +
+			'	<td class="last_check '+ trClass +'">'+ $(this)[0].lastCheck +'</td>' +
+			'	<td class="duration-sec" style="display: none;"></td>' +
+			'	<td class="duration '+ trClass +'">'+ $(this)[0].duration +'</td>' +
+			'	<td class="status_information '+ trClass +'">'+ $(this)[0].information +'</td>' +
+			'	<td class="comment"></td>' +
+			'</tr>'
+		);
+		
+		$('#mainTable tbody tr:contains("'+ contains +'")').each(function() {
+			var oldRow = $(this),
+				newRow = oldRow.clone();
+			
+			newRow.attr('data-group', groupNameSmall);
+			oldRow.attr('data-group', groupNameSmall);
+			$('#mainTable thead').append(newRow);
 		});
-											
-		for (var a = 0; a < duration.length; a++) {
-			if (getSeconds(duration[a]) > getSeconds(durationText)) {
-				durationText = duration[a];
-			}
+	});
+	
+	$('#mainTable tbody tr[data-group]').removeAttr('data-group').hide();
+	$('#mainTable thead tr[data-group]:not(.group-list)').hide();
+	$('#mainTable thead tr.group-list').removeClass('open');
+	
+	$('#mainTable thead tr[data-group]:not(.group-list)').each(function() {
+		if (localStorage.getItem(Search.currentTab + '_' + $(this).attr('data-group'))) {
+			$('#mainTable tr[data-group="'+ $(this).attr('data-group') +'"]').show();
+			$('#mainTable tr.group-list[data-group="'+ $(this).attr('data-group') +'"]').addClass('open');
+			$('#mainTable tr[data-group="'+  $(this).attr('data-group') +'"]:not(.group-list):last').addClass('group-list-bottom');
 		}
-											
-		for (var b = 0; b < last_check.length; b++) {
-			if (!last_checkText || last_check[b] < last_checkText) {
-				last_checkText = last_check[b];
-			}
-		}
-											
-		for (var c = 0; c < status.length; c++) {
-			if (status[c] == 'CRITICAL') {
-				statusText[0] = status[c];
-			}
-			else if (status[c] == 'UNKNOWN') {
-				statusText[1] = status[c];
-			}
-			else if (status[c] == 'WARNING') {
-				statusText[2] = status[c];
-			}
-			else {
-				statusText[3] = status[c];
-			}
-		}
-											
-		for (var d = 0; d < statusText.length; d++) {
-			if (statusText[d]) {
-				statusFinalText.push(statusText[d]);
-			}
-		}
-											
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status').text(statusFinalText[0]).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.last_check').html(last_checkText).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.duration').html(durationText).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.status_information').text(status_information[0]).addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.service').addClass(statusFinalText[0]);
-		$('#mainTable tr[data-group="'+ groupNameSmall +'"].group-list td.comment').addClass(statusFinalText[0]);
-	}
+	});
 	
 	quickAckUnAckGroup();
-}
-function getGroupGroupedData(rows, counts) {
-	var last = null;
-	
-	for (var i = 0; i < rows.length; i++) {
-		var row = rows[i];
-											
-		if ($(row).text().search('__normal__') >= 0) {
-			var groupName      = (Search.currentGroup == 1) ? $(row).find('.service-name').text() : $(row).find('.host').text(),
-				groupNameSmall = groupName.replace(/\s/g, '-').toLowerCase(),
-				hostValue      = (Search.currentGroup == 1) ? counts[groupName] : groupName,
-				serviceValue   = (Search.currentGroup == 1) ? groupName : counts[groupName];
-													
-			if (counts[groupName] > 1 && last != groupName) {
-				var isOpen  = localStorage.getItem(Search.currentTab + '_' + groupNameSmall),
-					trClass = 'group-list group-list-bottom';
-													
-				if (isOpen) {
-					trClass += ' open';
-				}
-													
-				$(rows).eq(i).before(
-					'<tr class="'+ trClass +'" data-group="' + groupNameSmall + '">' +
-					'	<td class="host" style="text-align: center; font-size: 12px; font-weight: bold;">' + hostValue + '</td>' +
-					'	<td class="service">' +
-					'		<div class="likeTable">' +
-					'			<ul>' +
-					'				<li>' + serviceValue + '</li>' +
-					'				<li class="quickAckUnAckIcon"><img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge"></li>' +
-					'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
-					'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
-					'				<li><img class="icons recheckItGroup" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status"></li>' +
-					'			</ul>' +
-					'		</div>' +
-					'	</td>' +
-					'	<td class="status"></td>' +
-					'	<td class="last_check"></td>' +
-					'	<td class="duration-sec" style="display: none;"></td>' +
-					'	<td class="duration"></td>' +
-					'	<td class="status_information"></td>' +
-					'	<td class="comment"></td>' +
-					'</tr>'
-				);
-			}
-											
-			if (counts[groupName] > 1) {
-				$(rows).eq(i).attr('data-group', groupNameSmall);
-			}
-												
-			last = groupName;
-		}
-	}
-}
-function getGroupNormalServicesCount(columnData) {
-	var counts = [];
-										
-	for (var i = 0; i < columnData.length; i++) {
-		counts[columnData[i]] = 1 + (counts[columnData[i]] || 0);
-	}
-	
-	return counts;
 }
 function getGroupNormalServices (rows) {
 	var columnData = [];
@@ -233,42 +260,20 @@ Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
 	if (Search.currentTab == 'normal') {
-		var saveOrder = Search.orderBy[Search.currentTab],
-			tmpOrder  = (Search.currentGroup == 1) ? [[1,'asc'], [2,'asc'], [3, 'asc']] : [[0,'asc'], [2,'asc'], [3, 'asc']];
+		var saveOrder = Search.orderBy[Search.currentTab];
 		
-		Search.allDataTable.order(tmpOrder).draw();
+		Search.allDataTable.order([[2,'asc'], [3, 'asc']]).draw();
 		Search.orderBy[Search.currentTab] = saveOrder;
 		$('#mainTable tbody tr:contains("__normal__")').show();
 		
-		var rows       = $('#mainTable tbody tr:contains("__normal__")'),
-			columnData = (Search.currentGroup == 1) ? getGroupNormalServices(rows) : getGroupNormalHosts(rows),
-			counts     = getGroupNormalServicesCount(columnData);
-		
-		getGroupGroupedData(rows, counts);
-		getGroupAdditionalData(columnData);
-		
-		$('#mainTable tbody tr[data-group]').each(function() {
-			var newRow = $(this).clone();
+		var rows          = $('#mainTable tbody tr:contains("__normal__")'),
+			rowsService   = getGroupNormalServices(rows),
+			rowsHost      = getGroupNormalHosts(rows),
+			countsService = getGroupNormalCount(rowsService, 10),
+			countsHost    = getGroupNormalCount(rowsHost, 1),
+			rowsHeader    = getGroupNormalHeaders(rows, countsService, countsHost);
 			
-			$('#mainTable thead').append(newRow);
-		});
-		
-		if (Search.currentGroup == 2) {
-			$('#mainTable thead tr[data-group].group-list .host').css('text-align', 'left').css('font-weight', 'normal').css('font-size', '10.66px');
-			$('#mainTable thead tr[data-group].group-list .service').each(function() { $(this).find('li:first').css('text-align', 'center').css('font-weight', 'bold').css('font-size', '12px') });
-			$('#mainTable thead tr[data-group]:not(.group-list) .host').css('visibility', 'visible');
-		}
-		$('#mainTable tbody tr[data-group]').removeAttr('data-group').hide();
-		$('#mainTable thead tr[data-group]:not(.group-list)').hide();
-		$('#mainTable thead tr.group-list').removeClass('open');
-		
-		$('#mainTable thead tr[data-group]:not(.group-list)').each(function() {
-			if (localStorage.getItem(Search.currentTab + '_' + $(this).attr('data-group'))) {
-				$('#mainTable tr[data-group="'+ $(this).attr('data-group') +'"]').show();
-				$('#mainTable tr.group-list[data-group="'+ $(this).attr('data-group') +'"]').addClass('open');
-				$('#mainTable tr[data-group="'+  $(this).attr('data-group') +'"]:not(.group-list):last').addClass('group-list-bottom');
-			}
-		});
+		getGroupNormalThead(rowsHeader);
 	}
 }
 
@@ -952,13 +957,7 @@ Search.getHost = function(row) {
 	return (row.length && row.find('td.host a').html()) ? row.find('td.host a').html() : '';
 }
 Search.getLastCheck = function(row) {
-	var returnData = '';
-	
-	if (row.length) {
-		row.find('td.last_check span').remove();
-		returnData = (row.find('td.last_check').text().trim()) ? row.find('td.last_check').text().trim() : '';
-	}
-	return returnData;
+	return (row.length && row.find('td.last_check').text().trim().substr(10)) ? row.find('td.last_check').text().trim().substr(10) : '';
 } 
 
 
