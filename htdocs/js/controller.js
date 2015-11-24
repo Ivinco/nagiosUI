@@ -37,10 +37,11 @@ var Search = {}
 	Search.backgroundReload   = true;
 	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true});
 	Search.orderBy = {
-		'normal'   : [[2,'desc'],[4,'desc']],
-		'acked'    : [[1, 'asc'],[0, 'asc']],
-		'sched'    : [[1, 'asc'],[0, 'asc']],
-		'EMERGENCY': [[2,'desc'],[4,'desc']],
+		'normal'        : [[2,'desc'],[4,'desc']],
+		'normalDefault' : [[2,'desc'],[4,'desc']],
+		'acked'         : [[1, 'asc'],[0, 'asc']],
+		'sched'         : [[1, 'asc'],[0, 'asc']],
+		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
 	};
 
 
@@ -260,10 +261,7 @@ Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
 	if (Search.currentTab == 'normal') {
-		var saveOrder = Search.orderBy[Search.currentTab];
-		
-		Search.allDataTable.order([[2,'asc'], [3, 'asc']]).draw();
-		Search.orderBy[Search.currentTab] = saveOrder;
+		Search.allDataTable.order(Search.orderBy['normalDefault']).draw();
 		$('#mainTable tbody tr:contains("__normal__")').show();
 		
 		var rows          = $('#mainTable tbody tr:contains("__normal__")'),
@@ -309,10 +307,6 @@ Search.getContent = function() {
 				clearTimeout(reloadTimer);
 				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
 			},
-            fail: function() {
-				clearTimeout(reloadTimer);
-				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
-			}
 		});
 	}
 }
