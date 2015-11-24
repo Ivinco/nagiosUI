@@ -75,11 +75,11 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 				service        = $(this).find('.service-name').text(),
 				count          = (countsService[serviceName]) ? countsService[serviceName] : countsHost[hostName],
 				statusOrder    = $(this).find('.status .for-order').text(),
-				status         = $(this).find('.status').text().trim().substr(1),
+				status         = $(this).find('.status .value').text(),
 				lastCheckOrder = $(this).find('.last_check .for-order').text(),
-				lastCheck      = $(this).find('.last_check').text().trim().substr(10),
+				lastCheck      = $(this).find('.last_check .value').text(),
 				durationOrder  = $(this).find('.duration .for-order').text(),
-				duration       = $(this).find('.duration').text().trim().substr(9),
+				duration       = $(this).find('.duration .value').text(),
 				information    = $(this).find('.status_information status_information').text(),
 				groupBy        = (countsService[serviceName]) ? service.replace(/\s/g, '-').toLowerCase() : host.replace(/\s/g, '-').toLowerCase();
 			
@@ -269,8 +269,8 @@ Search.reorderData = function() {
 		var rows          = $('#mainTable tbody tr:contains("__normal__")'),
 			rowsService   = getGroupNormalServices(rows),
 			rowsHost      = getGroupNormalHosts(rows),
-			countsService = getGroupNormalCount(rowsService, 10),
-			countsHost    = getGroupNormalCount(rowsHost, 1),
+			countsService = getGroupNormalCount(rowsService, 1),
+			countsHost    = getGroupNormalCount(rowsHost, 10),
 			rowsHeader    = getGroupNormalHeaders(rows, countsService, countsHost);
 			
 		getGroupNormalThead(rowsHeader);
@@ -957,7 +957,7 @@ Search.getHost = function(row) {
 	return (row.length && row.find('td.host a').html()) ? row.find('td.host a').html() : '';
 }
 Search.getLastCheck = function(row) {
-	return (row.length && row.find('td.last_check').text().trim().substr(10)) ? row.find('td.last_check').text().trim().substr(10) : '';
+	return (row.length && row.find('td.last_check .value').text()) ? row.find('td.last_check .value').text() : '';
 } 
 
 
