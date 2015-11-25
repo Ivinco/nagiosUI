@@ -35,7 +35,7 @@ var Search = {}
 	Search.currentUser        = $('#userName').text();
 	Search.updateHash         = $('#updateHash').text();
 	Search.backgroundReload   = true;
-	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true});
+	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true });
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
 		'normalDefault' : [[2,'desc'],[4,'desc']],
@@ -986,13 +986,13 @@ Search.init = function() {
 	Search.addDialog();
 	$('#loading').hide();
 	$('#infoHolder').show();
-	Search.searchInput.focus();
+	$('#mainTable_filter input').focus();
 	Search.emptyHosts();
 	$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
 	acknowledgeItGroupObject = null;
 	sheduleItGroupObject     = null;
 	
-	$(document).on('propertychange keyup input paste keydown', Search.searchInput, function (e) {
+	$('#mainTable_filter input').on('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();
 
 		typingTimer = setTimeout(function(){
