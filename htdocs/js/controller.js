@@ -70,7 +70,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 		var serviceName = $(this).find('.service-name').text(),
 			hostName    = $(this).find('.host').text();
 				
-		if ($(this).text().search('__normal__') >= 0 && (countsService[serviceName] || countsHost[hostName])) {
+		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0 && (countsService[serviceName] || countsHost[hostName])) {
 			var type           = (countsService[serviceName]) ? 'service' : 'host',
 				host           = $(this).find('.host').text(),
 				service        = $(this).find('.service-name').text(),
@@ -82,6 +82,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 				durationOrder  = $(this).find('.duration .for-order').text(),
 				duration       = $(this).find('.duration .value').text(),
 				information    = $(this).find('.status_information status_information').text(),
+				comment        = $(this).find('.comment').html(),
 				groupBy        = (countsService[serviceName]) ? service.replace(/\s/g, '-').toLowerCase() : host.replace(/\s/g, '-').toLowerCase();
 			
 			returnData.push({
@@ -96,6 +97,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 				'duration':       duration,
 				'durationOrder':  durationOrder,
 				'information':    information,
+				'comment':        comment,
 				'groupBy':        groupBy,
 			});
 		}
@@ -148,7 +150,12 @@ function getGroupNormalThead(rowsHeader) {
 			hostValue      = ($(this)[0].type != 'service') ? $(this)[0].host : $(this)[0].count,
 			serviceValue   = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].count,
 			css            = ' style="text-align: center; font-size: 12px; font-weight: bold;"',
-			contains       = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].host;
+			contains       = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].host,
+			liClass        = (Search.currentTab == 'acked') ? 'unAckIcon' : 'quickAckUnAckIcon',
+			liImgClass     = (Search.currentTab == 'acked') ? 'unAckGroup' : 'quickAckGroup',
+			liImgSrc       = (Search.currentTab == 'acked') ? 'ack.gif' : 'ok.png',
+			liImgTitle     = (Search.currentTab == 'acked') ? 'Unacknowledge All Services' : 'Quick Acknowledge';
+			
 		
 		$('#mainTable thead').append(
 			'<tr class="'+ trClass +' group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
@@ -157,7 +164,7 @@ function getGroupNormalThead(rowsHeader) {
 			'		<div class="likeTable">' +
 			'			<ul>' +
 			'				<li>' + serviceValue + '</li>' +
-			'				<li class="quickAckUnAckIcon"><img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge"></li>' +
+			'				<li class="'+ liClass +'"><img class="icons '+ liImgClass +'" src="images/'+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></li>' +
 			'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
 			'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
 			'				<li><img class="icons recheckItGroup" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status"></li>' +
@@ -169,7 +176,7 @@ function getGroupNormalThead(rowsHeader) {
 			'	<td class="duration-sec" style="display: none;"></td>' +
 			'	<td class="duration '+ trClass +'">'+ $(this)[0].duration +'</td>' +
 			'	<td class="status_information '+ trClass +'">'+ $(this)[0].information +'</td>' +
-			'	<td class="comment"></td>' +
+			'	<td class="comment '+ trClass +'">'+ $(this)[0].comment +'</td>' +
 			'</tr>'
 		);
 		
@@ -201,7 +208,7 @@ function getGroupNormalServices (rows) {
 	var columnData = [];
 	
 	$(rows).each(function() {
-		if ($(this).text().search('__normal__') >= 0) {
+		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0) {
 			columnData.push($(this).find('.service-name').text());
 		}
 	});
@@ -212,7 +219,7 @@ function getGroupNormalHosts (rows) {
 	var columnData = [];
 	
 	$(rows).each(function() {
-		if ($(this).text().search('__normal__') >= 0) {
+		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0) {
 			columnData.push($(this).find('.host').text());
 		}
 	});
@@ -260,11 +267,13 @@ function getSeconds(str) {
 Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
-	if (Search.currentTab == 'normal') {
+	var tabsArray = ['normal', 'acked', 'sched'];
+	if (tabsArray.indexOf(Search.currentTab) !== -1) {
+
 		Search.allDataTable.order(Search.orderBy['normalDefault']).draw();
-		$('#mainTable tbody tr:contains("__normal__")').show();
+		$('#mainTable tbody tr:contains("__'+ Search.currentTab +'__")').show();
 		
-		var rows          = $('#mainTable tbody tr:contains("__normal__")'),
+		var rows          = $('#mainTable tbody tr:contains("__'+ Search.currentTab +'__")'),
 			rowsService   = getGroupNormalServices(rows),
 			rowsHost      = getGroupNormalHosts(rows),
 			countsService = getGroupNormalCount(rowsService, 1),
@@ -957,9 +966,9 @@ Search.getLastCheck = function(row) {
 
 Search.countRecords = function() {
 	$('#radio label[for="normal"] em').text($('#mainTable tbody tr:contains("__normal__")').length);
-	$('#radio label[for="acked"] em').text($('#mainTable tr:contains("__acked__")').length);
-	$('#radio label[for="sched"] em').text($('#mainTable tr:contains("__sched__")').length);
-	$('#radio label[for="EMERGENCY"] em').text($('#mainTable tr:contains("EMERGENCY")').length);
+	$('#radio label[for="acked"] em').text($('#mainTable tbody tr:contains("__acked__")').length);
+	$('#radio label[for="sched"] em').text($('#mainTable tbody tr:contains("__sched__")').length);
+	$('#radio label[for="EMERGENCY"] em').text($('#mainTable tbody tr:contains("EMERGENCY")').length);
 }
 Search.countRecordsMinus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) - 1;
@@ -1341,6 +1350,67 @@ Search.init = function() {
 			);
 	});
 	
+	$('#mainTable').on('click', 'thead .unAckGroup', function () {
+		Search.autoRefresh = false;
+		
+		var dataGroup  = $(this).closest('tr').attr('data-group');
+			itemsList  = [],
+			hiddenData = [];
+		
+		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis').length) {
+			console.log("no rows were found: unack won't be run");
+			Search.autoRefresh = true;
+			return;
+		}
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckGroup').hide();
+		
+		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis').each(function () {
+			hiddenData.push(Search.returnUnAckRequest($(this).closest('tr')));
+			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
+		});
+		
+		$.when.apply($, itemsList)
+			.then(
+				function() {	
+					$(hiddenData).each(function() {
+						
+						var newRow = $('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'")').clone();
+							newRow.find('.unAckThis').closest('li').remove();
+							newRow.find('.comment span.ack').html('');
+						
+						var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
+						
+						if (!statusText) {
+							statusText = '__normal__';
+							Search.countRecordsPlus('normal');
+						}
+				
+						newRow.find('.comment span').first().text(statusText);
+						
+						Search.countRecordsMinus('acked');
+						Search.allDataTable.row.add(newRow);
+						Search.allDataTable.row($('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'")')).remove();
+						Search.allDataTable.draw();
+						Search.emptyHosts();
+					});
+
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"]').remove();
+				},
+				function(data, textStatus, jqXHR) {
+					alert('server error: '+ jqXHR);
+					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckGroup').show();
+				}
+			)
+			.always(
+				function () {
+					Search.autoRefresh = true;
+					Search.extension();
+				}
+			);
+			
+		return false;
+	});
 	$('#mainTable').on('click', '.unAckThis', function () {
 		Search.autoRefresh = false;
 		
