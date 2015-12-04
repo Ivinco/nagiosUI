@@ -17,32 +17,194 @@ localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
 
-var Search = {}
+Search = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
-	Search.currentReload      = localStorage.getItem('currentReloadNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
+	Search.currentReload      = localStorage.getItem('currentReloadNew');
 	Search.reloadCustomText   = 'Refresh: Custom';
-	Search.searchInput        = $('#mainTable_filter input');
-	Search.tableLength        = 0;
-	Search.recheckButtonId    = 'recheck_button';
-	Search.quickAckButtonId   = 'quickack_button';
-	Search.quickUnAckButtonId = 'quickunack_button';
-	Search.ackButtonId        = 'aknoledge_button';
-	Search.unackButtonId      = 'unaknoledge_button'; 
-	Search.sdButtonId         = 'scheduled_downtime_button';
-	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId;
 	Search.autoRefresh        = true;
-	Search.currentUser        = $('#userName').text();
-	Search.updateHash         = $('#updateHash').text();
 	Search.backgroundReload   = true;
-	Search.allDataTable       = $('#mainTable').DataTable({ 'paging': false, 'ordering': true });
+	Search.firstLoad          = true;
+	Search.tableLength        = 0;
+	Search.doneTypingInterval = 0;
+	Search.recheckButtonId    = 'recheckIt_button';
+	Search.quickAckButtonId   = 'quickAck_button';
+	Search.quickUnAckButtonId = 'quickUnAck_button';
+	Search.ackButtonId        = 'acknowledgeIt_button';
+	Search.unackButtonId      = 'unAck_button'; 
+	Search.sdButtonId         = 'scheduleIt_button';
+	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId;
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
-		'normalDefault' : [[2,'desc'],[4,'desc']],
 		'acked'         : [[1, 'asc'],[0, 'asc']],
 		'sched'         : [[1, 'asc'],[0, 'asc']],
 		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
 	};
+	
+	Search.allDataTable       = $('#mainTable').DataTable({
+		'paging':      false,
+		'ordering':    true,
+		'order':       Search.orderBy[Search.currentTab],
+		'ajax':        'json.php',
+		'columns':     [
+            {
+				data:      'host',
+				className: 'host',
+				render: function ( data, type, full, meta ) {
+					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a>';
+				},
+			},
+            {
+				data:      'service',
+				className: 'service',
+				render: {
+					_:     'name',
+					display: function ( data, type, full, meta ) {
+						var unAck = (data.unAck) ? '<li><img class="icons unAck" src="images/ack.gif" alt="Unacknowledge this Service" title="Unacknowledge this Service" /></li>' : '',
+							down  = (data.down)  ? '<li><img class="icons" src="images/downtime.gif"/></li>' : '',
+							notes = (data.notes) ? '<li><a href="'+ data.notes +'" target="_blank"><img class="icons" src="images/notes.gif"/></a></li>' : '',
+							qAck  = (data.qAck)  ? '<img class="icons quickAck" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge" />' : '',
+							qUAck = (data.qUAck) ? '<img class="icons quickUnAck" src="images/avatars/'+ data.qUAck +'.jpeg" alt="'+ data.qUAck +' unack" title="'+ data.qUAck +' unack" />' : '';
+						
+						return '' +
+							'<div class="likeTable">' +
+							'	<ul>' +
+							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+									unAck  +
+									down   +
+									notes  +
+							'		<li>'  +
+										qAck  +
+										qUAck +
+							'		</li>' +
+							'		<li><img class="icons acknowledgeIt" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service" /></li>' +
+							'		<li><img class="icons scheduleIt" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service" /></li>' +
+							'		<li><img class="icons recheckIt" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status" /></li>' +
+							'	</ul>' +
+							'</div>';
+					},
+				},
+			},
+			
+			{
+				data:      'status',
+				className: 'status',
+				render: {
+					_:     'name',
+					sort:  'order',
+					type:  'num',
+					display: function ( data, type, full, meta ) {
+						return (!data.down) ? data.name : (data.name + ' <span class="downtime_id" data-id="'+ data.down +'">remove</span>');
+					},
+				},
+			},
+			{
+				data: {
+					_:     'last.name',
+					sort:  'last.order',
+					type:  'string',
+				},
+				className: 'last_check',
+			},
+			{
+				data: {
+					_:     'duration.name',
+					sort:  'duration.order',
+					type:  'string',
+				},
+				className: 'duration',
+			},
+			{
+				data:      'info',
+				className: 'status_information main',
+			},
+			{
+				data:      'comment',
+				className: 'comment',
+				render: function ( data, type, full, meta ) {
+					return '<span class="ack">'+ data.ack +'" </span><span class="sched">'+ data.sched +'</span>';
+				},
+			},
+			{
+				data:      'type',
+				visible:   false
+			}
+        ],
+		'createdRow': function(row, data, index) {
+            if (data.state) {
+				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment').addClass(data.state);
+            }
+        },
+		'initComplete': function(settings, json) {
+			$('#loading').hide();
+			$('#infoHolder').show();
+			Search.countRecords();
+			
+			if (Search.firstLoad) {
+				$('#userName').text(json.additional.userName);
+				$('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
+				$('#nagiosPostFile').text(json.additional.nagiosPostFile);
+				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
+				$('#updateHash').text(json.additional.updateHash);
+				
+				Search.doneTypingInterval = (Search.allDataTable.rows().count() > 1000) ? 350 : 0;
+				Search.firstLoad          = false;
+				whatWeChangeObject        = null;
+				whatWeChangeDataObject    = null;
+				Search.currentUser        = $('#userName').text();
+				Search.updateHash         = $('#updateHash').text();
+	
+				$('#' + Search.currentTab).attr('checked', 'checked');
+				$('#radio').buttonset();
+				Search.addDialog();
+				$('#mainTable_filter input').val(Search.getParameterByName('search')).trigger('keyup').focus();
+				
+				refreshValues = [];
+				$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
+				
+				if ($.inArray(Search.currentReload, refreshValues) !== -1) {
+					$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
+				} else {
+					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')').attr('selected', 'selected');
+				}
+				
+				$('#refreshTimeSelect').selectmenu({
+					select: function (event, data) {
+						Search.stopReloads();
+						
+						if (data.item.value == 'custom') {
+							var reload = prompt('Enter page reload time (minutes):', ''),
+								newVal = (parseInt(reload) > 0) ? parseInt(reload)*60 : 'auto',
+								custom = (newVal == 'auto') ? Search.reloadCustomText : (Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')');
+							
+							localStorage.setItem('currentReloadNew', newVal);
+							$('#refreshTime select option[value="custom"]').text(custom);
+						} else {
+							localStorage.setItem('currentReloadNew', data.item.value);
+							$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText);
+						}
+						
+						Search.currentReload = localStorage.getItem('currentReloadNew');
+						
+						if ($.inArray(Search.currentReload, refreshValues) !== -1) {
+							$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
+						} else {
+							$('#refreshTime select option[value="custom"]').attr('selected', 'selected');
+						}
+						
+						$('#refreshTimeSelect').selectmenu('refresh');
+						Search.startReloads();
+					}
+				});
+				
+				Search.startReloads();
+			}
+			
+			Search.filterDataTable();
+		}
+	});
+	
+
 
 
 function getGroupNormalCount(columnData, limit) {
@@ -67,28 +229,27 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 		returnArray   = [];
 	
 	$(rows).each(function() {
-		var serviceName = $(this).find('.service-name').text(),
-			hostName    = $(this).find('.host').text();
+		var rowData     = $(this)[0],
+			serviceName = rowData.service.name,
+			hostName    = rowData.host.name;
 				
-		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0 && (countsService[serviceName] || countsHost[hostName])) {
+		if (countsService[serviceName] || countsHost[hostName]) {
 			var type           = (countsService[serviceName]) ? 'service' : 'host',
-				host           = $(this).find('.host').text(),
-				service        = $(this).find('.service-name').text(),
 				count          = (countsService[serviceName]) ? countsService[serviceName] : countsHost[hostName],
-				statusOrder    = $(this).find('.status .for-order').text(),
-				status         = $(this).find('.status .value').text(),
-				lastCheckOrder = $(this).find('.last_check .for-order').text(),
-				lastCheck      = $(this).find('.last_check .value').text(),
-				durationOrder  = $(this).find('.duration .for-order').text(),
-				duration       = $(this).find('.duration .value').text(),
-				information    = $(this).find('.status_information status_information').text(),
-				comment        = $(this).find('.comment').html(),
-				groupBy        = (countsService[serviceName]) ? service.replace(/\s/g, '-').toLowerCase() : host.replace(/\s/g, '-').toLowerCase();
-			
+				statusOrder    = rowData.status.order,
+				status         = rowData.status.name,
+				lastCheckOrder = rowData.last.order,
+				lastCheck      = rowData.last.name,
+				durationOrder  = rowData.duration.order,
+				duration       = rowData.duration.name,
+				information    = rowData.info,
+				comment        = (Search.currentTab == 'acked') ? rowData.comment.ack : ((Search.currentTab == 'sched') ? rowData.comment.sched : ''),
+				groupBy        = (countsService[serviceName]) ? serviceName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : hostName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
+
 			returnData.push({
 				'type':           type,
-				'service':        service,
-				'host':           host,
+				'service':        serviceName,
+				'host':           hostName,
 				'count':          count,
 				'status':         status,
 				'statusOrder':    statusOrder,
@@ -104,18 +265,25 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 	});
 	
 	$(returnData).each(function() {
-		if (!returnOrdered[$(this)[0].groupBy]) {
-			returnOrdered[$(this)[0].groupBy] = $(this)[0];
+		var rowData = $(this)[0];
+		
+		if (!returnOrdered[rowData.groupBy]) {
+			returnOrdered[rowData.groupBy] = rowData;
 		}
 		
-		if (returnOrdered[$(this)[0].groupBy].statusOrder < $(this)[0].statusOrder) {
-			returnOrdered[$(this)[0].groupBy].statusOrder = $(this)[0].statusOrder;
-			returnOrdered[$(this)[0].groupBy].status      = $(this)[0].status;
+		if (returnOrdered[rowData.groupBy].statusOrder < rowData.statusOrder) {
+			returnOrdered[rowData.groupBy].statusOrder = rowData.statusOrder;
+			returnOrdered[rowData.groupBy].status      = rowData.status;
 		}
 
-		if (returnOrdered[$(this)[0].groupBy].durationOrder < $(this)[0].durationOrder) {
-			returnOrdered[$(this)[0].groupBy].durationOrder = $(this)[0].durationOrder;
-			returnOrdered[$(this)[0].groupBy].duration      = $(this)[0].duration;
+		if (returnOrdered[rowData.groupBy].durationOrder < rowData.durationOrder) {
+			returnOrdered[rowData.groupBy].durationOrder = rowData.durationOrder;
+			returnOrdered[rowData.groupBy].duration      = rowData.duration;
+		}
+		
+		if (returnOrdered[rowData.groupBy].lastCheckOrder > rowData.lastCheckOrder) {
+			returnOrdered[rowData.groupBy].lastCheckOrder = rowData.lastCheckOrder;
+			returnOrdered[rowData.groupBy].lastCheck      = rowData.lastCheck;
 		}
 	});
 	
@@ -145,12 +313,13 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 }
 function getGroupNormalThead(rowsHeader) {
 	$(rowsHeader).each(function() {
-		var trClass        = $(this)[0].status,
-			groupNameSmall = $(this)[0].groupBy,
-			hostValue      = ($(this)[0].type != 'service') ? $(this)[0].host : $(this)[0].count,
-			serviceValue   = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].count,
+		var rowData        = $(this)[0],
+			trClass        = rowData.status,
+			groupNameSmall = rowData.groupBy,
+			hostValue      = (rowData.type != 'service') ? rowData.host : rowData.count,
+			serviceValue   = (rowData.type == 'service') ? rowData.service : rowData.count,
 			css            = ' style="text-align: center; font-size: 12px; font-weight: bold;"',
-			contains       = ($(this)[0].type == 'service') ? $(this)[0].service : $(this)[0].host,
+			contains       = (rowData.type == 'service') ? rowData.service : rowData.host,
 			liClass        = (Search.currentTab == 'acked') ? 'unAckIcon' : 'quickAckUnAckIcon',
 			liImgClass     = (Search.currentTab == 'acked') ? 'unAckGroup' : 'quickAckGroup',
 			liImgSrc       = (Search.currentTab == 'acked') ? 'ack.gif' : 'ok.png',
@@ -158,7 +327,7 @@ function getGroupNormalThead(rowsHeader) {
 			
 		
 		$('#mainTable thead').append(
-			'<tr class="'+ trClass +' group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
+			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
 			'	<td class="host"'+ css +'>' + hostValue + '</td>' +
 			'	<td class="service '+ trClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
@@ -171,12 +340,12 @@ function getGroupNormalThead(rowsHeader) {
 			'			</ul>' +
 			'		</div>' +
 			'	</td>' +
-			'	<td class="status '+ trClass +'">'+ $(this)[0].status +'</td>' +
-			'	<td class="last_check '+ trClass +'">'+ $(this)[0].lastCheck +'</td>' +
+			'	<td class="status '+ trClass +'">'+ rowData.status +'</td>' +
+			'	<td class="last_check '+ trClass +'">'+ rowData.lastCheck +'</td>' +
 			'	<td class="duration-sec" style="display: none;"></td>' +
-			'	<td class="duration '+ trClass +'">'+ $(this)[0].duration +'</td>' +
-			'	<td class="status_information '+ trClass +'">'+ $(this)[0].information +'</td>' +
-			'	<td class="comment '+ trClass +'">'+ $(this)[0].comment +'</td>' +
+			'	<td class="duration '+ trClass +'">'+ rowData.duration +'</td>' +
+			'	<td class="status_information '+ trClass +'">'+ rowData.information +'</td>' +
+			'	<td class="comment '+ trClass +'">'+ rowData.comment +'</td>' +
 			'</tr>'
 		);
 		
@@ -208,9 +377,7 @@ function getGroupNormalServices (rows) {
 	var columnData = [];
 	
 	$(rows).each(function() {
-		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0) {
-			columnData.push($(this).find('.service-name').text());
-		}
+		columnData.push($(this)[0].service.name);
 	});
 	
 	return columnData;
@@ -219,9 +386,7 @@ function getGroupNormalHosts (rows) {
 	var columnData = [];
 	
 	$(rows).each(function() {
-		if ($(this).text().search('__'+ Search.currentTab +'__') >= 0) {
-			columnData.push($(this).find('.host').text());
-		}
+		columnData.push($(this)[0].host.name);
 	});
 	
 	return columnData;
@@ -268,93 +433,76 @@ Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
 	
 	var tabsArray = ['normal', 'acked', 'sched'];
-	if (tabsArray.indexOf(Search.currentTab) !== -1) {
-
-		Search.allDataTable.order(Search.orderBy['normalDefault']).draw();
-		$('#mainTable tbody tr:contains("__'+ Search.currentTab +'__")').show();
-		
-		var rows          = $('#mainTable tbody tr:contains("__'+ Search.currentTab +'__")'),
+	if (tabsArray.indexOf(Search.currentTab) !== -1) {		
+		var rows          = Search.allDataTable.rows({ page:'current', search:'applied' }).data(),
 			rowsService   = getGroupNormalServices(rows),
 			rowsHost      = getGroupNormalHosts(rows),
 			countsService = getGroupNormalCount(rowsService, 1),
 			countsHost    = getGroupNormalCount(rowsHost, 10),
 			rowsHeader    = getGroupNormalHeaders(rows, countsService, countsHost);
-			
+
 		getGroupNormalThead(rowsHeader);
 	}
 }
 
 
+Search.stopReloads = function() {
+	$.stopPendingAjax.abortAll();		
+	clearTimeout(reloadTimer);
+	Search.backgroundReload = false;
+	Search.autoRefresh      = false;
+}
+Search.startReloads = function() {
+	if (Search.currentReload == 'auto') {
+		reloadTimer             = setTimeout(function () { Search.getContent(); }, 0);
+		Search.backgroundReload = true;
+	} else {
+		reloadTimer        = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+		Search.autoRefresh = true;
+	}
+}
 Search.getContent = function() {
-	if (Search.autoRefresh) {
+	if (Search.backgroundReload) {
 		$.ajax({
 			type:    'GET',
 			url:     'update.php',
 			data:    {'hash' : Search.updateHash},
-			success: function(data){ 
+			success: function(data){
+				Search.stopReloads();
 				Search.updateHash = data;
-				
-				var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
-				
-				Search.allDataTable.clear().draw();
-				
-				$(newData).find('tr[class]').each(function(){
-					$('#mainTable tbody').append($(this));	
-					Search.allDataTable.row.add($(this));
-				});
-				
-				Search.countRecords();
-				Search.filterDataTable();
-				Search.emptyHosts();
-				
-				if (Search.backgroundReload) {
-					clearTimeout(reloadTimer);
-					reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-				}
+				Search.allDataTable.ajax.reload(function() { Search.filterDataTable($('#mainTable_filter input').val()); });
+				Search.startReloads();
 			},
 			error: function() {
-				clearTimeout(reloadTimer);
-				reloadTimer = setTimeout(function () { Search.getContent(); }, 2000);
+				Search.startReloads();
 			},
 		});
 	}
 }
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {
-		Search.autoRefresh = false;
-		
-		var newData = $.xslt({xmlUrl: 'index.php', xslUrl: 'alerts.xsl', xmlCache: false, xslCache: false });
-		
-		Search.allDataTable.clear().draw();
-		
-		$(newData).find('tr[class]').each(function(){
-			$('#mainTable tbody').append($(this));	
-			Search.allDataTable.row.add($(this));
-        });
-		
-		Search.countRecords();
-		Search.filterDataTable();
-		Search.emptyHosts();
-		
-		Search.autoRefresh = true;
+		Search.stopReloads();
+		Search.allDataTable.ajax.reload(function() { Search.filterDataTable($('#mainTable_filter input').val()); });
+		Search.startReloads();
 	}
-	
-	clearTimeout(reloadTimer);
-	reloadTimer = setTimeout(function () { Search.autoReloadData(''); }, Search.currentReload*1000);
 }
 
 
-Search.filterDataTable = function() {
+Search.filterDataTable = function(val) {
+	var value = (val) ? val : '';
+	
+	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();	
+	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
+
 	if (Search.currentGroup != 0) {
-		Search.reorderData();
+		Search.reorderData(value);
 		quickAckUnAckGroup();
 	} else {
 		$('#mainTable thead tr').not(':first').remove();
 		$('#mainTable tbody tr').show();
 	}
-	Search.allDataTable.order(Search.orderBy[Search.currentTab]).draw();
-	
-	Search.tableLength = $('#mainTable >tbody >tr[role]').length;
+
+	Search.countRecords();
 	Search.extension();
 	Search.emptyHosts();
 	
@@ -390,7 +538,7 @@ Search.extensionVisibility = function () {
 		$(Search.filterButtons).show();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.currentUser +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
-		(Search.currentTab == 'acked' && $('#mainTable tbody .icons.unAckThis').length) ? $('#'+ Search.unackButtonId).show() : $('#'+ Search.unackButtonId).hide();
+		(Search.currentTab == 'acked' && $('#mainTable tbody .icons.unAck').length) ? $('#'+ Search.unackButtonId).show() : $('#'+ Search.unackButtonId).hide();
 	}
 	else {
 		$(Search.filterButtons).hide();
@@ -437,34 +585,19 @@ Search.addDialog = function() {
 Search.addDialogJs = function() {
 	$('#dialog').dialog({
 		autoOpen: false,
+		modal:    true,
 		width:    400,
-		open:     function() {
-			Search.autoRefresh = false;
-			Search.getServerLocalTimeDialog();
-			
-			if (sheduleItGroupObject) { Search.SchedItHideIconsGroup(); }
-			else { Search.SchedItHideIcons($(this).attr('data-call')); }
-		},
-		close:    function() {
-			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
-			
-			if (sheduleItGroupObject) { Search.SchedItShowIconsGroup();	}
-			else { Search.SchedItShowIcons();}
-			
-			$('#sched_finish_date_time').datetimepicker('destroy');
-			$('#openDialogServerTime').html('');
-			Search.autoRefresh = true;
-		},
+		position: { my: "center top", at: "center top+200"},
+		open:     function() { Search.getServerLocalTimeDialog(); $(this).parent().css("position","fixed"); },
+		close:    function() { Search.tempShowButtons() },
 		create:   function() {
-			var $dialog = $(this);
-	        $dialog.closest('.ui-dialog').on('keydown', function(ev) {
+			$(this).closest('.ui-dialog').on('keydown', function(ev) {
 			    if (ev.keyCode === $.ui.keyCode.ESCAPE) {
 					if ($('.xdsoft_datetimepicker').is(':visible')) {
 						$('#sched_finish_date_time').datetimepicker('hide');
 					}
 					else {
-						Search.clearScheduleDowntimeForm($dialog);
+						$('#dialog').dialog('close');
 					}
 			    }
 			});
@@ -474,67 +607,32 @@ Search.addDialogJs = function() {
 			{
 				text:  'Schedule Downtime',
 				id:    'scheduleDowntimeButton',
-				click: function() {
-					if ('mass' == $(this).attr('data-call') && Search.ScheduleDowntimeServices()) {
-						Search.clearScheduleDowntimeForm($(this));
-					}
-					if ('custom' == $(this).attr('data-call') && Search.ScheduleDowntimeCustomService()) {
-						Search.clearScheduleDowntimeForm($(this));
-					}							
-				}
+				click: function() { Search.SheduleServices() },
 			},
 			{
 				text:  'Cancel',							
-				click: function() {
-					Search.clearScheduleDowntimeForm($(this));
-				}
+				click: function() { $('#dialog').dialog('close'); },
 			}
 		]
 	});
 	
 	$('#dialogAck').dialog({
 		autoOpen: false,
+		modal:    true,
 		width:    400,
-		open:     function() {
-			Search.autoRefresh = false;
-			if (acknowledgeItGroupObject) {
-				Search.AcknowledgeItHideIconsGroup();
-			}
-			else {
-				Search.AcknowledgeItHideIcons($(this).attr('data-call'));
-			}
-		},
-		close:    function() {
-			if (Search.currentReload == 'auto') reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-			else reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
-
-			if (acknowledgeItGroupObject) {
-				Search.AcknowledgeItShowIconsGroup();
-			}
-			else {
-				Search.AcknowledgeItShowIcons();
-			}
-			Search.autoRefresh = true;
-		},
-		closeOnEscape: true,				
+		position: { my: "center top", at: "center top+200"},
+		close:    function() { Search.tempShowButtons() },
+		open:	  function() { $(this).parent().css("position","fixed"); },
+		closeOnEscape: true,
 		buttons: [
 			{
 				text:  'Acknowledge',
 				id:    'acknowledgeDialogButton',
-				click: function() {
-					if ('mass' == $(this).attr('data-call')) {
-						Search.AcknowledgeItMassServices();
-					}
-					if ('custom' == $(this).attr('data-call')) {
-						Search.AcknowledgeItCustomService();
-					}
-				}
+				click: function() { Search.AcknowledgeServices() },
 			},
 			{
 				text:  'Cancel',							
-				click: function() {
-					$(this).dialog('close');
-				}
+				click: function() { $('#dialogAck').dialog('close'); },
 			}
 		]
 	});
@@ -564,37 +662,265 @@ Search.addParameterToUrl = function(parameter, value) {
 }
 
 
-Search.SchedItHideIcons = function(dataCall) {
-	if ('custom' == dataCall) {
-		if (!sheduleItObject) {
-			return;
+Search.tmpHideIcon = function(item, type) {
+	item.find('.icons.'+ type).hide();
+}
+Search.tmpShowIcon = function(item, type) {
+	item.find('.icons.'+ type).show();
+}
+Search.tempHideButtons = function () {
+	Search.stopReloads();
+	
+	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
+		tableNot      = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
+		returnArray   = [];   
+	
+	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
+		var row     = $(this),
+			host    = Search.getHost(row),
+			service = Search.getService(row),
+			check   = Search.getLastCheck(row);
+			
+		if (whatWeChangeObject.host && whatWeChangeObject.service) {
+			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+				Search.tmpHideIcon(row, whatWeChangeObject.type);
+				returnArray.push({ 'host': host, 'service': service, 'check': check });
+			}
+		} else if (whatWeChangeObject.host) {
+			if (host == whatWeChangeObject.host) {
+				Search.tmpHideIcon(row, whatWeChangeObject.type);
+				returnArray.push({ 'host': host, 'service': service, 'check': check });
+			}
+		} else if (whatWeChangeObject.service) {
+			if (service == whatWeChangeObject.service) {
+				Search.tmpHideIcon(row, whatWeChangeObject.type);
+				returnArray.push({ 'host': host, 'service': service, 'check': check });
+			}
+		} else {
+			Search.tmpHideIcon(row, whatWeChangeObject.type);
+			returnArray.push({ 'host': host, 'service': service, 'check': check });
 		}
-		
-		sheduleItObject.find('img.scheduleIt').hide();
+	});
+	
+	if (whatWeChangeObject.what == 'group' || whatWeChangeObject.what == 'this') {
+		$('#mainTable thead tr').each(function() {
+			var row     = $(this),
+				host    = Search.getHost(row),
+				service = Search.getService(row);
+			
+			if (whatWeChangeObject.host && whatWeChangeObject.service) {
+				if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+				}
+			} else if (whatWeChangeObject.host) {
+				if (host == whatWeChangeObject.host) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type +'Group');
+				}
+			} else if (whatWeChangeObject.service) {
+				if (service == whatWeChangeObject.service) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type +'Group');
+				}
+			}
+		});
 	}
 	
-	if ('mass' == dataCall) {
-		$('#mainTable img.scheduleIt').hide();
-		$('#'+ Search.sdButtonId).attr('disabled', 'disabled').addClass('ui-state-disabled');
-	}
-}
-Search.SchedItHideIconsGroup = function(dataCall) {
-	if (!sheduleItGroupObject) {
-		return;
+	if (whatWeChangeObject.what == 'all') {
+		$('#mainTable tr .icons.'+ whatWeChangeObject.type +'Group, #mainTable tr .icons.'+ whatWeChangeObject.type +', #'+ whatWeChangeObject.type +'_button').hide();
 	}
 	
-	$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt, #mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleItGroup').hide();
-}
-Search.SchedItShowIcons = function() {
-	$('#'+ Search.sdButtonId).removeAttr('disabled').removeClass('ui-state-disabled');
-	$('#mainTable img.scheduleIt').show();
-}
-Search.SchedItShowIconsGroup = function() {
-	$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt, #mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleItGroup').show();
+	whatWeChangeDataObject = returnArray;
 	
-	sheduleItGroupObject = null;
+	return true;
 }
-Search.ScheduleDowntimeHandlePopup = function() {
+Search.prepareSendData = function () {
+	var requestData = [];
+	
+	$(whatWeChangeDataObject).each(function() {
+		if (whatWeChangeObject.type == 'recheckIt') {
+			requestData.push({
+//				'cmd_typ':     7,
+//				'cmd_mod':     2,
+//				'force_check': 'on',
+				'start_time':  $(this)[0].check,
+				'host':        $(this)[0].host,
+				'service':     $(this)[0].service,
+			});
+		}
+		else if (whatWeChangeObject.type == 'quickAck') {
+			requestData.push({
+//				'cmd_typ':           34,
+//				'cmd_mod':           2,
+//				'sticky_ack':        'on',
+//				'send_notification': 'on',
+				'host':              $(this)[0].host,
+				'service':           $(this)[0].service,
+				'com_data':          'temp',
+				'author':            Search.currentUser,
+			});
+		}
+		else if (whatWeChangeObject.type == 'quickUnAck' || whatWeChangeObject.type == 'unAck') {
+			requestData.push({
+//				'cmd_typ':           52,
+//				'cmd_mod':           2,
+				'host':              $(this)[0].host,
+				'service':           $(this)[0].service,
+			});
+		}
+		else if (whatWeChangeObject.type == 'acknowledgeIt') {
+			requestData.push({
+//				'cmd_typ':           34,
+//				'cmd_mod':           2,
+//				'sticky_ack':        'on',
+//				'send_notification': 'on',
+				'host':              $(this)[0].host,
+				'service':           $(this)[0].service,
+				'com_data':          $('input[name="ack_comment_extension"]').val(),
+				'author':            Search.currentUser,
+			});
+		}
+		else if (whatWeChangeObject.type == 'scheduleIt') {
+			var currentServerDate = $('#lastUpdated').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
+				hours             = parseInt($('#timeShift').html(),10);
+				
+			requestData.push({
+//				'cmd_typ':    56,
+//				'cmd_mod':    2,
+//				'trigger':    0,
+//				'fixed':      1,
+//				'minutes':    0,
+				'hours':      hours,
+				'start_time': new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
+				'end_time':   new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
+				'host':       $(this)[0].host,
+				'service':    $(this)[0].service,
+				'com_data':   $('#downtimeComment').html(),
+			});
+		}
+	});
+
+	$.ajax({
+		url:    $('#nagiosPostFile').html(),
+		method: 'POST',
+		data:   { data: requestData, type: whatWeChangeObject.type },
+	})
+	.fail(function(jqXHR, textStatus) {
+		console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+		Search.tempShowButtons();
+	})
+	.done(function() {
+		Search.allDataTable.ajax.reload(function() {
+			Search.filterDataTable($('#mainTable_filter input').val());
+			Search.startReloads();
+			quickAckUnAckGroup();
+			
+			$('#dialogAck').dialog('close');
+			$('#dialog').dialog('close');
+			$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
+			$('#acknowledgeDialogButton').removeAttr('disabled');
+			$('#sched_finish_date_time').datetimepicker('destroy');
+			$('#openDialogServerTime').html('');
+			$('form[name=scheduleDowntime] input').val('');
+			$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
+			$('#timeShift').html('');
+			$('#downtimeComment').html('');
+			$('#lastUpdated').html('');
+			$('#scheduleDowntimeButton').removeAttr('disabled');
+			whatWeChangeDataObject = null;
+			whatWeChangeObject     = null;
+		});
+	});
+}
+Search.tempShowButtons = function() {
+	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
+		tableNot      = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
+		returnArray   = [];   
+	
+	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
+		var row     = $(this),
+			host    = Search.getHost(row),
+			service = Search.getService(row),
+			check   = Search.getLastCheck(row);
+			
+		if (whatWeChangeObject.host && whatWeChangeObject.service) {
+			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+				Search.tmpShowIcon(row, whatWeChangeObject.type);
+			}
+		} else if (whatWeChangeObject.host) {
+			if (host == whatWeChangeObject.host) {
+				Search.tmpShowIcon(row, whatWeChangeObject.type);
+			}
+		} else if (whatWeChangeObject.service) {
+			if (service == whatWeChangeObject.service) {
+				Search.tmpShowIcon(row, whatWeChangeObject.type);
+			}
+		} else {
+			Search.tmpShowIcon(row, whatWeChangeObject.type);
+		}
+	});
+
+	
+	if (whatWeChangeObject.what == 'group' || whatWeChangeObject.what == 'this') {
+		$('#mainTable thead tr').each(function() {
+			var row     = $(this),
+				host    = Search.getHost(row),
+				service = Search.getService(row);
+			
+			if (whatWeChangeObject.host && whatWeChangeObject.service) {
+				if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+					Search.tmpShowIcon(row, whatWeChangeObject.type);
+				}
+			} else if (whatWeChangeObject.host) {
+				if (host == whatWeChangeObject.host) {
+					Search.tmpShowIcon(row, whatWeChangeObject.type +'Group');
+				}
+			} else if (whatWeChangeObject.service) {
+				if (service == whatWeChangeObject.service) {
+					Search.tmpShowIcon(row, whatWeChangeObject.type +'Group');
+				}
+			}
+		});
+	}
+	
+	if ((whatWeChangeObject.what == 'all')) {
+		$('#mainTable tr .icons.'+ whatWeChangeObject.type +'Group, #mainTable tr .icons.'+ whatWeChangeObject.type +', #'+ whatWeChangeObject.type +'_button').show();
+	}
+	
+	$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
+	$('#acknowledgeDialogButton').removeAttr('disabled');
+	$('#sched_finish_date_time').datetimepicker('destroy');
+	$('#openDialogServerTime').html('');
+	$('form[name=scheduleDowntime] input').val('');
+	$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
+	$('#timeShift').html('');
+	$('#downtimeComment').html('');
+	$('#lastUpdated').html('');
+	$('#scheduleDowntimeButton').removeAttr('disabled');
+	
+	whatWeChangeDataObject = null;
+	whatWeChangeObject     = null;
+	
+	Search.startReloads();
+	quickAckUnAckGroup();
+}
+Search.AcknowledgeServices = function() {
+	var $form = $('form[name="acknowledge"]');
+	$form.find('.ui-state-error').each(function(){			
+		$(this).removeClass('ui-state-error');
+	})
+	
+	$comment = $('input[name="ack_comment_extension"]');
+	if ($comment.val() == '' || typeof($comment.val()) != 'string') {
+		$comment.addClass('ui-state-error');		
+	}
+	
+	if ($form.find('.ui-state-error').length > 0) {			
+		return false;
+	}
+	
+	$('#acknowledgeDialogButton').attr('disabled', 'disabled');
+	Search.prepareSendData();
+}
+Search.SheduleServices = function() {
 	var $form = $('form[name=scheduleDowntime]');
 	$form.find('.ui-state-error').each(function(){			
 		$(this).removeClass('ui-state-error');
@@ -613,238 +939,19 @@ Search.ScheduleDowntimeHandlePopup = function() {
 	if ($form.find('.ui-state-error').length > 0) {			
 		return false;
 	}
-
+	
 	$('#timeShift').html(parseInt($interval.val()));
 	$('#downtimeComment').html($comment.val());
 	
-	return true;
-}
-Search.ScheduleDowntimeServices = function() {
-	if ((!sheduleItGroupObject && !Search.tableLength) || (sheduleItGroupObject && !$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt').length)) {
-		console.log("no rows were found: schedule service won't be run");
-		return;
-	}
-	
-	if (!Search.ScheduleDowntimeHandlePopup()) {
-		return;
-	}
-	
-	$.when.apply($, [Search.getServerLocalTime()])
-		.then(
-			function() {
-				var button    = $('#'+ Search.sdButtonId),
-					itemsList = [];
-				
-				button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-				
-				if (sheduleItGroupObject) {
-					$('#mainTable thead tr[data-group="'+ sheduleItGroupObject +'"] .icons.scheduleIt').each(function () {
-						itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this).closest('tr'))));
-					});
-				}
-				else {
-					$('#mainTable >tbody >tr[role]').each(function () {
-						itemsList.push(Search.sendAjax(Search.getScheduleDowntimeRequest($(this))));
-					});
-				}
-				
-				$.when.apply($, itemsList)
-					.then(
-						function() {},
-						function(data, textStatus, jqXHR) {
-							alert('server error: '+ jqXHR);
-						}
-					)
-					.always(
-						function () {
-							button.removeAttr('disabled').removeClass('ui-state-disabled');
-						}
-					);
-			},
-			function(data, textStatus, jqXHR) {
-				alert('server error: '+ jqXHR);
-			}
-		);
-	
-	return true;
-}
-Search.ScheduleDowntimeCustomService = function() {
-	if (!sheduleItObject) {
-		console.log("no row were found: schedule service won't be run");
-		return;
-	}
-	
-	if (!Search.ScheduleDowntimeHandlePopup()) {
-		return;
-	}
-	
-	$.when.apply($, [Search.getServerLocalTime()])
-		.then(
-			function() {
-				var button = sheduleItObject.find('.scheduleIt');
-			
-				button.hide();
-				
-				$.when.apply($, [Search.sendAjax(Search.getScheduleDowntimeRequest(sheduleItObject))])
-					.then(
-						function() {
-							sheduleItObject = null;
-						},
-						function(data, textStatus, jqXHR) {
-							alert('server error: '+ jqXHR);
-						}
-					)
-					.always(
-						function () {
-							button.show();
-						}
-					);
-			},
-			function(data, textStatus, jqXHR) {
-				alert('server error: '+ jqXHR);
-			}
-		);
-	
-	return true;	
-}
-Search.clearScheduleDowntimeForm = function($dialog) {
-	$('form[name=scheduleDowntime] input').val('');
-	$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
-	$dialog.dialog('close');
-}
-
-
-Search.AcknowledgeItHideIcons = function(dataCall) {
-	if ('custom' == dataCall) {
-		if (!acknowledgeItObject) {
-			return;
-		}
-		
-		acknowledgeItObject.find('img.acknowledgeIt').hide();
-		$('#dialogAck p.validateTips').html('Alert "'+ Search.getService(acknowledgeItObject) +'" on "'+ Search.getHost(acknowledgeItObject) +'" will be acknowledged in nagios.');
-	}
-	
-	if ('mass' == dataCall) {
-		$('#mainTable img.acknowledgeIt').hide();
-		$('#'+ Search.ackButtonId).attr('disabled', 'disabled').addClass('ui-state-disabled');
-		$('#dialogAck p.validateTips').html('All matched alerts will be acknowledged in nagios.');
-	}
-}
-Search.AcknowledgeItHideIconsGroup = function() {
-	if (!acknowledgeItGroupObject) {
-		return;
-	}
-	
-	$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt, #mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeItGroup').hide();
-}
-Search.AcknowledgeItShowIcons = function() {
-	$('#'+ Search.ackButtonId).removeAttr('disabled').removeClass('ui-state-disabled');
-	$('#mainTable img.acknowledgeIt').show();
-	$('#dialogAck p.validateTips').html('');
-}
-Search.AcknowledgeItShowIconsGroup = function() {
-	$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt, #mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeItGroup').show();
-	
-	acknowledgeItGroupObject = null;
-}
-Search.AcknowledgeItCustomService = function() {
-	if (!acknowledgeItObject) {
-		console.log("no row were found: acknowledge service won't be run");
-		return;
-	}
-	
-	if (!Search.AcknowledgeItHandlePopup()) {
-		return;
-	}
-	
-	var request             = Search.returnAckRequest(acknowledgeItObject);
-		request['com_data'] = $('input[name="ack_comment_extension"]').val();
-
-	$.when.apply($, [Search.sendAjax(request)])
-		.then(
-			function() {},
-			function(data, textStatus, jqXHR) {
-				alert('server error: '+ jqXHR);
-			}
-		)
-		.always(
-			function () {
-				acknowledgeItObject = null;
-				$('input[name="ack_comment_extension"]').val('');
-				$('#dialogAck').dialog('close');
-			}
-		);
-}
-Search.AcknowledgeItMassServices = function() {
-	if ((!acknowledgeItGroupObject && !Search.tableLength) || (acknowledgeItGroupObject && !$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt').length)) {
-		console.log("no rows were found: acknowledge service won't be run");
-		return;
-	}
-	
-	if (!Search.AcknowledgeItHandlePopup()) {
-		return;
-	}
-	
-	var itemsList = [];
-	
-	if (acknowledgeItGroupObject) {
-		$('#mainTable thead tr[data-group="'+ acknowledgeItGroupObject +'"] .icons.acknowledgeIt').each(function () {
-			var request = Search.returnAckRequest($(this).closest('tr'));
-				request['com_data'] = $('input[name="ack_comment_extension"]').val();
-				
-			itemsList.push(Search.sendAjax(request));
-		});
-	}
-	else {
-		$('#mainTable >tbody >tr[role]').each(function () {
-			var request = Search.returnAckRequest($(this));
-				request['com_data'] = $('input[name="ack_comment_extension"]').val();
-				
-			itemsList.push(Search.sendAjax(request));
-		});
-	}
-	
-	$.when.apply($, itemsList)
-		.then(
-			function() {},
-			function(data, textStatus, jqXHR) {
-				alert('server error: '+ jqXHR);
-			}
-		)
-		.always(
-			function () {
-				$('input[name="ack_comment_extension"]').val('');
-				$('#dialogAck').dialog('close');
-			}
-		);
-}
-Search.AcknowledgeItHandlePopup = function() {
-	var $form = $('form[name="acknowledge"]');
-	$form.find('.ui-state-error').each(function(){			
-		$(this).removeClass('ui-state-error');
-	})
-	
-	$comment = $('input[name="ack_comment_extension"]');
-	if ($comment.val() == '' || typeof($comment.val()) != 'string') {
-		$comment.addClass('ui-state-error');		
-	}
-	
-	if ($form.find('.ui-state-error').length > 0) {			
-		return false;
-	}
-	
-	return true;
-}
-
-
-Search.getServerLocalTime = function() {
-	$('#lastUpdated').html('');
-	
-	return $.get($('#nagiosConfigFile').html(), function(data) {
+	$.get($('#nagiosConfigFile').html(), function(data) {
 		var regex       = new RegExp(/Last Updated:\s*([^<]+)/i),
 			results     = regex.exec(data);
 		
 		$('#lastUpdated').html(results[1]);
+	})
+	.done(function() {
+		$('#scheduleDowntimeButton').attr('disabled', 'disabled');
+		Search.prepareSendData();
 	});
 }
 Search.getServerLocalTimeDialog = function() {
@@ -888,87 +995,34 @@ Search.getDefaultMinutes = function(minutes) {
 	
 	return allowTimes;
 }
-
-
-Search.getScheduleDowntimeRequest = function(row) {
-	var currentServerDate = $('#lastUpdated').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
-		hours             = parseInt($('#timeShift').html(),10);
-	
-	return {
-		cmd_typ:    56,
-		cmd_mod:    2,
-		trigger:    0,
-		fixed:      1,
-		minutes:    0,
-		hours:      hours,
-		start_time: new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
-		end_time:   new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
-		com_data:   $('#downtimeComment').html(),
-		host:       Search.getHost(row),
-		service:    Search.getService(row),
-	}
-}
-Search.returnRecheckRequest = function(row) {
-	return {
-		cmd_typ:     7,
-		cmd_mod:     2,
-		force_check: 'on',
-		start_time:  Search.getLastCheck(row),
-		host:        Search.getHost(row),
-		service:     Search.getService(row),
-	};
-}
-Search.returnAckRequest = function(row) {
-	return {
-		cmd_typ:           34,
-		cmd_mod:           2,
-		sticky_ack:        'on',
-		send_notification: 'on',
-		service:           Search.getService(row),
-		host:              Search.getHost(row),
-	};
-}
-Search.returnUnAckRequest = function(row) {
-	return {
-		cmd_typ:           52,
-		cmd_mod:           2,
-		service:           Search.getService(row),
-		host:              Search.getHost(row),
-	};
-}
-Search.returnDowntimeRequest = function(down_id) {
-	return {
-		cmd_typ: 79,
-		cmd_mod: 2,
-		down_id: down_id,
-	};
-}
-Search.sendAjax = function(reqData) {		
-	return $.ajax({
-		crossDomain: true,
-		url:    $('#nagiosPostFile').html(),
-		method: 'POST',
-		data:   reqData,
-	});
-}
-
-
 Search.getService = function(row) {
-	return (row.length && row.find('td.service ul li:first-child a').html()) ? row.find('td.service ul li:first-child a').html() : '';
+	return (row.length && row.find('td.service ul li:first').text()) ? row.find('td.service ul li:first').text() : '';
 }
 Search.getHost = function(row) {
-	return (row.length && row.find('td.host a').html()) ? row.find('td.host a').html() : '';
+	return (row.length && row.find('td.host').text()) ? row.find('td.host').text() : '';
 }
 Search.getLastCheck = function(row) {
-	return (row.length && row.find('td.last_check .value').text()) ? row.find('td.last_check .value').text() : '';
-} 
+	return (row.length && row.find('td.last_check').text()) ? row.find('td.last_check').text() : '';
+}
 
 
 Search.countRecords = function() {
-	$('#radio label[for="normal"] em').text($('#mainTable tbody tr:contains("__normal__")').length);
-	$('#radio label[for="acked"] em').text($('#mainTable tbody tr:contains("__acked__")').length);
-	$('#radio label[for="sched"] em').text($('#mainTable tbody tr:contains("__sched__")').length);
-	$('#radio label[for="EMERGENCY"] em').text($('#mainTable tbody tr:contains("EMERGENCY")').length);
+	var normal = 0,
+		acked  = 0,
+		sched  = 0,
+		emerg  = 0;
+
+	$(Search.allDataTable.rows().data()).each(function() {
+		if ($(this)[0].type.search('__normal__') > -1) { normal++; }
+		if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
+		if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
+		if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
+	});
+	
+	$('#radio label[for="normal"] em').text(normal);
+	$('#radio label[for="acked"] em').text(acked);
+	$('#radio label[for="sched"] em').text(sched);
+	$('#radio label[for="EMERGENCY"] em').text(emerg);
 }
 Search.countRecordsMinus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) - 1;
@@ -980,44 +1034,10 @@ Search.countRecordsPlus = function(buttonID) {
 }
 
 
-Search.init = function() {
-	var typingTimer,
-		doneTypingInterval = ($('#mainTable tr').length > 1000) ? 350 : 0,
-		refreshValues      = [],
-		reloadValue        = (parseInt(Search.currentReload) > 0) ? parseInt(Search.currentReload) : Search.autoRefreshTime;
-
-	$('#' + Search.currentTab).attr('checked', 'checked');
-	$('#radio').buttonset();
-	Search.countRecords();
-	Search.allDataTable.draw();
-	Search.searchInput.val(Search.getParameterByName('search')).trigger('keyup');
+Search.init = function() {	
 	Search.filterDataTable();
-	Search.addDialog();
-	$('#loading').hide();
-	$('#infoHolder').show();
-	$('#mainTable_filter input').focus();
-	Search.emptyHosts();
-	$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
-	acknowledgeItGroupObject = null;
-	sheduleItGroupObject     = null;
-	
-	$('#mainTable_filter input').on('propertychange keyup input paste keydown', function(e) {
-		var val = $(this).val();
-
-		typingTimer = setTimeout(function(){
-			Search.filterDataTable();
-			Search.tableLength = $('#mainTable >tbody >tr[role]').length;
-		}, doneTypingInterval);
-		
-		if (e.keyCode && e.keyCode == 13) {
-			window.location.href = Search.addParameterToUrl('search', val);
-		}
-	});
 	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
-		$('td.host').css('visibility', 'visible');
-		$('#mainTable tbody tr').show();
-		
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
 		    return false;
@@ -1025,625 +1045,20 @@ Search.init = function() {
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
 		Search.currentTab = localStorage.getItem('currentTabNew');
-		
+	
 		Search.filterDataTable();
-		Search.emptyHosts();
 	});
-	
-	$('#mainTable').on('click', '.downtime_id', function () {
-		Search.autoRefresh = false;
-		
-		var button    = $(this),
-			rowRemove = button.closest('tr'),
-			request   = Search.returnDowntimeRequest(button.find('span').html());
-			
-		button.hide();
-			
-		$.when.apply($, [Search.sendAjax(request)])
-			.then(
-				function() {
-					Search.countRecordsMinus(Search.currentTab);
-					Search.allDataTable.row(rowRemove).remove().draw();
-					Search.emptyHosts();
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					button.show();
-				}
-			)
-			.always(
-				function () {
-					Search.filterDataTable();
-					Search.emptyHosts();
-					Search.autoRefresh = true;
-				}
-			);
-	});
-	
-	$('#mainTable').on('click', 'thead .quickAckGroup', function () {
-		Search.autoRefresh = false;
-		
-		var dataGroup  = $(this).closest('tr').attr('data-group'),
-			itemsList  = [],
-			hiddenData = [];
-		
-		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').length) {
-			console.log("no rows were found: quick ack won't be run");
-			Search.autoRefresh = true;
-			return;
-		}
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup').hide();
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').each(function () {
-			var request = Search.returnAckRequest($(this).closest('tr'));
-				request['com_data'] = 'temp';
-			hiddenData.push(request);
-			itemsList.push(Search.sendAjax(request));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup')
-					.attr('alt', Search.currentUser + ' unack')
-					.attr('title', Search.currentUser + ' unack')
-					.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
-					.removeClass('quickAck')
-					.removeClass('quickAckGroup')
-					.addClass('quickUnAck')
-					.show();
-					
-					$(hiddenData).each(function() {
-						$('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'") .icons.quickAck')
-							.attr('alt', Search.currentUser + ' unack')
-							.attr('title', Search.currentUser + ' unack')
-							.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
-							.removeClass('quickAck')
-							.addClass('quickUnAck');
-					});
-					
-					$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickUnAck').removeClass('quickUnAck').addClass('quickUnAckGroup');
-				},
-				function(data, textStatus, jqXHR) {
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickAckGroup').show();
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					Search.autoRefresh = true;
-					quickAckUnAckGroup();
-					Search.extension();
-				}
-			);
+	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
+		var val = $(this).val();
 
+		typingTimer = setTimeout(function(){
+			Search.filterDataTable(val);
+		}, Search.doneTypingInterval);
 		
-		return false;
-	});
-	$('#mainTable').on('click', '.quickAck', function () {
-		Search.autoRefresh = false;
-		
-		var button     = $(this),
-			request    = Search.returnAckRequest(button.closest('tr'));
-			
-		button.hide();
-		request['com_data'] = 'temp';
-		
-		$.when.apply($, [Search.sendAjax(request)])
-			.then(
-				function() {
-					button
-						.removeClass('quickAck')
-						.addClass('quickUnAck')
-						.attr('alt', Search.currentUser + ' unack')
-						.attr('title', Search.currentUser + ' unack')
-						.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
-						.show();
-					
-					$('#mainTable tbody tr:contains("'+ request.host +'"):contains("'+ request.service +'") .icons.quickAck')
-						.removeClass('quickAck')
-						.addClass('quickUnAck')
-						.attr('alt', Search.currentUser + ' unack')
-						.attr('title', Search.currentUser + ' unack')
-						.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg');
-				},
-				function(data, textStatus, jqXHR) {
-					button.show();
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					Search.autoRefresh = true;
-					Search.filterDataTable();
-					quickAckUnAckGroup();
-				}
-			);
-	});
-	$(document).on('click', '#'+ Search.quickAckButtonId, function () {
-		Search.autoRefresh = false;
-		
-		if (!$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').length) {
-			console.log("no rows were found: quick ack won't be run");
-			Search.autoRefresh = false;
-			return;
+        if (e.keyCode && e.keyCode == 13) {
+			window.location.href = Search.addParameterToUrl('search', val);
 		}
-		
-		var button    = $(this),
-			itemsList = [];
-			
-		button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-		$('#mainTable .icons.quickAck, #mainTable .icons.quickUnAck, #mainTable .icons.quickAckGroup').hide();
-		
-		$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').each(function () {
-			var request = Search.returnAckRequest($(this).closest('tr'));
-				request['com_data'] = 'temp';
-
-			itemsList.push(Search.sendAjax(request));
-		}); 
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {
-					$('#mainTable .icons.quickAck, #mainTable .icons.quickUnAck')
-					.attr('alt', Search.currentUser + ' unack')
-					.attr('title', Search.currentUser + ' unack')
-					.attr('src', 'images/avatars/'+ Search.currentUser +'.jpeg')
-					.removeClass('quickAck')
-					.addClass('quickUnAck')
-					.show();
-				},
-				function(data, textStatus, jqXHR) {
-					$('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck').show();
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					Search.autoRefresh = true;
-					Search.filterDataTable();
-					quickAckUnAckGroup();
-				}
-			);
-	});
-	
-	$('#mainTable').on('click', 'thead .quickUnAckGroup', function () {
-		Search.autoRefresh = false;
-		
-		var dataGroup  = $(this).closest('tr').attr('data-group');
-			itemsList  = [],
-			hiddenData = [];
-		
-		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').length) {
-			console.log("no rows were found: quick unack won't be run");
-			Search.autoRefresh = true;
-			return;
-		}
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup').hide();
-
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck').each(function () {
-			hiddenData.push(Search.returnUnAckRequest($(this).closest('tr')));
-			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup')
-						.attr('alt', 'Quick Acknowledge')
-						.attr('title', 'Quick Acknowledge')
-						.attr('src', 'images/ok.png')
-						.removeClass('quickUnAck')
-						.removeClass('quickUnAckGroup')
-						.addClass('quickAck')
-						.show();
-						
-					$(hiddenData).each(function() {
-						$('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'") .icons.quickUnAck')
-							.attr('alt', 'Quick Acknowledge')
-							.attr('title', 'Quick Acknowledge')
-							.attr('src', 'images/ok.png')
-							.removeClass('quickUnAck')
-							.addClass('quickAck');
-					});
-						
-					$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAck').removeClass('quickAck').addClass('quickAckGroup');
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAck, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.quickUnAckGroup').show();
-				}
-			)
-			.always(
-				function () {
-					Search.autoRefresh = true;
-					quickAckUnAckGroup();
-					Search.extension();
-				}
-			);
-			
-		return false;
-	});
-	$('#mainTable').on('click', '.quickUnAck', function () {
-		Search.autoRefresh = false;
-		
-		var button  = $(this),
-			request = Search.returnUnAckRequest(button.closest('tr'));
-			
-		button.hide();
-		
-		$.when.apply($, [Search.sendAjax(request)])
-			.then(
-				function() {
-					button
-						.removeClass('quickUnAck')
-						.addClass('quickAck')
-						.attr('alt', 'Quick Acknowledge')
-						.attr('title', 'Quick Acknowledge')
-						.attr('src', 'images/ok.png')
-						.show();
-					
-					$('#mainTable tbody tr:contains("'+ request.host +'"):contains("'+ request.service +'") .icons.quickUnAck')
-						.removeClass('quickUnAck')
-						.addClass('quickAck')
-						.attr('alt', 'Quick Acknowledge')
-						.attr('title', 'Quick Acknowledge')
-						.attr('src', 'images/ok.png');
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					button.show();
-				}
-			)
-			.always(
-				function () {
-					Search.autoRefresh = true;
-					Search.filterDataTable();
-					quickAckUnAckGroup();
-				}
-			);
-	});
-	$(document).on('click', '#'+ Search.quickUnAckButtonId, function () {
-		Search.autoRefresh = false;
-		
-		if (!$('#mainTable tbody .icons.quickUnAck').length) {
-			console.log("no rows were found: quick unack won't be run");
-			return;
-		}
-		
-		var button    = $(this),
-			itemsList = [];
-			
-		button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-		$('#mainTable .icons.quickUnAck, #mainTable .icons.quickUnAckGroup').hide();
-		
-		$('#mainTable tbody .icons.quickUnAck').each(function () {
-			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {
-					$('#mainTable tbody .icons.quickUnAck')
-						.attr('alt', 'Quick Acknowledge')
-						.attr('title', 'Quick Acknowledge')
-						.attr('src', 'images/ok.png')
-						.removeClass('quickUnAck')
-						.addClass('quickAck')
-						.show();
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					$('#mainTable tbody .icons.quickUnAck').show();
-				}
-			)
-			.always(
-				function () {
-					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					Search.autoRefresh = true;
-					Search.filterDataTable();
-					quickAckUnAckGroup();
-				}
-			);
-	});
-	
-	$('#mainTable').on('click', 'thead .unAckGroup', function () {
-		Search.autoRefresh = false;
-		
-		var dataGroup  = $(this).closest('tr').attr('data-group');
-			itemsList  = [],
-			hiddenData = [];
-		
-		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis').length) {
-			console.log("no rows were found: unack won't be run");
-			Search.autoRefresh = true;
-			return;
-		}
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckGroup').hide();
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis').each(function () {
-			hiddenData.push(Search.returnUnAckRequest($(this).closest('tr')));
-			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {	
-					$(hiddenData).each(function() {
-						
-						var newRow = $('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'")').clone();
-							newRow.find('.unAckThis').closest('li').remove();
-							newRow.find('.comment span.ack').html('');
-						
-						var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
-						
-						if (!statusText) {
-							statusText = '__normal__';
-							Search.countRecordsPlus('normal');
-						}
-				
-						newRow.find('.comment span').first().text(statusText);
-						
-						Search.countRecordsMinus('acked');
-						Search.allDataTable.row.add(newRow);
-						Search.allDataTable.row($('#mainTable tbody tr:contains("'+ $(this)[0].host +'"):contains("'+ $(this)[0].service +'")')).remove();
-						Search.allDataTable.draw();
-						Search.emptyHosts();
-					});
-
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"]').remove();
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckThis, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.unAckGroup').show();
-				}
-			)
-			.always(
-				function () {
-					Search.autoRefresh = true;
-					Search.extension();
-				}
-			);
-			
-		return false;
-	});
-	$('#mainTable').on('click', '.unAckThis', function () {
-		Search.autoRefresh = false;
-		
-		var button  = $(this),
-			thisRow = button.closest('tr'),
-			request = Search.returnUnAckRequest(thisRow);
-			
-		button.hide();
-		
-		$.when.apply($, [Search.sendAjax(request)])
-			.then(
-				function() {
-					var newRow = thisRow.clone();
-						newRow.find('.unAckThis').closest('li').remove();
-						newRow.find('.comment span.ack').html('');
-					
-					var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
-					
-					if (!statusText) {
-						statusText = '__normal__';
-						Search.countRecordsPlus('normal');
-					}
-					
-					newRow.find('.comment span').first().text(statusText);
-						
-					Search.countRecordsMinus('acked');
-					Search.allDataTable.row.add(newRow);
-					Search.allDataTable.row(thisRow).remove();
-					Search.allDataTable.draw();
-					Search.emptyHosts();
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					button.show();
-				}
-			)
-			.always(
-				function () {
-					Search.filterDataTable();
-					Search.emptyHosts();
-					Search.autoRefresh = true;
-				}
-			);
-	});
-	$(document).on('click', '#'+ Search.unackButtonId, function () {
-		Search.autoRefresh = false;
-		
-		if (!$('#mainTable tbody .icons.unAckThis').length) {
-			console.log("no rows were found: unack won't be run");
-			return;
-		}
-		
-		var button    = $(this),
-			itemsList = [];
-			
-		button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-		$('#mainTable tbody .icons.unAckThis').hide();
-		
-		$('#mainTable tbody .icons.unAckThis').each(function () {
-			itemsList.push(Search.sendAjax(Search.returnUnAckRequest($(this).closest('tr'))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {
-					$('#mainTable tbody .icons.unAckThis').each(function () {
-						var newRow = $(this).closest('tr').clone();
-							newRow.find('.unAckThis').closest('li').remove();
-							newRow.find('.comment span.ack').html('');
-						
-						var statusText = newRow.find('.comment span').first().text().replace('__acked__', '');
-						
-						if (!statusText) {
-							statusText = '__normal__';
-							Search.countRecordsPlus('normal');
-						}
-				
-						newRow.find('.comment span').first().text(statusText);
-						
-						Search.countRecordsMinus('acked');
-						Search.allDataTable.row.add(newRow);
-						Search.allDataTable.row($(this).closest('tr')).remove();
-						Search.allDataTable.draw();
-						Search.emptyHosts();
-					});
-				},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-					$('#mainTable tbody .icons.unAckThis').show();
-				}
-			)
-			.always(
-				function () {
-					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					Search.filterDataTable();
-					Search.emptyHosts();
-					Search.autoRefresh = true;
-				}
-			);
-	});
-	
-	$('#mainTable').on('click', 'thead .recheckItGroup', function () {
-		Search.autoRefresh = false;
-		
-		var dataGroup = $(this).closest('tr').attr('data-group');
-			itemsList = [];
-		
-		if (!$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt').length) {
-			console.log("no rows were found: re-check won't be run");
-			Search.autoRefresh = true;
-			return;
-		}
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckItGroup').hide();
-		
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt').each(function () {
-			itemsList.push(Search.sendAjax(Search.returnRecheckRequest($(this).closest('tr'))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					$('#mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckIt, #mainTable thead tr[data-group="'+ dataGroup +'"] .icons.recheckItGroup').show();
-					Search.autoRefresh = true;
-				}
-			);
-			
-		return false;
-	});
-	$('#mainTable').on('click', '.recheckIt', function () {
-		Search.autoRefresh = false;
-		
-		var button  = $(this),
-			request = Search.returnRecheckRequest(button.closest('tr'));
-			
-		button.hide();
-		
-		$.when.apply($, [Search.sendAjax(request)])
-			.then(
-				function() {},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					button.show();
-					Search.autoRefresh = true;
-				}
-			);
-	});
-	$(document).on('click', '#'+ Search.recheckButtonId, function () {
-		Search.autoRefresh = false;
-		
-		if (!Search.tableLength) {
-			console.log("no rows were found: re-check won't be run");
-			return;
-		}
-		
-		var button    = $(this),
-			itemsList = [];
-			
-		button.attr('disabled', 'disabled').addClass('ui-state-disabled');
-		$('#mainTable tbody .icons.recheckIt').hide();
-		
-		$('#mainTable >tbody >tr[role]').each(function () {
-			itemsList.push(Search.sendAjax(Search.returnRecheckRequest($(this))));
-		});
-		
-		$.when.apply($, itemsList)
-			.then(
-				function() {},
-				function(data, textStatus, jqXHR) {
-					alert('server error: '+ jqXHR);
-				}
-			)
-			.always(
-				function () {
-					button.removeAttr('disabled').removeClass('ui-state-disabled');
-					$('#mainTable tbody .icons.recheckIt').show();
-					Search.autoRefresh = true;
-				}
-			);
-	});
-	
-	$('#mainTable').on('click', 'thead .acknowledgeItGroup', function () {
-		acknowledgeItGroupObject = $(this).closest('tr').attr('data-group');
-		$('#dialogAck').attr('data-call', 'mass').dialog('open');
-		
-		return false;
-	});
-	$('#mainTable').on('click', '.acknowledgeIt', function () {		
-		acknowledgeItObject = $(this).closest('tr');
-		$('#dialogAck').attr('data-call', 'custom').dialog('open');
-	});
-	$(document).on('click', '#'+ Search.ackButtonId, function () {
-		$('#dialogAck').attr('data-call', 'mass').dialog('open');
-	});
-	
-	$('#mainTable').on('click', 'thead .scheduleItGroup', function () {
-		sheduleItGroupObject = $(this).closest('tr').attr('data-group');
-		$('#dialog').attr('data-call', 'mass').dialog('open');
-		
-		return false;
-	});
-	$('#mainTable').on('click', '.scheduleIt', function () {
-		sheduleItObject = $(this).closest('tr');
-		$('#dialog').attr('data-call', 'custom').dialog('open');
-	});
-	$(document).on('click', '#'+ Search.sdButtonId, function () {
-		$('#dialog').attr('data-call', 'mass').dialog('open');
-	});
-	
-	
-
-	if ($.inArray(Search.currentReload, refreshValues) !== -1) {
-		$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
-	} else {
-		$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')').attr('selected', 'selected');
-	}
-	
-
-	if (Search.currentReload == 'auto') {
-		reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-	} else {
-		reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
-	}
+    });
 	
 	$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
 	$('#grouping').selectmenu({
@@ -1653,90 +1068,6 @@ Search.init = function() {
 			Search.filterDataTable();
 		}
 	});
-	$('#refreshTimeSelect').selectmenu({
-		select: function (event, data) {
-			if (data.item.value == 'auto') {
-				Search.backgroundReload = true;
-				clearTimeout(reloadTimer);
-				localStorage.setItem('currentReloadNew', data.item.value);
-				reloadTimer = setTimeout(function () { Search.getContent(); }, 0);
-				return;
-			}
-			
-			Search.backgroundReload = false;
-			
-			if (data.item.value == 'custom') {
-				var reload = prompt('Enter page reload time (minutes):', '');
-				
-				Search.autoRefresh = false;
-				
-				if (parseInt(reload)*60 > 0) {
-					localStorage.setItem('currentReloadNew', parseInt(reload)*60);
-					Search.currentReload = localStorage.getItem('currentReloadNew');
-					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')');
-				}
-				
-				Search.autoRefresh = true;
-			}
-			else {
-				localStorage.setItem('currentReloadNew', data.item.value);
-				Search.currentReload = localStorage.getItem('currentReloadNew');
-				$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText);
-			}
-			
-			if ($.inArray(Search.currentReload, refreshValues) !== -1) {
-				$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
-			} else {
-				$('#refreshTime select option[value="custom"]').attr('selected', 'selected');
-			}
-			
-			$('#refreshTimeSelect').selectmenu('refresh');
-			
-			clearTimeout(reloadTimer);
-			reloadTimer = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
-		}
-	});
-	$('#sched_finish_date_time').on('change', function() {
-		var currentServerDate = $('#openDialogServerTime').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
-			selectedDate      = $('#sched_finish_date_time').val(),
-			differenceDate    = new Date(selectedDate) - new Date(currentServerDate);
-		
-		if (differenceDate && differenceDate > 0) {
-			differenceDate = Math.ceil(differenceDate / 3600000);
-			$('#sched_interval_extension').val(differenceDate);
-		}
-		else {
-			$('#sched_interval_extension').val(0);
-			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).format('mm-dd-yyyy HH:MM')});
-		}
-	});
-	$('#sched_interval_extension').on('change', function() {
-		var currentServerDate = $('#openDialogServerTime').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
-			selectedDate      = parseInt($('#sched_interval_extension').val());
-		
-		if (selectedDate && selectedDate > 0) {
-			$('#sched_interval_extension').val(selectedDate);
-			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).addHours(selectedDate).format('mm-dd-yyyy HH:MM')});
-		}
-		else {
-			$('#sched_interval_extension').val(0);
-			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).format('mm-dd-yyyy HH:MM')});
-		}
-	});
-	
-	
-	$('#sched_comment_extension, #sched_interval_extension').on('keypress', function (e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$('#scheduleDowntimeButton').trigger('click');
-		}
-	});
-	$('#ack_comment_extension').on('keypress', function (e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$('#acknowledgeDialogButton').trigger('click');
-		}
-	});
-
-	
 	$(document).on('click', '.group-list', function () {
 		var attr = $(this).attr('data-group');
 
@@ -1755,16 +1086,325 @@ Search.init = function() {
 	});
 	
 	
-	$('img').error(function() { $(this).attr('src', 'images/avatars/empty.jpeg'); });
+	$('#mainTable').on('click', 'thead .recheckItGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'recheckIt',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.recheckIt', function () {
+		whatWeChangeObject = {
+			'type':    'recheckIt',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	$(document).on('click', '#'+ Search.recheckButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'recheckIt',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	
+	
+	$('#mainTable').on('click', 'thead .quickAckGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'quickAck',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.quickAck', function () {
+		whatWeChangeObject = {
+			'type':    'quickAck',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	$(document).on('click', '#'+ Search.quickAckButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'quickAck',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	
+	
+	$('#mainTable').on('click', 'thead .quickUnAckGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'quickUnAck',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+			
+		return false;
+	});
+	$('#mainTable').on('click', '.quickUnAck', function () {
+		whatWeChangeObject = {
+			'type':    'quickUnAck',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	$(document).on('click', '#'+ Search.quickUnAckButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'quickUnAck',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	
+	
+	$('#mainTable').on('click', 'thead .unAckGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'unAck',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.unAck', function () {
+		whatWeChangeObject = {
+			'type':    'unAck',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	$(document).on('click', '#'+ Search.unackButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'unAck',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	
+	
+	$('#mainTable').on('click', 'thead .acknowledgeItGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'acknowledgeIt',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		Search.tempHideButtons();
+		$('#dialogAck').dialog('open');
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.acknowledgeIt', function () {
+		whatWeChangeObject = {
+			'type':    'acknowledgeIt',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		Search.tempHideButtons();
+		$('#dialogAck').dialog('open');
+	});
+	$(document).on('click', '#'+ Search.ackButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'acknowledgeIt',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		Search.tempHideButtons();
+		$('#dialogAck').dialog('open');
+	});
+	$(document).on('keypress', '#ack_comment_extension', function (e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$('#acknowledgeDialogButton').trigger('click');
+		}
+	});
+	
+	$('#mainTable').on('click', 'thead .scheduleItGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'scheduleIt',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		Search.tempHideButtons();
+		$('#dialog').dialog('open');
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.scheduleIt', function () {
+		whatWeChangeObject = {
+			'type':    'scheduleIt',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		Search.tempHideButtons();
+		$('#dialog').dialog('open');
+	});
+	$(document).on('click', '#'+ Search.sdButtonId, function () {
+		whatWeChangeObject = {
+			'type':    'scheduleIt',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		Search.tempHideButtons();
+		$('#dialog').dialog('open');
+	});
+	$(document).on('change', '#sched_finish_date_time', function () {
+		var currentServerDate = $('#openDialogServerTime').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
+			selectedDate      = $('#sched_finish_date_time').val(),
+			differenceDate    = new Date(selectedDate) - new Date(currentServerDate);
+		
+		if (differenceDate && differenceDate > 0) {
+			differenceDate = Math.ceil(differenceDate / 3600000);
+			$('#sched_interval_extension').val(differenceDate);
+		}
+		else {
+			$('#sched_interval_extension').val(0);
+			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).format('mm-dd-yyyy HH:MM')});
+		}
+	});
+	$(document).on('change', '#sched_interval_extension', function () {
+		var currentServerDate = $('#openDialogServerTime').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
+			selectedDate      = parseInt($('#sched_interval_extension').val());
+		
+		if (selectedDate && selectedDate > 0) {
+			$('#sched_interval_extension').val(selectedDate);
+			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).addHours(selectedDate).format('mm-dd-yyyy HH:MM')});
+		}
+		else {
+			$('#sched_interval_extension').val(0);
+			$('#sched_finish_date_time').datetimepicker({value: new Date(currentServerDate).format('mm-dd-yyyy HH:MM')});
+		}
+	});
+	$(document).on('keypress', '#sched_comment_extension, #sched_interval_extension', function (e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$('#scheduleDowntimeButton').trigger('click');
+		}
+	});
+	
+	
+	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; Search.emptyHosts(); });
 	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').html().replace('&amp;', '&'), '_blank'); });
-	$(document).on('submit','form[name=scheduleDowntime]', function() { return false; });
-	$(document).on('submit','form[name="acknowledge"]',    function() { return false; });
+	$('img').error(function() { $(this).attr('src', 'images/avatars/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
-	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; });
+	$(document).on('submit','form[name=scheduleDowntime]', function() { return false; });
+	$(document).on('submit','form[name="acknowledge"]',    function() { return false; });
+	
+
+	$('#mainTable').on('click', '.downtime_id', function () {
+		Search.stopReloads();
+		$(this).hide();
+		
+		$.ajax({
+			url:    $('#nagiosPostFile').html(),
+			method: 'POST',
+			data:   { data: { 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': $(this).attr('data-id') }, type: 'downtime' },
+		})
+		.fail(function(jqXHR, textStatus) {
+			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+		})
+		.done(function() {
+			Search.allDataTable.ajax.reload(function() {
+				Search.filterDataTable($('#mainTable_filter input').val());
+				Search.startReloads();
+				quickAckUnAckGroup();
+			});
+		});
+	});
 }
+
+$.stopPendingAjax = (function() {
+	var id = 0, Q = {};
+
+	$(document).ajaxSend(function(e, jqx){
+		jqx._id = ++id;
+		Q[jqx._id] = jqx;
+	});
+	$(document).ajaxComplete(function(e, jqx){
+		delete Q[jqx._id];
+	});
+	return {
+		abortAll: function(){
+			var r = [];
+			$.each(Q, function(i, jqx){
+				r.push(jqx._id);
+				jqx.abort();
+			});
+			return r;
+		}
+	};
+})();
 
 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 	return (Search.currentTab && (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0)) ? true : false;
 });
+$.fn.dataTable.ext.errMode = 'none';
 
