@@ -799,7 +799,7 @@ Search.prepareSendData = function () {
 	});
 
 	$.ajax({
-		url:    $('#nagiosPostFile').html(),
+		url:    'post.php',
 		method: 'POST',
 		data:   { data: requestData, type: whatWeChangeObject.type },
 	})
@@ -1364,7 +1364,7 @@ Search.init = function() {
 		$(this).hide();
 		
 		$.ajax({
-			url:    $('#nagiosPostFile').html(),
+			url:    'post.php',
 			method: 'POST',
 			data:   { data: { 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': $(this).attr('data-id') }, type: 'downtime' },
 		})
