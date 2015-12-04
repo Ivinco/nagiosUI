@@ -10,12 +10,8 @@ $returnJson = array();
 foreach ($array['alert'] as $item) {
 	$acked      = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
 	$ackComment = (!is_array($item['ack_comment']))          ? $item['ack_comment']          : implode(' ', $item['ack_comment']);
-	$ackAuthor  = (!is_array($item['ack_author']))           ? $item['ack_author']           : implode(' ', $item['ack_author']);
-	$ackComDate = (!is_array($item['ack_comment_date']))     ? $item['ack_comment_date']     : implode(' ', $item['ack_comment_date']);
 	$sched      = (!is_array($item['sched']))                ? $item['sched']                : implode(' ', $item['sched']);
 	$schComment = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
-	$schAuthor  = (!is_array($item['sched_author']))         ? $item['sched_author']         : implode(' ', $item['sched_author']);
-	$schComDate = (!is_array($item['sched_comment_date']))   ? $item['sched_comment_date']   : implode(' ', $item['sched_comment_date']);
 	$host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
 	$hostUrl    = (!is_array($item['host-url']))             ? $item['host-url']             : implode(' ', $item['host-url']);
 	$service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
@@ -28,17 +24,14 @@ foreach ($array['alert'] as $item) {
 	$duration   = (!is_array($item['duration']))             ? $item['duration']             : implode(' ', $item['duration']);
 	$durationS  = (!is_array($item['durationSec9Digits']))   ? $item['durationSec9Digits']   : implode(' ', $item['durationSec9Digits']);
 	$statusInfo = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
+	$tempAuthor = (!is_array($item['ack_last_author']))      ? $item['ack_last_author']      : implode(' ', $item['ack_last_author']);
+	$tempCommen = (!is_array($item['ack_last_temp']))        ? $item['ack_last_temp']        : implode(' ', $item['ack_last_temp']);
+	$ackSched   = $item['ack_sched_data'];
 	
 	$returnType = '';
-	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $ackComment == 'temp')) ? '__normal__' : '';
-	$returnType.= ($acked == 1 && $ackComment != 'temp') ? '__acked__' : '';
+	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp')) ? '__normal__' : '';
+	$returnType.= ($acked == 1 && $tempCommen != 'temp') ? '__acked__' : '';
 	$returnType.= ($sched == 1) ? '__sched__' : '';
-	$returnAck  = "";
-	$returnAck .= ($ackComment != '')      ? "'{$ackComment}' by {$ackAuthor}" : "";
-	$returnAck .= ($ackComDate != '') ? "<br />added: {$ackComDate}" : "";
-	$returnSche = "";
-	$returnSche.= ($schComment != '')       ? "'{$schComment}' by {$schAuthor}" : "";
-	$returnSche.= ($schComDate != '') ? "<br />added: {$schComDate}" : "";
 				
 	$returnJson[] = array(
 		'host'      => array(
@@ -48,11 +41,11 @@ foreach ($array['alert'] as $item) {
 		'service'   => array(
 			'name'  => $service,
 			'url'   => $serviceUrl,
-			'unAck' => ($acked == 1 && $ackComment != 'temp') ? true : false,
+			'unAck' => ($acked == 1 && $tempCommen != 'temp') ? true : false,
 			'down'  => ($sched == 1) ? true : false,
 			'notes' => $notesUrl,
-			'qAck'  => ($ackComment != 'temp') ? true : false,
-			'qUAck' => ($ackComment == 'temp') ? $ackAuthor : false,
+			'qAck'  => ($tempCommen != 'temp') ? true : false,
+			'qUAck' => ($tempCommen == 'temp') ? $tempAuthor : false,
 		),
 		'status'    => array(
 			'name'  => $state,
@@ -68,8 +61,8 @@ foreach ($array['alert'] as $item) {
 			'order' => $durationS,
 		),
 		'comment'   => array(
-			'ack'   => $returnAck,
-			'sched' => $returnSche,
+			'ack'   => $ackComment,
+			'sched' => $schComment,
 		),
 		'type'      => $returnType,
 		'state'     => $state,

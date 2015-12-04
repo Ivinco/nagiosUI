@@ -72,30 +72,17 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 		$tmp = array();
 	
 		foreach ($ackAndSchedMatches['host'] as $k=>$host) {
-			
-			if (!isset($tmp[$host][$ackAndSchedMatches['service'][$k]])) {
-				$tmp[$host][$ackAndSchedMatches['service'][$k]] = array(
-					'ackAuthor'        => '',
-					'ackComment'       => '',
-					'ackCommentDate'   => '',
-					'schedAuthor'      => '',
-					'schedComment'     => '',
-					'schedCommentDate' => '',
-					'downtime_id'      => '',
-				);
-			}
-			
 			$commentType = ($ackAndSchedMatches['entry_type'][$k] == 2) ? 'other' : (($ackAndSchedMatches['entry_type'][$k] == 4 || $ackAndSchedMatches['entry_type'][$k] == 1) ? 'ack' : 'sched');
-	
-			if ($commentType != 'other') {
-				$tmp[$host][$ackAndSchedMatches['service'][$k]][$commentType.'Author']      = $ackAndSchedMatches['author'][$k];
-				$tmp[$host][$ackAndSchedMatches['service'][$k]][$commentType.'Comment']     = $ackAndSchedMatches['comment'][$k];
-				$tmp[$host][$ackAndSchedMatches['service'][$k]][$commentType.'CommentDate'] = $ackAndSchedMatches['entry_time'][$k];
-			}
 			
-			if ($commentType == 'sched') {
-				$tmp[$host][$ackAndSchedMatches['service'][$k]]['downtime_id']              = $ackAndSchedMatches['entry_type'][$k];
-			}
+			$tmp[$host][$ackAndSchedMatches['service'][$k]][] = array(
+				'ackAuthor'        => ($commentType == 'ack')   ? $ackAndSchedMatches['author'][$k]     : '',
+				'ackComment'       => ($commentType == 'ack')   ? $ackAndSchedMatches['comment'][$k]    : '',
+				'ackCommentDate'   => ($commentType == 'ack')   ? $ackAndSchedMatches['entry_time'][$k] : '',
+				'schedAuthor'      => ($commentType == 'sched') ? $ackAndSchedMatches['author'][$k]     : '',
+				'schedComment'     => ($commentType == 'sched') ? $ackAndSchedMatches['comment'][$k]    : '',
+				'schedCommentDate' => ($commentType == 'sched') ? $ackAndSchedMatches['entry_time'][$k] : '',
+				'downtime_id'      => ($commentType != 'other') ? $ackAndSchedMatches['entry_type'][$k] : '',
+			);
 		}
 	
 		$ackAndSchedMatches = $tmp;
@@ -179,22 +166,53 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 					$duration    = duration($durationSec, false);
 				}
 				
-				$ackComment   = isset($ackAndSchedMatches[$host][$service]) ? preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $ackAndSchedMatches[$host][$service]['ackComment']) : '';
-				$schedComment = isset($ackAndSchedMatches[$host][$service]) ? preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $ackAndSchedMatches[$host][$service]['schedComment']) : '';
-				$ackedStatus  = (int)$attrs['acked'];
+				$ackedStatus   = (int)$attrs['acked'];
+				$ackComment    = '';
+				$schedComment  = '';
+				$downtime_id   = '';
+				$ackLastTemp   = '';
+				$ackLastAuthor = '';
 				
-				if ($ackedStatus && $ackAndSchedMatches[$host][$service]['ackComment'] == 'temp') {
-					$ackComment  = $ackAndSchedMatches[$host][$service]['ackComment'];
+				if (isset($ackAndSchedMatches[$host][$service])) {
+					$tmpAckComments   = array();
+					$tmpSchedComments = array();
+					$tmpDowntimeId    = array();
+					$tmpAckAuthor     = array();
+					$tmpAckTemp       = array();
+					
+					foreach ($ackAndSchedMatches[$host][$service] as $tmpComments) {
+						if ($tmpComments['ackComment']) {
+							$tmpValue  = ($tmpComments['ackComment'] == 'temp') ? 'temp' : preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['ackComment']);
+							$tmpValue  = preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['ackComment']);
+							$tmpValue  = "'{$tmpValue}' by {$tmpComments['ackAuthor']}";
+							$tmpValue .= ($tmpComments['ackCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['ackCommentDate'])) : '';
+							
+							$tmpAckComments[] = $tmpValue;
+							$tmpAckAuthor[]   = $tmpComments['ackAuthor'];
+							$tmpAckTemp[]     = $tmpComments['ackComment'];
+						}
+						if ($tmpComments['schedComment']) {
+							$tmpValue  = preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['schedComment']);
+							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
+							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
+							
+							$tmpSchedComments[] = $tmpValue;
+						}
+						if ($tmpComments['downtime_id'] && $state == 'OK') {
+							$tmpDowntimeId[] = $tmpComments['downtime_id'];
+						}
+					}
+					
+					$ackComment    = implode('<br /><br />', $tmpAckComments);
+					$schedComment  = implode('<br /><br />', $tmpSchedComments);
+					$downtime_id   = (!empty($tmpDowntimeId)) ? end($tmpDowntimeId) : '';
+					$ackLastTemp   = (!empty($tmpAckTemp))    ? end($tmpAckTemp) : '';
+					$ackLastAuthor = (!empty($tmpAckAuthor))  ? end($tmpAckAuthor) : '';
 				}
 				
-				$scheduled          = (int)$attrs['scheduled'];
-				$downtime_id        = (isset($ackAndSchedMatches[$host][$service]) && $state == 'OK') ? $ackAndSchedMatches[$host][$service]['downtime_id'] : '';
-				$sched_author       = (isset($ackAndSchedMatches[$host][$service])) ?                   $ackAndSchedMatches[$host][$service]['schedAuthor'] : '';
-				$ack_author         = (isset($ackAndSchedMatches[$host][$service])) ?                   $ackAndSchedMatches[$host][$service]['ackAuthor']   : '';
-				$sched_comment_date = (isset($ackAndSchedMatches[$host][$service])) ? date('M j H:i', intval($ackAndSchedMatches[$host][$service]['schedCommentDate'])) : '';
-				$ack_comment_date   = (isset($ackAndSchedMatches[$host][$service])) ? date('M j H:i', intval($ackAndSchedMatches[$host][$service]['ackCommentDate']))   : '';
-				$last_check         = date('m-d-Y H:i:s', $attrs['last_check']);
-				$attempt            = $attrs['attempts']/$attrs['max_attempts'];
+				$scheduled  = (int)$attrs['scheduled'];
+				$last_check = date('m-d-Y H:i:s', $attrs['last_check']);
+				$attempt    = $attrs['attempts']/$attrs['max_attempts'];
 
 $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<host>'.               $host .'</host>
@@ -206,12 +224,10 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<acked>'.              $ackedStatus .'</acked>
 		<sched>'.              $scheduled .'</sched>
 		<downtime_id>'.        $downtime_id .'</downtime_id>
-		<sched_author>'.       $sched_author .'</sched_author>
-		<ack_author>'.         $ack_author .'</ack_author>
-		<sched_comment>'.      $schedComment.'</sched_comment>
-		<ack_comment>'.        $ackComment .'</ack_comment>
-		<sched_comment_date>'. $sched_comment_date .'</sched_comment_date>
-		<ack_comment_date>'.   $ack_comment_date .'</ack_comment_date> 
+		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
+		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
+		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
+		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>
 		<last_check_sec>'.     $attrs['last_check'] .'</last_check_sec>
 		<durationSec>'.        $durationSec .'</durationSec>
@@ -222,10 +238,9 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 	</alert>
 ';
 		
-			$verificateCheck .= $state . $origState . $host . $service . $serviceEncoded . $sched_author . $attempt;
-			$verificateCheck .= $notesUrl . $ackedStatus . $scheduled . $downtime_id . $ack_author . $pluginOutput;
-			$verificateCheck .= $schedComment . $ackComment . $sched_comment_date . $ack_comment_date;
-			$verificateCheck .= $last_check;
+			$verificateCheck .= $state . $origState . $host . $service . $serviceEncoded . $ackLastTemp . $attempt;
+			$verificateCheck .= $notesUrl . $ackedStatus . $scheduled . $downtime_id . $ackLastAuthor . $pluginOutput;
+			$verificateCheck .= $schedComment . $ackComment . $last_check;
 
 		}
 	}

@@ -829,7 +829,7 @@ Search.prepareSendData = function () {
 				whatWeChangeDataObject = null;
 				whatWeChangeObject     = null;
 			});
-		}, 500);
+		}, 1000);
 	});
 }
 Search.tempShowButtons = function() {
@@ -1380,7 +1380,7 @@ Search.init = function() {
 					Search.startReloads();
 					quickAckUnAckGroup();
 				});
-			}, 500);
+			}, 1000);
 		});
 	});
 }
