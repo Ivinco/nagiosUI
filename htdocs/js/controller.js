@@ -808,26 +808,28 @@ Search.prepareSendData = function () {
 		Search.tempShowButtons();
 	})
 	.done(function() {
-		Search.allDataTable.ajax.reload(function() {
-			Search.filterDataTable($('#mainTable_filter input').val());
-			Search.startReloads();
-			quickAckUnAckGroup();
-			
-			$('#dialogAck').dialog('close');
-			$('#dialog').dialog('close');
-			$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
-			$('#acknowledgeDialogButton').removeAttr('disabled');
-			$('#sched_finish_date_time').datetimepicker('destroy');
-			$('#openDialogServerTime').html('');
-			$('form[name=scheduleDowntime] input').val('');
-			$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
-			$('#timeShift').html('');
-			$('#downtimeComment').html('');
-			$('#lastUpdated').html('');
-			$('#scheduleDowntimeButton').removeAttr('disabled');
-			whatWeChangeDataObject = null;
-			whatWeChangeObject     = null;
-		});
+		setTimeout(function(){
+			Search.allDataTable.ajax.reload(function() {
+				Search.filterDataTable($('#mainTable_filter input').val());
+				Search.startReloads();
+				quickAckUnAckGroup();
+				
+				$('#dialogAck').dialog('close');
+				$('#dialog').dialog('close');
+				$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
+				$('#acknowledgeDialogButton').removeAttr('disabled');
+				$('#sched_finish_date_time').datetimepicker('destroy');
+				$('#openDialogServerTime').html('');
+				$('form[name=scheduleDowntime] input').val('');
+				$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
+				$('#timeShift').html('');
+				$('#downtimeComment').html('');
+				$('#lastUpdated').html('');
+				$('#scheduleDowntimeButton').removeAttr('disabled');
+				whatWeChangeDataObject = null;
+				whatWeChangeObject     = null;
+			});
+		}, 500);
 	});
 }
 Search.tempShowButtons = function() {
@@ -1372,11 +1374,13 @@ Search.init = function() {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
 		})
 		.done(function() {
-			Search.allDataTable.ajax.reload(function() {
-				Search.filterDataTable($('#mainTable_filter input').val());
-				Search.startReloads();
-				quickAckUnAckGroup();
-			});
+			setTimeout(function(){
+				Search.allDataTable.ajax.reload(function() {
+					Search.filterDataTable($('#mainTable_filter input').val());
+					Search.startReloads();
+					quickAckUnAckGroup();
+				});
+			}, 500);
 		});
 	});
 }
