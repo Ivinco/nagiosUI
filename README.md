@@ -1,5 +1,7 @@
 # nagiosUI
 Features:
+* Real-time status update
+  No need to refresh the page to see new alerts
 * XML and XSLT-based
 * quick acknowledgement
 * instant acknowledgement
