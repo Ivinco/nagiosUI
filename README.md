@@ -1,8 +1,7 @@
 # nagiosUI
 Features:
-* Real-time status update
-  No need to refresh the page to see new alerts
-* XML and XSLT-based
+* Real-time status update: no need to refresh the page to see new alerts
+* XML and XSLT-based: decreases traffic from the server few times which gives lower response time
 * quick acknowledgement
 * instant acknowledgement
 * instant scheduling a downtime
