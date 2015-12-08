@@ -67,6 +67,7 @@
 	<div id="timeShift"></div>
 	<div id="downtimeComment"></div>
     <div id="userName"></div>
+	<div id="userAvatar"></div>
 	<div id="nagiosConfigFile"></div>
 	<div id="nagiosPostFile"></div>
 	<div id="nagiosFullListUrl"></div>

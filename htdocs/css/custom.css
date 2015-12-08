@@ -175,7 +175,7 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #ext_search button:hover { border: 1px solid #000; color: #000; }
 
 .icons.acknowledgeIt, .icons.scheduleIt, .icons.recheckIt, .icons.quickAck, .icons.quickUnAck, .icons.unAckThis { cursor: pointer; }
-#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash { display: none; }
+#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash, #userAvatar { display: none; }
 
 #loading { width: 100%; margin: 40px auto; text-align: center; }
 #loading img { width: 100px; }

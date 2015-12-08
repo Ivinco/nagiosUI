@@ -7,8 +7,14 @@ $alertsPercentile_global  = '/domain/tmp/nagios_percentile/alerts_critical_50pct
 $durationsFromFile_global = '/domain/tmp/nagios_percentile/durations';
 $xmlArchive               = '/domain/log/nagios_xml_output/';
 $nagiosConfigFile         = '/cgi-bin/config.cgi';
-$nagiosPostFile           = '/cgi-bin/cmd.cgi';
 $nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&amp;style=hostdetail';
+$nagiosCommentUrl         = '<a href=url/view.php?id=$2" target="_blank">$1</a>';
+$nagiosPercentileUrl      = '/url/tmp/nagios_percentile';
+
+$usersArray = array(
+	'authUser' => 'email@domain.com',
+	'userName' => 'email@domain.com',
+);
 
 function hostUrl($host) {
 	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;

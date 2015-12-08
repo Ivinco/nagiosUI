@@ -26,6 +26,7 @@ foreach ($array['alert'] as $item) {
 	$statusInfo = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
 	$tempAuthor = (!is_array($item['ack_last_author']))      ? $item['ack_last_author']      : implode(' ', $item['ack_last_author']);
 	$tempCommen = (!is_array($item['ack_last_temp']))        ? $item['ack_last_temp']        : implode(' ', $item['ack_last_temp']);
+	$quickAckAu = (!is_array($item['quick_ack_author']))     ? $item['quick_ack_author']     : implode(' ', $item['quick_ack_author']);
 	$ackSched   = $item['ack_sched_data'];
 	
 	$returnType = '';
@@ -45,7 +46,8 @@ foreach ($array['alert'] as $item) {
 			'down'  => ($sched == 1) ? true : false,
 			'notes' => $notesUrl,
 			'qAck'  => ($tempCommen != 'temp') ? true : false,
-			'qUAck' => ($tempCommen == 'temp') ? $tempAuthor : false,
+			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
+			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
 		),
 		'status'    => array(
 			'name'  => $state,
@@ -72,8 +74,8 @@ foreach ($array['alert'] as $item) {
 
 $additional = array(
 	'userName'          => $array['user'],
+	'userAvatar'        => $array['avatar'],
 	'nagiosConfigFile'  => $array['nagios-config-file'],
-	'nagiosPostFile'    => $array['nagios-post-file'],
 	'nagiosFullListUrl' => $array['nagios-full-list-url'],
 	'updateHash'        => $array['hash'],
 );

@@ -64,7 +64,7 @@ Search = {}
 							down  = (data.down)  ? '<li><img class="icons" src="images/downtime.gif"/></li>' : '',
 							notes = (data.notes) ? '<li><a href="'+ data.notes +'" target="_blank"><img class="icons" src="images/notes.gif"/></a></li>' : '',
 							qAck  = (data.qAck)  ? '<img class="icons quickAck" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge" />' : '',
-							qUAck = (data.qUAck) ? '<img class="icons quickUnAck" src="images/avatars/'+ data.qUAck +'.jpeg" alt="'+ data.qUAck +' unack" title="'+ data.qUAck +' unack" />' : '';
+							qUAck = (data.qUAck) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
 						
 						return '' +
 							'<div class="likeTable">' +
@@ -142,8 +142,8 @@ Search = {}
 			
 			if (Search.firstLoad) {
 				$('#userName').text(json.additional.userName);
+				$('#userAvatar').text(json.additional.userAvatar);
 				$('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
-				$('#nagiosPostFile').text(json.additional.nagiosPostFile);
 				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);
 				
@@ -263,7 +263,8 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 			});
 		}
 	});
-	
+
+	var firstCount = 0;
 	$(returnData).each(function() {
 		var rowData = $(this)[0];
 		
@@ -285,6 +286,21 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 			returnOrdered[rowData.groupBy].lastCheckOrder = rowData.lastCheckOrder;
 			returnOrdered[rowData.groupBy].lastCheck      = rowData.lastCheck;
 		}
+		
+		if (!firstCount) {
+			returnOrdered[rowData.groupBy].information = rowData.information;
+			returnOrdered[rowData.groupBy].comment     = rowData.comment;
+		}
+		
+		if (firstCount && returnOrdered[rowData.groupBy].information != rowData.information) {
+			returnOrdered[rowData.groupBy].information = '';
+		}
+		
+		if (firstCount && returnOrdered[rowData.groupBy].comment != rowData.comment) {
+			returnOrdered[rowData.groupBy].comment = '';
+		}
+		
+		firstCount++;
 	});
 	
 	$.each(returnOrdered, function(){
@@ -524,19 +540,18 @@ Search.extension = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength && !$('#ext_search').length) {
 		$('#mainTable_filter').after('<div id="ext_search"></div>');
 		$('#ext_search').append('<img id="'+ Search.quickAckButtonId +'" src="images/ok.png" alt="Quick Acknowledge All" title="Quick Acknowledge All">');
-		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="images/avatars/'+ Search.currentUser +'.jpeg" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
+		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.userAvatar +'?size=19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
 		$('#ext_search').append('<img id="'+ Search.ackButtonId +'" src="images/acknowledgement.png" alt="Acknowledge All Services" title="Acknowledge All Services">');
 		$('#ext_search').append('<img id="'+ Search.unackButtonId +'" src="images/ack.gif" alt="Unacknowledge All Services" title="Unacknowledge All Services">');
 		$('#ext_search').append('<img id="'+ Search.sdButtonId +'" src="images/schedule.png" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services">');
 		$('#ext_search').append('<img id="'+ Search.recheckButtonId +'" src="images/refresh.png" alt="Refresh Services Status" title="Refresh Services Status">');
 	}
-	
 	Search.extensionVisibility();
 }
 Search.extensionVisibility = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength) {
 		$(Search.filterButtons).show();
-		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.currentUser +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
+		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.userAvatar +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
 		(Search.currentTab == 'acked' && $('#mainTable tbody .icons.unAck').length) ? $('#'+ Search.unackButtonId).show() : $('#'+ Search.unackButtonId).hide();
 	}
@@ -738,9 +753,6 @@ Search.prepareSendData = function () {
 	$(whatWeChangeDataObject).each(function() {
 		if (whatWeChangeObject.type == 'recheckIt') {
 			requestData.push({
-//				'cmd_typ':     7,
-//				'cmd_mod':     2,
-//				'force_check': 'on',
 				'start_time':  $(this)[0].check,
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
@@ -748,10 +760,6 @@ Search.prepareSendData = function () {
 		}
 		else if (whatWeChangeObject.type == 'quickAck') {
 			requestData.push({
-//				'cmd_typ':           34,
-//				'cmd_mod':           2,
-//				'sticky_ack':        'on',
-//				'send_notification': 'on',
 				'host':              $(this)[0].host,
 				'service':           $(this)[0].service,
 				'com_data':          'temp',
@@ -760,18 +768,12 @@ Search.prepareSendData = function () {
 		}
 		else if (whatWeChangeObject.type == 'quickUnAck' || whatWeChangeObject.type == 'unAck') {
 			requestData.push({
-//				'cmd_typ':           52,
-//				'cmd_mod':           2,
 				'host':              $(this)[0].host,
 				'service':           $(this)[0].service,
 			});
 		}
 		else if (whatWeChangeObject.type == 'acknowledgeIt') {
 			requestData.push({
-//				'cmd_typ':           34,
-//				'cmd_mod':           2,
-//				'sticky_ack':        'on',
-//				'send_notification': 'on',
 				'host':              $(this)[0].host,
 				'service':           $(this)[0].service,
 				'com_data':          $('input[name="ack_comment_extension"]').val(),
@@ -783,11 +785,6 @@ Search.prepareSendData = function () {
 				hours             = parseInt($('#timeShift').html(),10);
 				
 			requestData.push({
-//				'cmd_typ':    56,
-//				'cmd_mod':    2,
-//				'trigger':    0,
-//				'fixed':      1,
-//				'minutes':    0,
 				'hours':      hours,
 				'start_time': new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
 				'end_time':   new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
@@ -797,40 +794,67 @@ Search.prepareSendData = function () {
 			});
 		}
 	});
-
-	$.ajax({
-		url:    'post.php',
-		method: 'POST',
-		data:   { data: requestData, type: whatWeChangeObject.type },
-	})
-	.fail(function(jqXHR, textStatus) {
-		console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
-		Search.tempShowButtons();
-	})
-	.done(function() {
-		setTimeout(function(){
-			Search.allDataTable.ajax.reload(function() {
-				Search.filterDataTable($('#mainTable_filter input').val());
-				Search.startReloads();
-				quickAckUnAckGroup();
-				
-				$('#dialogAck').dialog('close');
-				$('#dialog').dialog('close');
-				$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
-				$('#acknowledgeDialogButton').removeAttr('disabled');
-				$('#sched_finish_date_time').datetimepicker('destroy');
-				$('#openDialogServerTime').html('');
-				$('form[name=scheduleDowntime] input').val('');
-				$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
-				$('#timeShift').html('');
-				$('#downtimeComment').html('');
-				$('#lastUpdated').html('');
-				$('#scheduleDowntimeButton').removeAttr('disabled');
-				whatWeChangeDataObject = null;
-				whatWeChangeObject     = null;
+	
+	if (whatWeChangeObject.type == 'scheduleIt' || whatWeChangeObject.type == 'acknowledgeIt') {
+		$.ajax({
+			url:    'post.php',
+			method: 'POST',
+			data:   { data: requestData, type: 'unAck' },
+		})
+		.always(function() {
+			$.ajax({
+				url:    'post.php',
+				method: 'POST',
+				data:   { data: requestData, type: whatWeChangeObject.type },
+			})
+			.fail(function(jqXHR, textStatus) {
+				console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+				Search.tempShowButtons();
+			})
+			.done(function() {
+				Search.allDataTable.ajax.reload(function() {
+					Search.restoreAllData();
+				});
 			});
-		}, 1000);
-	});
+		});
+	}
+	else {
+		$.ajax({
+			url:    'post.php',
+			method: 'POST',
+			data:   { data: requestData, type: whatWeChangeObject.type },
+		})
+		.fail(function(jqXHR, textStatus) {
+			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+			Search.tempShowButtons();
+		})
+		.done(function() {
+			Search.allDataTable.ajax.reload(function() {
+				Search.restoreAllData();
+			});
+		});
+	}
+}
+Search.restoreAllData = function() {
+	Search.filterDataTable($('#mainTable_filter input').val());
+	Search.startReloads();
+	quickAckUnAckGroup();
+				
+	$('#dialogAck').dialog('close');
+	$('#dialog').dialog('close');
+	$('input[name="ack_comment_extension"]').val('').removeClass('ui-state-error');
+	$('#acknowledgeDialogButton').removeAttr('disabled');
+	$('#sched_finish_date_time').datetimepicker('destroy');
+	$('#openDialogServerTime').html('');
+	$('form[name=scheduleDowntime] input').val('');
+	$('form[name=scheduleDowntime] .ui-state-error').removeClass('ui-state-error');
+	$('#timeShift').html('');
+	$('#downtimeComment').html('');
+	$('#lastUpdated').html('');
+	$('#scheduleDowntimeButton').removeAttr('disabled');
+	
+	whatWeChangeDataObject = null;
+	whatWeChangeObject     = null;
 }
 Search.tempShowButtons = function() {
 	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
@@ -1354,7 +1378,7 @@ Search.init = function() {
 	
 	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; Search.emptyHosts(); });
 	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').html().replace('&amp;', '&'), '_blank'); });
-	$('img').error(function() { $(this).attr('src', 'images/avatars/empty.jpeg'); });
+	$('img').error(function() { $(this).attr('src', 'images/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
 	$(document).on('submit','form[name=scheduleDowntime]', function() { return false; });
@@ -1374,13 +1398,11 @@ Search.init = function() {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
 		})
 		.done(function() {
-			setTimeout(function(){
-				Search.allDataTable.ajax.reload(function() {
-					Search.filterDataTable($('#mainTable_filter input').val());
-					Search.startReloads();
-					quickAckUnAckGroup();
-				});
-			}, 1000);
+			Search.allDataTable.ajax.reload(function() {
+				Search.filterDataTable($('#mainTable_filter input').val());
+				Search.startReloads();
+				quickAckUnAckGroup();
+			});
 		});
 	});
 }

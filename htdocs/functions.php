@@ -10,9 +10,10 @@ function returnDataList($isHash) {
 	global $alertsPercentile_global;
 	global $durationsFromFile_global;
 	global $nagiosConfigFile;
-	global $nagiosPostFile;
 	global $nagiosFullHostUrl;
 	global $xmlArchive;
+	global $usersArray;
+	global $nagiosCommentUrl;
 
 $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="alerts.xsl"?>
@@ -182,8 +183,8 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 					
 					foreach ($ackAndSchedMatches[$host][$service] as $tmpComments) {
 						if ($tmpComments['ackComment']) {
-							$tmpValue  = ($tmpComments['ackComment'] == 'temp') ? 'temp' : preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['ackComment']);
-							$tmpValue  = preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['ackComment']);
+							$tmpValue  = ($tmpComments['ackComment'] == 'temp') ? 'temp' : preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
+							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
 							$tmpValue  = "'{$tmpValue}' by {$tmpComments['ackAuthor']}";
 							$tmpValue .= ($tmpComments['ackCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['ackCommentDate'])) : '';
 							
@@ -192,7 +193,7 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 							$tmpAckTemp[]     = $tmpComments['ackComment'];
 						}
 						if ($tmpComments['schedComment']) {
-							$tmpValue  = preg_replace('/(#(\d+))/', '<a href="https://intranet.ivinco.com/eventum/view.php?id=$2" target="_blank">$1</a>', $tmpComments['schedComment']);
+							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
 							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
 							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
 							
@@ -226,6 +227,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<downtime_id>'.        $downtime_id .'</downtime_id>
 		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
+		<quick_ack_author>'.   md5(strtolower(trim($usersArray[$ackLastAuthor]))) .'</quick_ack_author>
 		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
 		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>
@@ -248,8 +250,8 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
 	<user>'.                 (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '') .'</user>
+	<avatar>'.               (isset($_SERVER['PHP_AUTH_USER']) ? md5(strtolower(trim($usersArray[$_SERVER['PHP_AUTH_USER']]))) : '') .'</avatar>
 	<nagios-config-file>'.   $nagiosConfigFile .'</nagios-config-file>
-	<nagios-post-file>'.     $nagiosPostFile .'</nagios-post-file>
 	<nagios-full-list-url>'. $nagiosFullHostUrl .'</nagios-full-list-url>
 </alerts>';
 
