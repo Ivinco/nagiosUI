@@ -526,6 +526,32 @@ Search.filterDataTable = function(val) {
 	$('.comment span.ack').toggle(Search.currentTab == 'acked');
 	$('.comment span.sched').toggle(Search.currentTab == 'sched');
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked');
+	
+	var warnings = 0,
+		critical = 0;
+		
+	$(Search.allDataTable.rows().data()).each(function() {
+		if ($(this)[0].type.search('__normal__') > -1) {
+			if ($(this)[0].status.name.search('WARNING') > -1) {
+				warnings++;
+			}
+			if ($(this)[0].status.name.search('CRITICAL') > -1) {
+				critical++;
+			}
+		}
+	});
+	
+	if (critical) {
+		favicon = new Favico({ animation : 'popFade', bgColor : '#ff0000' });
+		favicon.badge(critical);
+	} else if (warnings) {
+		favicon = new Favico({ animation : 'popFade', bgColor : '#ffff00', textColor : '#000000' });
+		favicon.badge(warnings);
+	} else if (typeof favicon !== 'undefined') {
+		favicon.reset();
+	}
+	
+
 }
 Search.emptyHosts = function () {
     var prevHost = '';
@@ -1060,7 +1086,7 @@ Search.countRecordsPlus = function(buttonID) {
 }
 
 
-Search.init = function() {	
+Search.init = function() {
 	Search.filterDataTable();
 	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
@@ -1383,7 +1409,6 @@ Search.init = function() {
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
 	$(document).on('submit','form[name=scheduleDowntime]', function() { return false; });
 	$(document).on('submit','form[name="acknowledge"]',    function() { return false; });
-	
 
 	$('#mainTable').on('click', '.downtime_id', function () {
 		Search.stopReloads();
