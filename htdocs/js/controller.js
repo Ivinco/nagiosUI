@@ -921,6 +921,9 @@ Search.restoreAllData = function() {
 				var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
 				d.comment.sched = (d.comment.sched) ? (d.comment.sched +'<br /><br />'+ newComment) : newComment;
 				d.service.down  = true;
+				d.service.qUAck = false;
+				d.service.qAck  = true;
+				d.service.qAuth = false;
 				d.type          = d.type.replace('__normal__', '');
 				if (d.type.search('__sched__') < 0) {
 					d.type += '__sched__';
