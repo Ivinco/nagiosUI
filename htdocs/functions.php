@@ -214,6 +214,8 @@ $xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
 				$scheduled  = (int)$attrs['scheduled'];
 				$last_check = date('m-d-Y H:i:s', $attrs['last_check']);
 				$attempt    = $attrs['attempts']/$attrs['max_attempts'];
+				
+				$userAvatar = (isset($usersArray[$ackLastAuthor])) ? $usersArray[$ackLastAuthor] : '';
 
 $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<host>'.               $host .'</host>
@@ -227,7 +229,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<downtime_id>'.        $downtime_id .'</downtime_id>
 		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
-		<quick_ack_author>'.   md5(strtolower(trim($usersArray[$ackLastAuthor]))) .'</quick_ack_author>
+		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
 		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
 		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>

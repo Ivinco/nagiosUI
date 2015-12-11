@@ -153,7 +153,8 @@ Search = {}
 				whatWeChangeDataObject    = null;
 				Search.currentUser        = $('#userName').text();
 				Search.updateHash         = $('#updateHash').text();
-	
+				Search.avatarUrl          = $('#userAvatar').text();
+				
 				$('#' + Search.currentTab).attr('checked', 'checked');
 				$('#radio').buttonset();
 				Search.addDialog();
@@ -566,7 +567,7 @@ Search.extension = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength && !$('#ext_search').length) {
 		$('#mainTable_filter').after('<div id="ext_search"></div>');
 		$('#ext_search').append('<img id="'+ Search.quickAckButtonId +'" src="images/ok.png" alt="Quick Acknowledge All" title="Quick Acknowledge All">');
-		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.userAvatar +'?size=19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
+		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
 		$('#ext_search').append('<img id="'+ Search.ackButtonId +'" src="images/acknowledgement.png" alt="Acknowledge All Services" title="Acknowledge All Services">');
 		$('#ext_search').append('<img id="'+ Search.unackButtonId +'" src="images/ack.gif" alt="Unacknowledge All Services" title="Unacknowledge All Services">');
 		$('#ext_search').append('<img id="'+ Search.sdButtonId +'" src="images/schedule.png" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services">');
@@ -577,7 +578,7 @@ Search.extension = function () {
 Search.extensionVisibility = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength) {
 		$(Search.filterButtons).show();
-		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.userAvatar +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
+		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
 		(Search.currentTab == 'acked' && $('#mainTable tbody .icons.unAck').length) ? $('#'+ Search.unackButtonId).show() : $('#'+ Search.unackButtonId).hide();
 	}
@@ -838,9 +839,7 @@ Search.prepareSendData = function () {
 				Search.tempShowButtons();
 			})
 			.done(function() {
-				Search.allDataTable.ajax.reload(function() {
-					Search.restoreAllData();
-				});
+				Search.restoreAllData();
 			});
 		});
 	}
@@ -855,15 +854,84 @@ Search.prepareSendData = function () {
 			Search.tempShowButtons();
 		})
 		.done(function() {
-			Search.allDataTable.ajax.reload(function() {
-				Search.restoreAllData();
-			});
+			Search.restoreAllData();
 		});
 	}
 }
 Search.restoreAllData = function() {
+	var commentDate = '';
+	
+	Search.allDataTable.rows({ page:'current', search:'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
+		var d      = this.data(),
+			change = 0;
+			
+		if (whatWeChangeObject.what == 'all') {
+			change = 1;
+		}
+		else if (whatWeChangeObject.what == 'this' && whatWeChangeObject.service == d.service.name && whatWeChangeObject.host == d.host.name) {
+			change = 1;
+		}
+		else if (whatWeChangeObject.what == 'group' && whatWeChangeObject.service == d.service.name) {
+			change = 1;
+		}
+ 
+		
+		if (change) {
+			if (whatWeChangeObject.type == 'quickAck') {
+				d.service.qUAck = Search.avatarUrl;
+				d.service.qAck  = false;
+				d.service.qAuth = Search.currentUser;
+			}
+			else if (whatWeChangeObject.type == 'quickUnAck') {
+				d.service.qUAck = false;
+				d.service.qAck  = true;
+				d.service.qAuth = false;
+			}
+			else if (whatWeChangeObject.type == 'unAck') {
+				d.service.unAck = false;
+				d.service.qUAck = false;
+				d.service.qAck  = true;
+				d.service.qAuth = false;
+				d.comment.ack   = '';
+				
+				if (d.type.search('__acked__') > -1) {
+					d.type = (d.type.replace('__acked__', '')) ? d.type.replace('__acked__', '') : '__normal__';
+				}
+			}
+			else if (whatWeChangeObject.type == 'acknowledgeIt') {
+				if (!commentDate) {
+					commentDate = Search.commentsDateFromat(new Date());
+				}
+				
+				var newComment  = "'"+ $('input[name="ack_comment_extension"]').val() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
+				d.comment.ack   = (d.comment.ack) ? (d.comment.ack +'<br /><br />'+ newComment) : newComment;
+				d.service.unAck = true;
+				d.service.qAck  = true;
+				d.type          = d.type.replace('__normal__', '');
+				
+				if (d.type.search('__acked__') < 0) {
+					d.type += '__acked__';
+				}
+			}
+			else if (whatWeChangeObject.type == 'scheduleIt') {
+				if (!commentDate) {
+					commentDate = Search.commentsDateFromat(new Date());
+				}
+				
+				var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
+				d.comment.sched = (d.comment.sched) ? (d.comment.sched +'<br /><br />'+ newComment) : newComment;
+				d.service.down  = true;
+				d.type          = d.type.replace('__normal__', '');
+				if (d.type.search('__sched__') < 0) {
+					d.type += '__sched__';
+				}
+			}
+			this.invalidate();
+		}
+	});
+	
 	Search.filterDataTable($('#mainTable_filter input').val());
-	Search.startReloads();
+	setTimeout(function(){ Search.startReloads(); }, 3000);
 	quickAckUnAckGroup();
 				
 	$('#dialogAck').dialog('close');
@@ -879,8 +947,31 @@ Search.restoreAllData = function() {
 	$('#lastUpdated').html('');
 	$('#scheduleDowntimeButton').removeAttr('disabled');
 	
+	commentDate            = ''
 	whatWeChangeDataObject = null;
 	whatWeChangeObject     = null;
+}
+Search.commentsDateFromat = function(d) {
+	var month   = d.getMonth(),
+		day     = d.getDate(),
+		hour    = d.getHours(),
+		minutes = d.getMinutes();
+	
+	if (month == 0) { month = 'Jan' }
+	else if (month == 1)  { month = 'Feb' }
+	else if (month == 2)  { month = 'Mar' }
+	else if (month == 3)  { month = 'Apr' }
+	else if (month == 4)  { month = 'May' }
+	else if (month == 5)  { month = 'Jun' }
+	else if (month == 6)  { month = 'Jul' }
+	else if (month == 7)  { month = 'Aug' }
+	else if (month == 8)  { month = 'Sep' }
+	else if (month == 9)  { month = 'Oct' }
+	else if (month == 10) { month = 'Nov' }
+	else if (month == 11) { month = 'Dec' }
+
+
+	return month +' '+ day +' '+ hour +':'+ minutes;
 }
 Search.tempShowButtons = function() {
 	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
@@ -1097,7 +1188,7 @@ Search.init = function() {
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
 		Search.currentTab = localStorage.getItem('currentTabNew');
-	
+
 		Search.filterDataTable();
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
@@ -1413,21 +1504,22 @@ Search.init = function() {
 	$('#mainTable').on('click', '.downtime_id', function () {
 		Search.stopReloads();
 		$(this).hide();
+		var row = $(this).closest('tr'),
+			id  = $(this).attr('data-id');
 		
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
-			data:   { data: { 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': $(this).attr('data-id') }, type: 'downtime' },
+			data:   { data: { 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': id }, type: 'downtime' },
 		})
 		.fail(function(jqXHR, textStatus) {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
 		})
 		.done(function() {
-			Search.allDataTable.ajax.reload(function() {
-				Search.filterDataTable($('#mainTable_filter input').val());
-				Search.startReloads();
-				quickAckUnAckGroup();
-			});
+			Search.allDataTable.row(row).remove();
+			Search.filterDataTable($('#mainTable_filter input').val());
+			setTimeout(function(){ Search.startReloads(); }, 3000);
+			quickAckUnAckGroup();
 		});
 	});
 }

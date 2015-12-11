@@ -30,6 +30,4 @@ foreach ($_POST['data'] as $post) {
 	fclose($f);
 }
 
-sleep(2);
-
 return http_response_code(200);
