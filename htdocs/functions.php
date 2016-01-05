@@ -15,9 +15,7 @@ function returnDataList($isHash) {
 	global $usersArray;
 	global $nagiosCommentUrl;
 
-$xmlContent = '<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="alerts.xsl"?>
-<alerts sort="1">
+$xmlContent = '<alerts sort="1">
 ';
 
 	$verificateCheck   = '';

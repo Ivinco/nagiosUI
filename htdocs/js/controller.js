@@ -51,7 +51,7 @@ Search = {}
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a>';
+					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a><br /><span class="more-info-icon"></span>';
 				},
 			},
             {
@@ -60,10 +60,10 @@ Search = {}
 				render: {
 					_:     'name',
 					display: function ( data, type, full, meta ) {
-						var unAck = (data.unAck) ? '<li><img class="icons unAck" src="images/ack.gif" alt="Unacknowledge this Service" title="Unacknowledge this Service" /></li>' : '',
-							down  = (data.down)  ? '<li><img class="icons" src="images/downtime.gif"/></li>' : '',
-							notes = (data.notes) ? '<li><a href="'+ data.notes +'" target="_blank"><img class="icons" src="images/notes.gif"/></a></li>' : '',
-							qAck  = (data.qAck)  ? '<img class="icons quickAck" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge" />' : '',
+						var unAck = (data.unAck) ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
+							down  = (data.down)  ? '<li><span class="list-downtime-icon"></span></li>' : '',
+							notes = (data.notes) ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
+							qAck  = (data.qAck)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
 						
 						return '' +
@@ -77,9 +77,9 @@ Search = {}
 										qAck  +
 										qUAck +
 							'		</li>' +
-							'		<li><img class="icons acknowledgeIt" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service" /></li>' +
-							'		<li><img class="icons scheduleIt" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service" /></li>' +
-							'		<li><img class="icons recheckIt" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status" /></li>' +
+							'		<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
+							'		<li><span class="list-sched-icon icons scheduleIt" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
+							'		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 							'	</ul>' +
 							'</div>';
 					},
@@ -339,21 +339,21 @@ function getGroupNormalThead(rowsHeader) {
 			contains       = (rowData.type == 'service') ? rowData.service : rowData.host,
 			liClass        = (Search.currentTab == 'acked') ? 'unAckIcon' : 'quickAckUnAckIcon',
 			liImgClass     = (Search.currentTab == 'acked') ? 'unAckGroup' : 'quickAckGroup',
-			liImgSrc       = (Search.currentTab == 'acked') ? 'ack.gif' : 'ok.png',
+			liImgSrc       = (Search.currentTab == 'acked') ? 'list-unack-icon' : 'list-qack-icon',
 			liImgTitle     = (Search.currentTab == 'acked') ? 'Unacknowledge All Services' : 'Quick Acknowledge';
 			
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host"'+ css +'>' + hostValue + '</td>' +
+			'	<td class="host"'+ css +'><span>' + hostValue + '</span><br /><span class="more-info-icon"></span></td>' +
 			'	<td class="service '+ trClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
 			'				<li>' + serviceValue + '</li>' +
-			'				<li class="'+ liClass +'"><img class="icons '+ liImgClass +'" src="images/'+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></li>' +
-			'				<li><img class="icons acknowledgeItGroup" src="images/acknowledgement.png" alt="Acknowledge this Service" title="Acknowledge this Service"></li>' +
-			'				<li><img class="icons scheduleItGroup" src="images/schedule.png" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></li>' +
-			'				<li><img class="icons recheckItGroup" src="images/refresh.png" alt="Refresh Service Status" title="Refresh Service Status"></li>' +
+			'				<li class="'+ liClass +'"><span class="icons '+ liImgClass +' '+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></span></li>' +
+			'				<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
+			'				<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
+			'				<li><span class="icons recheckItGroup list-recheck-icon" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 			'			</ul>' +
 			'		</div>' +
 			'	</td>' +
@@ -430,7 +430,7 @@ function quickAckUnAckGroup() {
 		}
 		else {
 			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
-				.html('<img class="icons quickAckGroup" src="images/ok.png" alt="Quick Acknowledge" title="Quick Acknowledge">');
+				.html('<span class="icons quickAckGroup list-qack-icon" alt="Quick Acknowledge" title="Quick Acknowledge"></span>');
 		}
 	});
 }
@@ -566,12 +566,12 @@ Search.emptyHosts = function () {
 Search.extension = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength && !$('#ext_search').length) {
 		$('#mainTable_filter').after('<div id="ext_search"></div>');
-		$('#ext_search').append('<img id="'+ Search.quickAckButtonId +'" src="images/ok.png" alt="Quick Acknowledge All" title="Quick Acknowledge All">');
+		$('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
 		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
-		$('#ext_search').append('<img id="'+ Search.ackButtonId +'" src="images/acknowledgement.png" alt="Acknowledge All Services" title="Acknowledge All Services">');
-		$('#ext_search').append('<img id="'+ Search.unackButtonId +'" src="images/ack.gif" alt="Unacknowledge All Services" title="Unacknowledge All Services">');
-		$('#ext_search').append('<img id="'+ Search.sdButtonId +'" src="images/schedule.png" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services">');
-		$('#ext_search').append('<img id="'+ Search.recheckButtonId +'" src="images/refresh.png" alt="Refresh Services Status" title="Refresh Services Status">');
+		$('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
+		$('#ext_search').append('<span id="'+ Search.unackButtonId +'" class="list-unack-icon" alt="Unacknowledge All Services" title="Unacknowledge All Services"></span>');
+		$('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
+		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Refresh Services Status" title="Refresh Services Status"></span>');
 	}
 	Search.extensionVisibility();
 }
@@ -1504,6 +1504,16 @@ Search.init = function() {
 	$(document).on('submit','form[name=scheduleDowntime]', function() { return false; });
 	$(document).on('submit','form[name="acknowledge"]',    function() { return false; });
 
+	$(document).on('click', '.more-info-icon', function() {
+		$('#serviceDialog').text($(this).closest('tr').find('.status_information').text());
+		$('#serviceDialog').dialog({
+			modal: true,
+			position: { my: "center top", at: "center top+200"},
+			close: function(event, ui) { $(this).dialog('close').dialog('destroy'); }
+		});
+		return false;
+	});
+	
 	$('#mainTable').on('click', '.downtime_id', function () {
 		Search.stopReloads();
 		$(this).hide();
@@ -1519,7 +1529,7 @@ Search.init = function() {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
 		})
 		.done(function() {
-			Search.allDataTable.row(row).remove();
+			Search.allDataTable.row($('#mainTable tbody tr [data-id="'+ id +'"]').closest('tr')).remove();
 			Search.filterDataTable($('#mainTable_filter input').val());
 			setTimeout(function(){ Search.startReloads(); }, 3000);
 			quickAckUnAckGroup();
@@ -1554,3 +1564,110 @@ $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 });
 $.fn.dataTable.ext.errMode = 'none';
 
+	var dateFormat = function () {
+		var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
+			////to do "ACDT","ACST","ACT","ACT","ADT","AEDT","AEST","AFT","AKDT","AKST","AMST","AMST","AMT","AMT","ART","AST","AST","AWDT","AWST","AZOST","AZT","BDT","BIOT","BIT","BOT","BRST","BRT","BST","BST","BST","BTT","CAT","CCT","CDT","CDT","CEDT","CEST","CET","CHADT","CHAST","CHOT","ChST","CHUT","CIST","CIT","CKT","CLST","CLT","COST","COT","CST","CST","CST","CST","CST","CT","CVT","CWST","CXT","DAVT","DDUT","DFT","EASST","EAST","EAT","ECT","ECT","EDT","EEDT","EEST","EET","EGST","EGT","EIT","EST","EST","FET","FJT","FKST","FKST","FKT","FNT","GALT","GAMT","GET","GFT","GILT","GIT","GMT","GST","GST","GYT","HADT","HAEC","HAST","HKT","HMT","HOVT","HST","ICT","IDT","IOT","IRDT","IRKT","IRST","IST","IST","IST","JST","KGT","KOST","KRAT","KST","LHST","LHST","LINT","MAGT","MART","MAWT","MDT","MET","MEST","MHT","MIST","MIT","MMT","MSK","MST","MST","MST","MUT","MVT","MYT","NCT","NDT","NFT","NPT","NST","NT","NUT","NZDT","NZST","OMST","ORAT","PDT","PET","PETT","PGT","PHOT","PKT","PMDT","PMST","PONT","PST","PST","PYST","PYT","RET","ROTT","SAKT","SAMT","SAST","SBT","SCT","SGT","SLST","SRET","SRT","SST","SST","SYOT","TAHT","THA","TFT","TJT","TKT","TLT","TMT","TOT","TVT","UCT","ULAT","USZ1","UTC","UYST","UYT","UZT","VET","VLAT","VOLT","VOST","VUT","WAKT","WAST","WAT","WEDT","WEST","WET","WIT","WST","YAKT","YEKT","Z",
+			timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
+			timezoneClip = /[^-+\dA-Z]/g,
+			pad = function (val, len) {
+				val = String(val);
+				len = len || 2;
+				while (val.length < len) val = "0" + val;
+				return val;
+			};
+
+		// Regexes and supporting functions are cached through closure
+		return function (date, mask, utc) {
+			var dF = dateFormat;
+
+			// You can't provide utc if you skip other args (use the "UTC:" mask prefix)
+			if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
+				mask = date;
+				date = undefined;
+			}
+
+			// Passing date through Date applies Date.parse, if necessary
+			date = date ? new Date(date) : new Date;
+			if (isNaN(date)) throw SyntaxError("invalid date");
+
+			mask = String(dF.masks[mask] || mask || dF.masks["default"]);
+
+			// Allow setting the utc argument via the mask
+			if (mask.slice(0, 4) == "UTC:") {
+				mask = mask.slice(4);
+				utc = true;
+			}
+
+			var	_ = utc ? "getUTC" : "get",
+				d = date[_ + "Date"](),
+				D = date[_ + "Day"](),
+				m = date[_ + "Month"](),
+				y = date[_ + "FullYear"](),
+				H = date[_ + "Hours"](),
+				M = date[_ + "Minutes"](),
+				s = date[_ + "Seconds"](),
+				L = date[_ + "Milliseconds"](),
+				o = utc ? 0 : date.getTimezoneOffset(),
+				flags = {
+					d:    d,
+					dd:   pad(d),
+					ddd:  dF.i18n.dayNames[D],
+					dddd: dF.i18n.dayNames[D + 7],
+					m:    m + 1,
+					mm:   pad(m + 1),
+					mmm:  dF.i18n.monthNames[m],
+					mmmm: dF.i18n.monthNames[m + 12],
+					yy:   String(y).slice(2),
+					yyyy: y,
+					h:    H % 12 || 12,
+					hh:   pad(H % 12 || 12),
+					H:    H,
+					HH:   pad(H),
+					M:    M,
+					MM:   pad(M),
+					s:    s,
+					ss:   pad(s),
+					l:    pad(L, 3),
+					L:    pad(L > 99 ? Math.round(L / 10) : L),
+					t:    H < 12 ? "a"  : "p",
+					tt:   H < 12 ? "am" : "pm",
+					T:    H < 12 ? "A"  : "P",
+					TT:   H < 12 ? "AM" : "PM",
+					Z:    utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
+					o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+					S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
+				};
+
+			return mask.replace(token, function ($0) {
+				return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1);
+			});
+		};
+	}();
+
+	// Some common format strings
+	dateFormat.masks = {
+		"default":      "ddd mmm dd yyyy HH:MM:ss",
+		shortDate:      "m/d/yy",
+		mediumDate:     "mmm d, yyyy",
+		longDate:       "mmmm d, yyyy",
+		fullDate:       "dddd, mmmm d, yyyy",
+		shortTime:      "h:MM TT",
+		mediumTime:     "h:MM:ss TT",
+		longTime:       "h:MM:ss TT Z",
+		isoDate:        "yyyy-mm-dd",
+		isoTime:        "HH:MM:ss",
+		isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
+		isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
+	};
+
+	// Internationalization strings
+	dateFormat.i18n = {
+		dayNames: [
+			"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+		],
+		monthNames: [
+			"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+			"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+		]
+	};
