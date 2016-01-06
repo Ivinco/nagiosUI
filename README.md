@@ -1,9 +1,11 @@
 # nagiosUI
 Features:
+* Responsive design: you can use phone, tablet or computer
 * Real-time status update: no need to refresh the page to see new alerts
 * XML and JSON: decreases traffic from the server few times which gives lower response time
 * Actions:
   * quick acknowledgement:
+    ![Image of quickAck](https://github.com/Ivinco/nagiosUI/blob/master/htdocs/images/examples/quick.gif)
     - quick acknowledged comment will be 'temp'
     - after quick acknowledgement icon will be changed to gravatar.com icon with user photo
     - quick acknowledged records are visible only in Normal tab

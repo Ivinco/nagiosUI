@@ -1511,6 +1511,7 @@ Search.init = function() {
 			position: { my: "center top", at: "center top+200"},
 			close: function(event, ui) { $(this).dialog('close').dialog('destroy'); }
 		});
+		
 		return false;
 	});
 	
