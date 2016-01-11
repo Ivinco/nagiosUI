@@ -53,11 +53,31 @@
 			</select>
 		</div>
 		<div id="radio">
-            <input type="radio" id="normal" name="radio"/><label for="normal">Normal (<em></em>)</label>
-            <input type="radio" id="acked" name="radio"/><label for="acked"><span class="top-ack-icon"></span>&#160;Acknowledged (<em></em>)</label>
-            <input type="radio" id="sched" name="radio"/><label for="sched"><span class="top-downtime-icon"></span>&#160;Scheduled downtime (<em></em>)</label>
-            <input type="radio" id="EMERGENCY" name="radio"/><label for="EMERGENCY">EMERGENCY (<em></em>)</label>
-            <input type="radio" id="hosts" name="radio"/><label for="hosts">Hosts</label>
+            <input type="radio" id="normal" name="radio"/>
+			<label for="normal">
+					<span class="top-normal-icon"></span>
+					<span class="small-hide">&#160;Normal</span>
+					<span class="xs-hide">&#160;(<em></em>)</span>
+			</label>
+            <input type="radio" id="acked" name="radio"/>
+			<label for="acked">
+				<span class="top-ack-icon"></span>
+				<span class="small-hide">&#160;Acknowledged</span>
+				<span class="xs-hide">&#160;(<em></em>)</span>
+			</label>
+            <input type="radio" id="sched" name="radio"/>
+			<label for="sched">
+				<span class="top-downtime-icon"></span>
+				<span class="small-hide">&#160;Scheduled downtime</span>
+				<span class="xs-hide">&#160;(<em></em>)</span>
+			</label>
+            <input type="radio" id="EMERGENCY" name="radio"/>
+			<label for="EMERGENCY" id="EMERGENCY-label">
+				<span class="top-emergency-icon"></span>
+				<span class="small-hide">&#160;EMERGENCY</span>
+				<span class="xs-hide">&#160;(<em></em>)</span>
+			</label>
+            <input type="radio" id="hosts" name="radio"/><label for="hosts" id="hosts-label">Hosts</label>
         </div>
     </form>
     <table id="mainTable">
@@ -87,11 +107,10 @@
 	<div id="serviceDialog" title="Status Information"></div>
 </div>
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="//cdn.datatables.net/s/dt/dt-1.10.10,kt-2.1.0,r-2.0.0/datatables.min.js"></script>
-	<script src="js/controller.js"></script>
-	<script src="js/favico-0.3.10.min.js"></script>
 	<script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
-	<script src="js/datetimepicker.min.js"></script>
+    <script src="//cdn.datatables.net/s/dt/dt-1.10.10,kt-2.1.0,r-2.0.0/datatables.min.js"></script>
+	<script src="js/favico-0.3.10.min.js"></script>
+	<script src="js/controller.js"></script>
 	<script>
 		$(document).ready(function() {
 			Search.init();

@@ -234,8 +234,10 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #mainTable .type-th { display: none; }
 #mainTable .comment span { display: block; }
 
-#radio .top-ack-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat 0 -19px; }
-#radio .top-downtime-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat -19px -19px; }
+#radio .top-ack-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat 0 -19px; float: left; margin-top: 2px; }
+#radio .top-downtime-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat -19px -19px; float: left; margin-top: 2px; }
+#radio .top-normal-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat -152px -19px; float: left; margin-top: 2px; }
+#radio .top-emergency-icon { width: 15px; height: 15px; display: inline-block; background: url('../images/icons.png') no-repeat -171px -19px; float: left; margin-top: 2px; }
 #mainTable .list-unack-icon, #ext_search .list-unack-icon { width: 19px; height: 19px; display: inline-block; background: url('../images/icons.png') no-repeat 0 0; margin: 0; padding: 0; }
 #mainTable .list-downtime-icon, #ext_search .list-downtime-icon { width: 19px; height: 19px; display: inline-block; background: url('../images/icons.png') no-repeat -19px 0; margin: 0; padding: 0; }
 #mainTable .list-notes-icon, #ext_search .list-notes-icon { width: 19px; height: 19px; display: inline-block; background: url('../images/icons.png') no-repeat -38px 0; margin: 0; padding: 0; }
@@ -251,16 +253,23 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 #mainTable .status_information { word-break: break-all; }
 #serviceDialog { display: none; }
 
+.ui-button-text-only .ui-button-text { padding: .4em .5em; }
+
 @media (max-width: 1199px) {
     #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 28px; }
     #grouping-menu li, #refreshTimeSelect-menu li { font-size: 12px; }
     div#radio { font-size: 12px; }
-    #radio .top-ack-icon, #radio .top-downtime-icon { width: 13px; height: 13px; }
+    #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
+    #radio .small-hide { display: none; }
     .ui-button-text-only .ui-button-text { padding: 6px 7px; }
 }
 @media (min-width: 991px) and (max-width: 1199px) {
     #mainTable .comment { width: 90px !important; }
     #mainTable .service, #mainTable .service-th { width: 280px !important; }
+    #grouping-button, #grouping-menu { width: 143px !important; }
+    #refreshTimeSelect-button { min-width: 130px !important; width: 130px !important; }
+    #grouping-button .ui-selectmenu-text, #refreshTimeSelect-button .ui-selectmenu-text { padding: 0 14px 0 3px !important; } 
+    #grouping-button .ui-selectmenu-button span.ui-icon, #refreshTimeSelect-button .ui-selectmenu-button span.ui-icon { right: 0 !important; }
 }
 @media (min-width: 768px) and (max-width: 991px) {
     #mainTable .service, #mainTable .service-th { width: 180px !important; }
@@ -268,15 +277,21 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 }
 
 @media (max-width: 991px) {
-    div#radio { clear: both; margin-top: 12px; }
     #mainTable .last_check, #mainTable .last_check-th { display: none; }
     table.dataTable td.service .likeTable ul li:first-child { float: left; display: block; width: 100%; margin: 2px 0 12px 0; text-align: left; }
     table.dataTable td.service .likeTable ul li:not(:first-child) { float: left; display: inline-block; margin: 0 2px 5px 2px; }
+    
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; padding: 0 12px 0 3px; }
+    #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { right: -1px; }
+    #refreshTimeSelect-button { width: 110px !important; min-width: 110px; }
+    #refreshTimeSelect-menu { width: 110px !important; }
+    #grouping-menu li, #refreshTimeSelect-menu li { font-size: 11px; padding: 3px; }
+    #grouping-button { width: 128px !important; }
+    #grouping-menu { width: 128px !important; }
 }
 @media (max-width: 767px) {
     body { margin: 8px 0; }
-    #refreshTime { margin-right: 8px; }
-    div#radio, #mainTable_filter { margin-left: 8px; }
+    #mainTable_filter { margin-left: 8px; }
     .ui-button-text-only .ui-button-text { padding: 6px 4px; height: 16px; }
     table { font-size: 9px; }
     #mainTable .host, #mainTable .host-th { width: 35px !important; }
@@ -291,6 +306,15 @@ table.dataTable td.service .likeTable ul li:not(:first-child) { width: 19px; }
 @media (max-width: 560px) {
     #mainTable .more-info-icon { display: inline-block; }
     #mainTable .status_information, #mainTable .status_information-th { display: none; }
+    #mainTable td.duration { vertical-align: top; padding-top: 10px; }
+    #radio .xs-hide { display: none; }
+    #hosts, #hosts-label { display: none; }
+    #EMERGENCY-label { border-bottom-right-radius: 4px; border-top-right-radius: 4px; }
+    .ui-buttonset { margin-right: 0; }
+    #mainTable .host, #mainTable .host-th { width: 23px !important; }
+    #mainTable .duration, #mainTable .duration-th { width: 43px !important; }
+    #mainTable .service, #mainTable .service-th { width: 122px !important; }
+    #mainTable .comment { width: 48px !important; }
 }
 
 .sk-circle {

@@ -17,6 +17,8 @@ localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
 
+lastTime = (new Date()).getTime();
+
 Search = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
@@ -166,7 +168,7 @@ Search = {}
 				if ($.inArray(Search.currentReload, refreshValues) !== -1) {
 					$('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
 				} else {
-					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')').attr('selected', 'selected');
+					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
 				}
 				
 				$('#refreshTimeSelect').selectmenu({
@@ -176,7 +178,7 @@ Search = {}
 						if (data.item.value == 'custom') {
 							var reload = prompt('Enter page reload time (minutes):', ''),
 								newVal = (parseInt(reload) > 0) ? parseInt(reload)*60 : 'auto',
-								custom = (newVal == 'auto') ? Search.reloadCustomText : (Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) +')');
+								custom = (newVal == 'auto') ? Search.reloadCustomText : (Search.reloadCustomText + ' ('+ parseInt(reload) +'min)');
 							
 							localStorage.setItem('currentReloadNew', newVal);
 							$('#refreshTime select option[value="custom"]').text(custom);
@@ -1536,6 +1538,19 @@ Search.init = function() {
 			quickAckUnAckGroup();
 		});
 	});
+
+	setInterval(function() {
+		var currentTime = (new Date()).getTime();
+		if (currentTime > (lastTime + 300000)) {
+			Search.stopReloads();
+			Search.startReloads();
+		}
+		lastTime = currentTime;
+	}, 2000);
+	
+	$.getScript('js/datetimepicker.min.js');
+	
+	
 }
 
 $.stopPendingAjax = (function() {
