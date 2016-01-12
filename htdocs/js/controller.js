@@ -53,7 +53,7 @@ Search = {}
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a><br /><span class="more-info-icon"></span>';
+					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
 				},
 			},
             {
@@ -130,11 +130,17 @@ Search = {}
 			{
 				data:      'type',
 				visible:   false
+			},
+			{
+				className: 'more',
+				render: function () {
+					return '<button class="button-more">></button>';
+				},
 			}
         ],
 		'createdRow': function(row, data, index) {
             if (data.state) {
-				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment').addClass(data.state);
+				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment, .more').addClass(data.state);
             }
         },
 		'initComplete': function(settings, json) {
@@ -347,7 +353,7 @@ function getGroupNormalThead(rowsHeader) {
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host"'+ css +'><span>' + hostValue + '</span><br /><span class="more-info-icon"></span></td>' +
+			'	<td class="host"'+ css +'><span>' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
 			'	<td class="service '+ trClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
@@ -365,6 +371,7 @@ function getGroupNormalThead(rowsHeader) {
 			'	<td class="duration '+ trClass +'">'+ rowData.duration +'</td>' +
 			'	<td class="status_information '+ trClass +'">'+ rowData.information +'</td>' +
 			'	<td class="comment '+ trClass +'">'+ rowData.comment +'</td>' +
+			'	<td class="more '+ trClass +'"><button class="button-more">></button></td>' +
 			'</tr>'
 		);
 		
@@ -434,6 +441,8 @@ function quickAckUnAckGroup() {
 			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
 				.html('<span class="icons quickAckGroup list-qack-icon" alt="Quick Acknowledge" title="Quick Acknowledge"></span>');
 		}
+		
+		$('#mainTable thead tr .quickAckUnAckIcon').show();
 	});
 }
 function getSeconds(str) {
@@ -525,13 +534,19 @@ Search.filterDataTable = function(val) {
 	Search.extension();
 	Search.emptyHosts();
 	
-	$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
-	$('.comment span.ack').toggle(Search.currentTab == 'acked');
-	$('.comment span.sched').toggle(Search.currentTab == 'sched');
+	
+	if ($(window).width() > 560) {
+		$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
+		$('.comment span.ack').toggle(Search.currentTab == 'acked');
+		$('.comment span.sched').toggle(Search.currentTab == 'sched');
+	} else {
+		$('.comment').hide();
+	}
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked');
 	
 	var warnings = 0,
-		critical = 0;
+		critical = 0,
+		unknown  = 0;
 		
 	$(Search.allDataTable.rows().data()).each(function() {
 		if ($(this)[0].type.search('__normal__') > -1) {
@@ -541,20 +556,25 @@ Search.filterDataTable = function(val) {
 			if ($(this)[0].status.name.search('CRITICAL') > -1) {
 				critical++;
 			}
+			if ($(this)[0].status.name.search('UNKNOWN') > -1) {
+				unknown++;
+			}
 		}
 	});
 	
-	if (critical) {
-		favicon = new Favico({ animation : 'popFade', bgColor : '#ff0000' });
-		favicon.badge(critical);
-	} else if (warnings) {
-		favicon = new Favico({ animation : 'popFade', bgColor : '#ffff00', textColor : '#000000' });
-		favicon.badge(warnings);
-	} else if (typeof favicon !== 'undefined') {
-		favicon.reset();
-	}
 	
-
+	if (critical) {
+		Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
+		Tinycon.setBubble(critical);
+	} else if (unknown) {
+		Tinycon.setOptions({ colour: '#ffffff', background: '#dd8500' });
+		Tinycon.setBubble(unknown);
+	} else if (warnings) {
+		Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
+		Tinycon.setBubble(warnings);
+	} else if (typeof favicon !== 'undefined') {
+		Tinycon.setBubble(0);
+	}
 }
 Search.emptyHosts = function () {
     var prevHost = '';
@@ -1509,14 +1529,125 @@ Search.init = function() {
 	$(document).on('click', '.more-info-icon', function() {
 		$('#serviceDialog').text($(this).closest('tr').find('.status_information').text());
 		$('#serviceDialog').dialog({
-			modal: true,
+			modal:    true,
+			width:    300,
 			position: { my: "center top", at: "center top+200"},
-			close: function(event, ui) { $(this).dialog('close').dialog('destroy'); }
+			close:    function(event, ui) { $(this).dialog('close').dialog('destroy'); }
 		});
 		
 		return false;
 	});
-	
+	$(document).on('click', '.more-comment-icon', function() {
+		var info = (Search.currentTab == 'acked') ? $(this).closest('tr').find('.comment .ack').html() : $(this).closest('tr').find('.comment .sched').html() ;
+		$('#commentDialog').html(info);
+		$('#commentDialog').dialog({
+			modal:    true,
+			width:    300,
+			position: { my: "center top", at: "center top+200"},
+			close:    function(event, ui) { $(this).dialog('close').dialog('destroy'); }
+		});
+		
+		return false;
+	});
+	$(document).on('click', '.button-more', function() {
+		var tr = $(this).closest('tr');
+		
+		tr.find('.hide-more').show();
+		tr
+			.find('.service .likeTable ul li:first')
+			.css('float',      'left')
+			.css('display',    'block')
+			.css('width',      '100%')
+			.css('margin',     '2px 0 12px 0')
+			.css('text-align', 'left');
+		
+		tr
+			.find('.service .likeTable ul li:not(:first)')
+			.css('float',   'left')
+			.css('display', 'inline-block')
+			.css('margin',  '0 2px 5px 2px') 
+			.show();
+			
+		tr
+			.find('.duration')
+			.css('vertical-align', 'top')
+			.css('padding-top',    '6px');
+			
+		tr
+			.find('.more .button-more')
+			.text('<')
+			.removeClass('button-more')
+			.addClass('button-more-hide');
+		
+		if (Search.currentTab == 'acked') {
+			tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').hide();
+		}
+		
+		if (Search.currentTab == 'normal' || Search.currentTab == 'EMERGENCY') {
+			tr.find('.host .hide-more .more-comment-icon').hide();
+		}
+		
+		if (tr.find('.host').css('visibility') == 'hidden') {
+			tr.find('.host').css('visibility', 'visible');
+			tr.find('.button-more-hide').addClass('hide-host');
+		}
+		
+		return false;
+	});
+	$(document).on('click', '.button-more-hide', function() {
+		var tr = $(this).closest('tr');
+		
+		hideMoreMobile(tr);
+		
+		return false;
+	});
+	function hideMoreMobile(tr) {
+		if (tr) {
+			tr.find('.hide-more').removeAttr('style');
+			tr.find('.service .likeTable ul li:first').removeAttr('style');;
+			tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
+			tr.find('.duration').removeAttr('style');
+			tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
+			
+			if (Search.currentTab != 'acked') {
+				tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
+			}
+			
+			if (tr.find('.more .button-more').hasClass('hide-host')) {
+				tr.find('.more .button-more').removeClass('hide-host');
+				tr.find('.host').css('visibility', 'hidden');
+			}
+		} else {
+			$('#mainTable tr').each(function() {
+				var tr = $(this);
+				
+				tr.find('.hide-more').removeAttr('style');
+				tr.find('.service .likeTable ul li:first').removeAttr('style');;
+				tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
+				tr.find('.duration').removeAttr('style');
+				tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
+				
+				if (Search.currentTab != 'acked') {
+					tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
+				}
+				
+				if (tr.find('.more .button-more').hasClass('hide-host')) {
+					tr.find('.more .button-more').removeClass('hide-host');
+					tr.find('.host').css('visibility', 'hidden');
+				}
+			});
+		}
+	}
+	$(window).resize(function(){
+		hideMoreMobile(false);
+		if ($(window).width() > 560) {
+			$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
+			$('.comment span.ack').toggle(Search.currentTab == 'acked');
+			$('.comment span.sched').toggle(Search.currentTab == 'sched');
+		} else {
+			$('.comment').hide();
+		}
+	})
 	$('#mainTable').on('click', '.downtime_id', function () {
 		Search.stopReloads();
 		$(this).hide();
@@ -1538,7 +1669,7 @@ Search.init = function() {
 			quickAckUnAckGroup();
 		});
 	});
-
+	
 	setInterval(function() {
 		var currentTime = (new Date()).getTime();
 		if (currentTime > (lastTime + 300000)) {
@@ -1580,110 +1711,123 @@ $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 });
 $.fn.dataTable.ext.errMode = 'none';
 
-	var dateFormat = function () {
-		var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
-			////to do "ACDT","ACST","ACT","ACT","ADT","AEDT","AEST","AFT","AKDT","AKST","AMST","AMST","AMT","AMT","ART","AST","AST","AWDT","AWST","AZOST","AZT","BDT","BIOT","BIT","BOT","BRST","BRT","BST","BST","BST","BTT","CAT","CCT","CDT","CDT","CEDT","CEST","CET","CHADT","CHAST","CHOT","ChST","CHUT","CIST","CIT","CKT","CLST","CLT","COST","COT","CST","CST","CST","CST","CST","CT","CVT","CWST","CXT","DAVT","DDUT","DFT","EASST","EAST","EAT","ECT","ECT","EDT","EEDT","EEST","EET","EGST","EGT","EIT","EST","EST","FET","FJT","FKST","FKST","FKT","FNT","GALT","GAMT","GET","GFT","GILT","GIT","GMT","GST","GST","GYT","HADT","HAEC","HAST","HKT","HMT","HOVT","HST","ICT","IDT","IOT","IRDT","IRKT","IRST","IST","IST","IST","JST","KGT","KOST","KRAT","KST","LHST","LHST","LINT","MAGT","MART","MAWT","MDT","MET","MEST","MHT","MIST","MIT","MMT","MSK","MST","MST","MST","MUT","MVT","MYT","NCT","NDT","NFT","NPT","NST","NT","NUT","NZDT","NZST","OMST","ORAT","PDT","PET","PETT","PGT","PHOT","PKT","PMDT","PMST","PONT","PST","PST","PYST","PYT","RET","ROTT","SAKT","SAMT","SAST","SBT","SCT","SGT","SLST","SRET","SRT","SST","SST","SYOT","TAHT","THA","TFT","TJT","TKT","TLT","TMT","TOT","TVT","UCT","ULAT","USZ1","UTC","UYST","UYT","UZT","VET","VLAT","VOLT","VOST","VUT","WAKT","WAST","WAT","WEDT","WEST","WET","WIT","WST","YAKT","YEKT","Z",
-			timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
-			timezoneClip = /[^-+\dA-Z]/g,
-			pad = function (val, len) {
-				val = String(val);
-				len = len || 2;
-				while (val.length < len) val = "0" + val;
-				return val;
+
+/* dateFormat */
+var dateFormat = function () {
+	var	token        = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
+		timezone     = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
+		timezoneClip = /[^-+\dA-Z]/g,
+		pad          = function (val, len) {
+			val = String(val);
+			len = len || 2;
+			while (val.length < len) val = "0" + val;
+			return val;
+		};
+
+	// Regexes and supporting functions are cached through closure
+	return function (date, mask, utc) {
+		var dF = dateFormat;
+
+		// You can't provide utc if you skip other args (use the "UTC:" mask prefix)
+		if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
+			mask = date;
+			date = undefined;
+		}
+
+		// Passing date through Date applies Date.parse, if necessary
+		date = date ? new Date(date) : new Date;
+		if (isNaN(date)) throw SyntaxError("invalid date");
+
+		mask = String(dF.masks[mask] || mask || dF.masks["default"]);
+
+		// Allow setting the utc argument via the mask
+		if (mask.slice(0, 4) == "UTC:") {
+			mask = mask.slice(4);
+			utc = true;
+		}
+
+		var	_ = utc ? "getUTC" : "get",
+			d = date[_ + "Date"](),
+			D = date[_ + "Day"](),
+			m = date[_ + "Month"](),
+			y = date[_ + "FullYear"](),
+			H = date[_ + "Hours"](),
+			M = date[_ + "Minutes"](),
+			s = date[_ + "Seconds"](),
+			L = date[_ + "Milliseconds"](),
+			o = utc ? 0 : date.getTimezoneOffset(),
+			flags = {
+				d:    d,
+				dd:   pad(d),
+				ddd:  dF.i18n.dayNames[D],
+				dddd: dF.i18n.dayNames[D + 7],
+				m:    m + 1,
+				mm:   pad(m + 1),
+				mmm:  dF.i18n.monthNames[m],
+				mmmm: dF.i18n.monthNames[m + 12],
+				yy:   String(y).slice(2),
+				yyyy: y,
+				h:    H % 12 || 12,
+				hh:   pad(H % 12 || 12),
+				H:    H,
+				HH:   pad(H),
+				M:    M,
+				MM:   pad(M),
+				s:    s,
+				ss:   pad(s),
+				l:    pad(L, 3),
+				L:    pad(L > 99 ? Math.round(L / 10) : L),
+				t:    H < 12 ? "a"  : "p",
+				tt:   H < 12 ? "am" : "pm",
+				T:    H < 12 ? "A"  : "P",
+				TT:   H < 12 ? "AM" : "PM",
+				Z:    utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
+				o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+				S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
 			};
 
-		// Regexes and supporting functions are cached through closure
-		return function (date, mask, utc) {
-			var dF = dateFormat;
-
-			// You can't provide utc if you skip other args (use the "UTC:" mask prefix)
-			if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
-				mask = date;
-				date = undefined;
-			}
-
-			// Passing date through Date applies Date.parse, if necessary
-			date = date ? new Date(date) : new Date;
-			if (isNaN(date)) throw SyntaxError("invalid date");
-
-			mask = String(dF.masks[mask] || mask || dF.masks["default"]);
-
-			// Allow setting the utc argument via the mask
-			if (mask.slice(0, 4) == "UTC:") {
-				mask = mask.slice(4);
-				utc = true;
-			}
-
-			var	_ = utc ? "getUTC" : "get",
-				d = date[_ + "Date"](),
-				D = date[_ + "Day"](),
-				m = date[_ + "Month"](),
-				y = date[_ + "FullYear"](),
-				H = date[_ + "Hours"](),
-				M = date[_ + "Minutes"](),
-				s = date[_ + "Seconds"](),
-				L = date[_ + "Milliseconds"](),
-				o = utc ? 0 : date.getTimezoneOffset(),
-				flags = {
-					d:    d,
-					dd:   pad(d),
-					ddd:  dF.i18n.dayNames[D],
-					dddd: dF.i18n.dayNames[D + 7],
-					m:    m + 1,
-					mm:   pad(m + 1),
-					mmm:  dF.i18n.monthNames[m],
-					mmmm: dF.i18n.monthNames[m + 12],
-					yy:   String(y).slice(2),
-					yyyy: y,
-					h:    H % 12 || 12,
-					hh:   pad(H % 12 || 12),
-					H:    H,
-					HH:   pad(H),
-					M:    M,
-					MM:   pad(M),
-					s:    s,
-					ss:   pad(s),
-					l:    pad(L, 3),
-					L:    pad(L > 99 ? Math.round(L / 10) : L),
-					t:    H < 12 ? "a"  : "p",
-					tt:   H < 12 ? "am" : "pm",
-					T:    H < 12 ? "A"  : "P",
-					TT:   H < 12 ? "AM" : "PM",
-					Z:    utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
-					o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
-					S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10]
-				};
-
-			return mask.replace(token, function ($0) {
-				return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1);
-			});
-		};
-	}();
-
-	// Some common format strings
-	dateFormat.masks = {
-		"default":      "ddd mmm dd yyyy HH:MM:ss",
-		shortDate:      "m/d/yy",
-		mediumDate:     "mmm d, yyyy",
-		longDate:       "mmmm d, yyyy",
-		fullDate:       "dddd, mmmm d, yyyy",
-		shortTime:      "h:MM TT",
-		mediumTime:     "h:MM:ss TT",
-		longTime:       "h:MM:ss TT Z",
-		isoDate:        "yyyy-mm-dd",
-		isoTime:        "HH:MM:ss",
-		isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
-		isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
+		return mask.replace(token, function ($0) {
+			return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1);
+		});
 	};
+}();
+// Some common format strings
+dateFormat.masks = {
+	"default":      "ddd mmm dd yyyy HH:MM:ss",
+	shortDate:      "m/d/yy",
+	mediumDate:     "mmm d, yyyy",
+	longDate:       "mmmm d, yyyy",
+	fullDate:       "dddd, mmmm d, yyyy",
+	shortTime:      "h:MM TT",
+	mediumTime:     "h:MM:ss TT",
+	longTime:       "h:MM:ss TT Z",
+	isoDate:        "yyyy-mm-dd",
+	isoTime:        "HH:MM:ss",
+	isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
+	isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'"
+};
+// Internationalization strings
+dateFormat.i18n = {
+	dayNames: [
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+		"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+	],
+	monthNames: [
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+	]
+};
+	
+	
+	
+/*!
+ * Tinycon - A small library for manipulating the Favicon
+ * Tom Moor, http://tommoor.com
+ * Copyright (c) 2015 Tom Moor
+ * @license MIT Licensed
+ * @version 0.6.4
+ */
+!function(){var a={},b=null,c=null,d=null,e=null,f={},g=window.devicePixelRatio||1,h=16*g,i={width:7,height:9,font:10*g+"px arial",colour:"#ffffff",background:"#F03D25",fallback:!0,crossOrigin:!0,abbreviate:!0},j=function(){var a=navigator.userAgent.toLowerCase();return function(b){return-1!==a.indexOf(b)}}(),k={ie:j("msie"),chrome:j("chrome"),webkit:j("chrome")||j("safari"),safari:j("safari")&&!j("chrome"),mozilla:j("mozilla")&&!j("chrome")&&!j("safari")},l=function(){for(var a=document.getElementsByTagName("link"),b=0,c=a.length;c>b;b++)if((a[b].getAttribute("rel")||"").match(/\bicon\b/))return a[b];return!1},m=function(){for(var a=document.getElementsByTagName("link"),b=document.getElementsByTagName("head")[0],c=0,d=a.length;d>c;c++){var e="undefined"!=typeof a[c];e&&(a[c].getAttribute("rel")||"").match(/\bicon\b/)&&b.removeChild(a[c])}},n=function(){if(!c||!b){var a=l();c=b=a?a.getAttribute("href"):"/favicon.ico"}return b},o=function(){return e||(e=document.createElement("canvas"),e.width=h,e.height=h),e},p=function(a){if(a){m();var b=document.createElement("link");b.type="image/x-icon",b.rel="icon",b.href=a,document.getElementsByTagName("head")[0].appendChild(b)}},q=function(a,b){if(!o().getContext||k.ie||k.safari||"force"===f.fallback)return r(a);var c=o().getContext("2d"),b=b||"#000000",e=n();d=document.createElement("img"),d.onload=function(){c.clearRect(0,0,h,h),c.drawImage(d,0,0,d.width,d.height,0,0,h,h),(a+"").length>0&&s(c,a,b),t()},!e.match(/^data/)&&f.crossOrigin&&(d.crossOrigin="anonymous"),d.src=e},r=function(a){if(f.fallback){var b=document.title;"("===b[0]&&(b=b.slice(b.indexOf(" "))),(a+"").length>0?document.title="("+a+") "+b:document.title=b}},s=function(a,b,c){"number"==typeof b&&b>99&&f.abbreviate&&(b=u(b));var d=(b+"").length-1,e=f.width*g+6*g*d,i=f.height*g,j=h-i,l=h-e-g,m=16*g,n=16*g,o=2*g;a.font=(k.webkit?"bold ":"")+f.font,a.fillStyle=f.background,a.strokeStyle=f.background,a.lineWidth=g,a.beginPath(),a.moveTo(l+o,j),a.quadraticCurveTo(l,j,l,j+o),a.lineTo(l,m-o),a.quadraticCurveTo(l,m,l+o,m),a.lineTo(n-o,m),a.quadraticCurveTo(n,m,n,m-o),a.lineTo(n,j+o),a.quadraticCurveTo(n,j,n-o,j),a.closePath(),a.fill(),a.beginPath(),a.strokeStyle="rgba(0,0,0,0.3)",a.moveTo(l+o/2,m),a.lineTo(n-o/2,m),a.stroke(),a.fillStyle=f.colour,a.textAlign="right",a.textBaseline="top",a.fillText(b,2===g?29:15,k.mozilla?7*g:6*g)},t=function(){o().getContext&&p(o().toDataURL())},u=function(a){for(var b=[["G",1e9],["M",1e6],["k",1e3]],c=0;c<b.length;++c)if(a>=b[c][1]){a=v(a/b[c][1])+b[c][0];break}return a},v=function(a,b){var c=new Number(a);return c.toFixed(b)};a.setOptions=function(a){f={};for(var b in i)f[b]=a.hasOwnProperty(b)?a[b]:i[b];return this},a.setImage=function(a){return b=a,t(),this},a.setBubble=function(a,b){return a=a||"",q(a,b),this},a.reset=function(){p(c)},a.setOptions(i),"function"==typeof define&&define.amd?define(a):"undefined"!=typeof module?module.exports=a:window.Tinycon=a}();
 
-	// Internationalization strings
-	dateFormat.i18n = {
-		dayNames: [
-			"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
-			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
-		],
-		monthNames: [
-			"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-			"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
-		]
-	};
+
+
