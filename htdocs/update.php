@@ -6,7 +6,7 @@ include_once 'functions.php';
 
 while (true) {
     clearstatcache();
-    $lastFileHash = returnDataList(true); 
+    $lastFileHash = returnDataList(true, false); 
 
     if (isset($_GET['hash']) && $lastFileHash != $_GET['hash']) {
         echo $lastFileHash;

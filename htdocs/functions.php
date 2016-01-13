@@ -2,7 +2,7 @@
 
 include_once 'config/nagios2Config.php';
 
-function returnDataList($isHash) {
+function returnDataList($isHash, $xmlFile) {
 	
 	global $statusFile_global;
 	global $getNotesUrls_cacheFile;
@@ -51,11 +51,12 @@ $xmlContent = '<alerts sort="1">
 						  
 						  
 	
-	if (isset($_GET['file'])) {
+	if ($xmlFile) {
 		$files = glob($xmlArchive.$_GET['file']."*.log");
-		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
-			echo file_get_contents($files[0]);
-			exit;
+		
+		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\.log/', $files[0])) {
+			return file_get_contents($files[0]);
+
 		}
 	}
 	

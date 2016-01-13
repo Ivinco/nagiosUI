@@ -221,10 +221,6 @@ copy
     #hosts, #hosts-label { display: none; }
     #EMERGENCY-label { border-bottom-right-radius: 4px; border-top-right-radius: 4px; }
     .ui-buttonset { margin-right: 0; }
-    #mainTable .host, #mainTable .host-th { width: 30px !important; }
-    #mainTable .duration, #mainTable .duration-th { width: 43px !important; }
-    #mainTable .service, #mainTable .service-th { width: 122px !important; }
-    #mainTable .comment { width: 48px !important; }
     #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { display: none; }
     #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }
     #grouping-button { width: 113px !important; }
@@ -234,6 +230,10 @@ copy
     #mainTable .more-th, #mainTable .more { display: table-cell; }
     #mainTable .likeTable ul li:first-child { float: none; display: table-cell; width: 100%; margin: auto; text-align: left; }
     #mainTable .likeTable ul li:not(:first-child) { float: none; display: none; margin: auto; }
+    #mainTable .host, #mainTable .host-th { width: 30px !important; }
+    #mainTable .duration, #mainTable .duration-th { width: 43px !important; }
+    #mainTable .service, #mainTable .service-th { width: 122px !important; }
+    #mainTable .comment { width: 48px !important; }
 }
 
 

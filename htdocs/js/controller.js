@@ -42,12 +42,12 @@ Search = {}
 		'sched'         : [[1, 'asc'],[0, 'asc']],
 		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
 	};
-	
+	Search.additionalFile     = (getParameterByName('file')) ? '?file=' + getParameterByName('file') : '';
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
-		'ajax':        'json.php',
+		'ajax':        'json.php' + Search.additionalFile,
 		'columns':     [
             {
 				data:      'host',
@@ -1682,6 +1682,14 @@ Search.init = function() {
 	$.getScript('js/datetimepicker.min.js');
 	
 	
+}
+
+function getParameterByName (name) {
+    name        = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex   = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+		
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 $.stopPendingAjax = (function() {
