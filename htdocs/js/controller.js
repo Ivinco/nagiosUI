@@ -516,7 +516,7 @@ Search.autoReloadData = function() {
 }
 
 
-Search.filterDataTable = function(val) {
+Search.filterDataTable = function(val, startReload) {
 	var value = (val) ? val : '';
 	
 	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();	
@@ -562,7 +562,6 @@ Search.filterDataTable = function(val) {
 		}
 	});
 	
-	
 	if (critical) {
 		Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
 		Tinycon.setBubble(critical);
@@ -574,6 +573,10 @@ Search.filterDataTable = function(val) {
 		Tinycon.setBubble(warnings);
 	} else if (typeof favicon !== 'undefined') {
 		Tinycon.setBubble(0);
+	}
+	
+	if (startReload) {
+		Search.startReloads();
 	}
 }
 Search.emptyHosts = function () {
@@ -1210,11 +1213,12 @@ Search.init = function() {
 		    location.reload();
 		    return false;
 		}
+		Search.stopReloads();
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
 		Search.currentTab = localStorage.getItem('currentTabNew');
 
-		Search.filterDataTable();
+		Search.filterDataTable(false, true);
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();
