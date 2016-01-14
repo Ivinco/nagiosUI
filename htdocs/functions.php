@@ -54,7 +54,7 @@ $xmlContent = '<alerts sort="1">
 	if ($xmlFile) {
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
-		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\.log/', $files[0])) {
+		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
 			return file_get_contents($files[0]);
 
 		}
