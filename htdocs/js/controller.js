@@ -385,11 +385,10 @@ function getGroupNormalThead(rowsHeader) {
 			newRow.attr('data-group', groupNameSmall);
 			oldRow.attr('data-group', groupNameSmall);
 			
-			newRow.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');
-			
+			newRow.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');			
 			prevHost = host;
-			console.log(prevHost);
-			$('#mainTable thead').append(newRow);
+
+			$('#mainTable thead').append(newRow); 
 		});
 	});
 	
