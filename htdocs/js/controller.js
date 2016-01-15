@@ -375,12 +375,20 @@ function getGroupNormalThead(rowsHeader) {
 			'</tr>'
 		);
 		
+		var prevHost = '';
+		
 		$('#mainTable tbody tr:contains("'+ contains +'")').each(function() {
 			var oldRow = $(this),
-				newRow = oldRow.clone();
+				newRow = oldRow.clone(),
+				host   = newRow.find('td.host').text();
 			
 			newRow.attr('data-group', groupNameSmall);
 			oldRow.attr('data-group', groupNameSmall);
+			
+			newRow.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');
+			
+			prevHost = host;
+			console.log(prevHost);
 			$('#mainTable thead').append(newRow);
 		});
 	});
@@ -396,6 +404,9 @@ function getGroupNormalThead(rowsHeader) {
 			$('#mainTable tr[data-group="'+  $(this).attr('data-group') +'"]:not(.group-list):last').addClass('group-list-bottom');
 		}
 	});
+	
+	
+
 	
 	quickAckUnAckGroup();
 }
