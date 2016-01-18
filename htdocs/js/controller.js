@@ -581,7 +581,7 @@ Search.filterDataTable = function(val, startReload) {
 	} else if (warnings) {
 		Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
 		Tinycon.setBubble(warnings);
-	} else if (typeof favicon !== 'undefined') {
+	} else if (typeof Tinycon !== 'undefined') {
 		Tinycon.setBubble(0);
 	}
 	
@@ -853,6 +853,7 @@ Search.prepareSendData = function () {
 				'host':       $(this)[0].host,
 				'service':    $(this)[0].service,
 				'com_data':   $('#downtimeComment').html(),
+				'author':     Search.currentUser,
 			});
 		}
 	});
@@ -1695,7 +1696,10 @@ Search.init = function() {
 	
 	$.getScript('js/datetimepicker.min.js');
 	
-	
+	$(document).on('copy', function(e) {
+		$('td.status_information').css('width', '200px');
+		setTimeout(function() { $('td.status_information').removeAttr('style') });
+	});
 }
 
 function getParameterByName (name) {
