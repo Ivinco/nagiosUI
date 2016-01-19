@@ -1,8 +1,10 @@
 <?php
 
+include_once 'config/nagios2Config.php';
+
 $return     = array();
 $type       = $_POST['type'];
-$nagiosPipe = '/var/log/nagios/rw/nagios.cmd';
+echo $nagiosPipe;
 
 if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
 	http_response_code(400);

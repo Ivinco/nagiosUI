@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 include_once 'htdocs/config/nagios2Config.php';

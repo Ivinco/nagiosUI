@@ -60,6 +60,4 @@ Installation:
   - $nagiosPercentileUrl      = nagios percentile file path
   - $usersArray               = user name/email array for gravatar.com icons
 * you need to set up cron job:
-  - * * * * * root /domain/html/misc_scripts/exclusive.php
-  - nagios_percentile php /domain/admin_scripts/cron/nagios_percentile.php
-  - /domain/log/nagios_percentile.log 2>&1
+  - * * * * * root php /domain/admin_scripts/cron/nagios_percentile.php >>/domain/log/nagios_percentile.log 2>&1

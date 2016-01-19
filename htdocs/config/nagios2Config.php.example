@@ -10,6 +10,7 @@ $nagiosConfigFile         = '/cgi-bin/config.cgi';
 $nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&amp;style=hostdetail';
 $nagiosCommentUrl         = '<a href=url/view.php?id=$2" target="_blank">$1</a>';
 $nagiosPercentileUrl      = '/url/tmp/nagios_percentile';
+$nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
 
 $usersArray = array(
 	'authUser' => 'email@domain.com',
