@@ -9,6 +9,10 @@ $xmlFile    = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array      = json_decode(json_encode(simplexml_load_string(returnDataList(false, $xmlFile))),TRUE);
 $returnJson = array();
 
+if (isset($array['alert']['host'])) {
+	$array['alert'] = [$array['alert']];
+}
+
 foreach ($array['alert'] as $item) {
 	$acked      = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
 	$ackComment = (!is_array($item['ack_comment']))          ? $item['ack_comment']          : implode(' ', $item['ack_comment']);
