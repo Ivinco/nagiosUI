@@ -237,103 +237,106 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 		returnOrdered = {},
 		returnArray   = [];
 	
-	$(rows).each(function() {
-		var rowData     = $(this)[0],
-			serviceName = rowData.service.name,
-			hostName    = rowData.host.name;
-				
-		if (countsService[serviceName] || countsHost[hostName]) {
-			var type           = (countsService[serviceName]) ? 'service' : 'host',
-				count          = (countsService[serviceName]) ? countsService[serviceName] : countsHost[hostName],
-				statusOrder    = rowData.status.order,
-				status         = rowData.status.name,
-				lastCheckOrder = rowData.last.order,
-				lastCheck      = rowData.last.name,
-				durationOrder  = rowData.duration.order,
-				duration       = rowData.duration.name,
-				information    = rowData.info,
-				comment        = (Search.currentTab == 'acked') ? rowData.comment.ack : ((Search.currentTab == 'sched') ? rowData.comment.sched : ''),
-				groupBy        = (countsService[serviceName]) ? serviceName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : hostName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
-
-			returnData.push({
-				'type':           type,
-				'service':        serviceName,
-				'host':           hostName,
-				'count':          count,
-				'status':         status,
-				'statusOrder':    statusOrder,
-				'lastCheck':      lastCheck,
-				'lastCheckOrder': lastCheckOrder,
-				'duration':       duration,
-				'durationOrder':  durationOrder,
-				'information':    information,
-				'comment':        comment,
-				'groupBy':        groupBy,
-			});
-		}
-	});
-
-	var firstCount = 0;
-	$(returnData).each(function() {
-		var rowData = $(this)[0];
-		
-		if (!returnOrdered[rowData.groupBy]) {
-			returnOrdered[rowData.groupBy] = rowData;
-		}
-		
-		if (returnOrdered[rowData.groupBy].statusOrder < rowData.statusOrder) {
-			returnOrdered[rowData.groupBy].statusOrder = rowData.statusOrder;
-			returnOrdered[rowData.groupBy].status      = rowData.status;
-		}
-
-		if (returnOrdered[rowData.groupBy].durationOrder < rowData.durationOrder) {
-			returnOrdered[rowData.groupBy].durationOrder = rowData.durationOrder;
-			returnOrdered[rowData.groupBy].duration      = rowData.duration;
-		}
-		
-		if (returnOrdered[rowData.groupBy].lastCheckOrder > rowData.lastCheckOrder) {
-			returnOrdered[rowData.groupBy].lastCheckOrder = rowData.lastCheckOrder;
-			returnOrdered[rowData.groupBy].lastCheck      = rowData.lastCheck;
-		}
-		
-		if (!firstCount) {
-			returnOrdered[rowData.groupBy].information = rowData.information;
-			returnOrdered[rowData.groupBy].comment     = rowData.comment;
-		}
-		
-		if (firstCount && returnOrdered[rowData.groupBy].information != rowData.information) {
-			returnOrdered[rowData.groupBy].information = '';
-		}
-		
-		if (firstCount && returnOrdered[rowData.groupBy].comment != rowData.comment) {
-			returnOrdered[rowData.groupBy].comment = '';
-		}
-		
-		firstCount++;
-	});
+	if ($(rows).length > 0) {
+		$(rows).each(function() {
+			var rowData     = $(this)[0],
+				serviceName = rowData.service.name,
+				hostName    = rowData.host.name;
+					
+			if (countsService[serviceName] || countsHost[hostName]) {
+				var type           = (countsService[serviceName]) ? 'service' : 'host',
+					count          = (countsService[serviceName]) ? countsService[serviceName] : countsHost[hostName],
+					statusOrder    = rowData.status.order,
+					status         = rowData.status.name,
+					lastCheckOrder = rowData.last.order,
+					lastCheck      = rowData.last.name,
+					durationOrder  = rowData.duration.order,
+					duration       = rowData.duration.name,
+					information    = rowData.info,
+					comment        = (Search.currentTab == 'acked') ? rowData.comment.ack : ((Search.currentTab == 'sched') ? rowData.comment.sched : ''),
+					groupBy        = (countsService[serviceName]) ? serviceName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : hostName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
 	
-	$.each(returnOrdered, function(){
-		returnArray.push($(this)[0]);
-	});
+				returnData.push({
+					'type':           type,
+					'service':        serviceName,
+					'host':           hostName,
+					'count':          count,
+					'status':         status,
+					'statusOrder':    statusOrder,
+					'lastCheck':      lastCheck,
+					'lastCheckOrder': lastCheckOrder,
+					'duration':       duration,
+					'durationOrder':  durationOrder,
+					'information':    information,
+					'comment':        comment,
+					'groupBy':        groupBy,
+				});
+			}
+		});
 	
-	returnArray.sort(function(a,b) {
-		if (parseInt(a.count) < parseInt(b.count)) {
-			return 1;
-		} else if (parseInt(a.count) > parseInt(b.count)) {
-		   return -1;
-		} else if (parseInt(a.statusOrder) < parseInt(b.statusOrder)) {
-			return 1;
-		} else if (parseInt(a.statusOrder) > parseInt(b.statusOrder)) {
-			return -1;
-		} else if (parseInt(a.durationOrder) < parseInt(b.durationOrder)) {
-			return 1;
-		} else if (parseInt(a.durationOrder) > parseInt(b.durationOrder)) {
-			return -1;
-		} else {
-			return 0;
-		}
-	});
+		var firstCount = 0;
+		$(returnData).each(function() {
+			var rowData = $(this)[0];
+			
+			if (!returnOrdered[rowData.groupBy]) {
+				returnOrdered[rowData.groupBy] = rowData;
+			}
+			
+			if (returnOrdered[rowData.groupBy].statusOrder < rowData.statusOrder) {
+				returnOrdered[rowData.groupBy].statusOrder = rowData.statusOrder;
+				returnOrdered[rowData.groupBy].status      = rowData.status;
+			}
+	
+			if (returnOrdered[rowData.groupBy].durationOrder < rowData.durationOrder) {
+				returnOrdered[rowData.groupBy].durationOrder = rowData.durationOrder;
+				returnOrdered[rowData.groupBy].duration      = rowData.duration;
+			}
+			
+			if (returnOrdered[rowData.groupBy].lastCheckOrder > rowData.lastCheckOrder) {
+				returnOrdered[rowData.groupBy].lastCheckOrder = rowData.lastCheckOrder;
+				returnOrdered[rowData.groupBy].lastCheck      = rowData.lastCheck;
+			}
+			
+			if (!firstCount) {
+				returnOrdered[rowData.groupBy].information = rowData.information;
+				returnOrdered[rowData.groupBy].comment     = rowData.comment;
+			}
+			
+			if (firstCount && returnOrdered[rowData.groupBy].information != rowData.information) {
+				returnOrdered[rowData.groupBy].information = '';
+			}
+			
+			if (firstCount && returnOrdered[rowData.groupBy].comment != rowData.comment) {
+				returnOrdered[rowData.groupBy].comment = '';
+			}
+			
+			firstCount++;
+		});
+		
+		$.each(returnOrdered, function(){
+			returnArray.push($(this)[0]);
+		});
+		
+		returnArray.sort(function(a,b) {
+			if (parseInt(a.count) < parseInt(b.count)) {
+				return 1;
+			} else if (parseInt(a.count) > parseInt(b.count)) {
+			   return -1;
+			} else if (parseInt(a.statusOrder) < parseInt(b.statusOrder)) {
+				return 1;
+			} else if (parseInt(a.statusOrder) > parseInt(b.statusOrder)) {
+				return -1;
+			} else if (parseInt(a.durationOrder) < parseInt(b.durationOrder)) {
+				return 1;
+			} else if (parseInt(a.durationOrder) > parseInt(b.durationOrder)) {
+				return -1;
+			} else {
+				return 0;
+			}
+		});
 
+	}
+	
 	return returnArray;
 }
 function getGroupNormalThead(rowsHeader) {
@@ -1194,12 +1197,14 @@ Search.countRecords = function() {
 		sched  = 0,
 		emerg  = 0;
 
-	$(Search.allDataTable.rows().data()).each(function() {
-		if ($(this)[0].type.search('__normal__') > -1) { normal++; }
-		if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
-		if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
-		if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
-	});
+	if ($(Search.allDataTable.rows().data()).length > 0) {
+		$(Search.allDataTable.rows().data()).each(function() {
+			if ($(this)[0].type.search('__normal__') > -1) { normal++; }
+			if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
+			if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
+			if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
+		});
+	}
 	
 	$('#radio label[for="normal"] em').text(normal);
 	$('#radio label[for="acked"] em').text(acked);
