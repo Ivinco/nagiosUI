@@ -14,6 +14,9 @@ function returnDataList($isHash, $xmlFile) {
 	global $xmlArchive;
 	global $usersArray;
 	global $nagiosCommentUrl;
+	global $groupByService;
+	global $groupByHost;
+	global $refreshArray;
 
 $xmlContent = '<alerts sort="1">
 ';
@@ -248,12 +251,20 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		}
 	}
 }
+$refreshArrayData = [];
+foreach ($refreshArray as $item) {
+	$refreshArrayData[] = intval($item['value']) .','. $item['name'];
+}
+
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
 	<user>'.                 (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '') .'</user>
 	<avatar>'.               (isset($_SERVER['PHP_AUTH_USER']) ? md5(strtolower(trim($usersArray[$_SERVER['PHP_AUTH_USER']]))) : '') .'</avatar>
 	<nagios-config-file>'.   $nagiosConfigFile .'</nagios-config-file>
 	<nagios-full-list-url>'. $nagiosFullHostUrl .'</nagios-full-list-url>
+	<group-by-service>'.     $groupByService .'</group-by-service>
+	<group-by-host>'.        $groupByHost .'</group-by-host>
+	<refresh-array>'.        implode(';', $refreshArrayData) .'</refresh-array>
 </alerts>';
 
 

@@ -29,21 +29,7 @@
 	<form>
 		<div id="refreshTime">
 			<select name="files" id="refreshTimeSelect">
-				<option value="auto">Refresh: Auto</option>
-				<optgroup label="---">
-                    <option value="10">Refresh: 10 sec</option>
-					<option value="20">Refresh: 20 sec</option>
-					<option value="40">Refresh: 40 sec</option>
-					<option value="60">Refresh: 1 min</option>
-					<option value="120">Refresh: 2 min</option>
-					<option value="180">Refresh: 3 min</option>
-					<option value="300">Refresh: 5 min</option>
-					<option value="600">Refresh: 10 min</option>
-					<option value="custom">Refresh: Custom</option>
-				</optgroup>
-				<optgroup label="----">
-					<option value="10000000">Refresh: Disable</option>
-				</optgroup>
+
 			</select>
 		</div>
 		<div id="normalGrouping">
@@ -105,6 +91,9 @@
 	<div id="nagiosPostFile"></div>
 	<div id="nagiosFullListUrl"></div>
 	<div id="updateHash"></div>
+	<div id="groupByService"></div>
+	<div id="groupByHost"></div>
+	<div id="refreshArray"></div>
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
 </div>

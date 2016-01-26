@@ -83,6 +83,9 @@ $additional = array(
 	'nagiosConfigFile'  => $array['nagios-config-file'],
 	'nagiosFullListUrl' => $array['nagios-full-list-url'],
 	'updateHash'        => $array['hash'],
+	'groupByService'    => $array['group-by-service'],
+	'groupByHost'       => $array['group-by-host'],
+	'refreshArray'      => $array['refresh-array'],
 );
 
 echo json_encode(array('data' => $returnJson, 'additional' => $additional));

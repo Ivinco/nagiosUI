@@ -154,6 +154,27 @@ Search = {}
 				$('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
 				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);
+				$('#groupByService').text(json.additional.groupByService);
+				$('#groupByHost').text(json.additional.groupByHost);
+				$('#refreshArray').text(json.additional.refreshArray);
+				
+				var refreshData = $('#refreshArray').text().split(';');
+				var refreshList = '';
+					refreshList += '<option value="auto">Refresh: Auto</option>';
+					refreshList += '<optgroup label="---">';
+					
+					$(refreshData).each(function () {
+						var refreshValue = this.split(',');
+						refreshList += '<option value="'+ refreshValue[0] +'">Refresh: '+ refreshValue[1] +'</option>';
+					});
+					
+					refreshList += '<option value="custom">Refresh: Custom</option>';
+					refreshList += '</optgroup>';
+					refreshList += '<optgroup label="----">';
+					refreshList += '<option value="10000000">Refresh: Disable</option>';
+					refreshList += '</optgroup>';
+					
+				$('#refreshTimeSelect').html(refreshList);
 				
 				Search.doneTypingInterval = (Search.allDataTable.rows().count() > 1000) ? 350 : 0;
 				Search.firstLoad          = false;
@@ -162,6 +183,8 @@ Search = {}
 				Search.currentUser        = $('#userName').text();
 				Search.updateHash         = $('#updateHash').text();
 				Search.avatarUrl          = $('#userAvatar').text();
+				Search.groupByService     = $('#groupByService').text();
+				Search.groupByHost        = $('#groupByHost').text();
 				
 				$('#' + Search.currentTab).attr('checked', 'checked');
 				$('#radio').buttonset();
@@ -176,7 +199,7 @@ Search = {}
 				} else {
 					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
 				}
-				
+
 				$('#refreshTimeSelect').selectmenu({
 					select: function (event, data) {
 						Search.stopReloads();
@@ -225,7 +248,7 @@ function getGroupNormalCount(columnData, limit) {
 	});
 	
 	$.each(columnData, function(i, val) {
-		if (counts[columnData[i]] > limit) {
+		if (counts[columnData[i]] >= limit) {
 			returnCounts[columnData[i]] = counts[columnData[i]];
 		}
 	});
@@ -407,9 +430,6 @@ function getGroupNormalThead(rowsHeader) {
 		}
 	});
 	
-	
-
-	
 	quickAckUnAckGroup();
 }
 function getGroupNormalServices (rows) {
@@ -478,8 +498,8 @@ Search.reorderData = function() {
 		var rows          = Search.allDataTable.rows({ page:'current', search:'applied' }).data(),
 			rowsService   = getGroupNormalServices(rows),
 			rowsHost      = getGroupNormalHosts(rows),
-			countsService = getGroupNormalCount(rowsService, 1),
-			countsHost    = getGroupNormalCount(rowsHost, 10),
+			countsService = getGroupNormalCount(rowsService, Search.groupByService),
+			countsHost    = getGroupNormalCount(rowsHost, Search.groupByHost),
 			rowsHeader    = getGroupNormalHeaders(rows, countsService, countsHost);
 
 		getGroupNormalThead(rowsHeader);

@@ -35,8 +35,8 @@ Features:
 * Grouping (you can turn on/off):
     - ![Image of grouping](https://github.com/Ivinco/nagiosUI/blob/master/htdocs/images/examples/grouping.gif)
     - ![Image of groupingAction](https://github.com/Ivinco/nagiosUI/blob/master/htdocs/images/examples/groupingAction.gif)
-    - by Service: min 2 equal services
-    - by Host: min 11 equal hosts
+    - by Service: min 2 equal services (you can change it in config)
+    - by Host: min 11 equal hosts (you can change it in config)
 * instant real-time search/filtering
 * instant javascript-based sorting
 * background refresh:
@@ -59,5 +59,8 @@ Installation:
   - $nagiosCommentUrl         = comments url
   - $nagiosPercentileUrl      = nagios percentile file path
   - $usersArray               = user name/email array for gravatar.com icons
+  - $groupByService           = grouping by Service count
+  - $groupByHost              = grouping by Host count
+  - $refreshArray             = refresh select values
 * you need to set up cron job:
   - * * * * * root php /domain/admin_scripts/cron/nagios_percentile.php >>/domain/log/nagios_percentile.log 2>&1
