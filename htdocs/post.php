@@ -6,7 +6,7 @@ $return     = array();
 $type       = $_POST['type'];
 
 if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
-	echo "type not in array OR file not exists";
+	echo 'type not in array OR file ('. $nagiosPipe .') not exists, please check in config.php $nagiosPipe value';
 	http_response_code(404);
 	
 	die;
