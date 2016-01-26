@@ -1,24 +1,55 @@
 <?php
 
+/* you need to change htdocs/config/config.php.example file
+   content and rename file to nagios2Config.php: */
+
+
+/* status.dat file path */
 $statusFile_global        = '/var/log/nagios/status.dat';
+
+/* nagios notes url file path */
 $getNotesUrls_cacheFile   = '/domain/tmp/nagios_notes_url.cache';
+
+/* nagios depends file path */
 $getDepends_cacheFile     = '/domain/tmp/nagios_depends.cache';
+
+/* nagios alerts critical 50pct file path */
 $alertsPercentile_global  = '/domain/tmp/nagios_percentile/alerts_critical_50pct';
+
+/* nagios percentile durations file path */
 $durationsFromFile_global = '/domain/tmp/nagios_percentile/durations';
+
+/* nagios xml output path */
 $xmlArchive               = '/domain/log/nagios_xml_output/';
+
+/* nagios config file path */
 $nagiosConfigFile         = '/cgi-bin/config.cgi';
+
+/* nagios full host url */
 $nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&amp;style=hostdetail';
+
+/* nagios comments url */
 $nagiosCommentUrl         = '<a href=url/view.php?id=$2" target="_blank">$1</a>';
+
+/* nagios percentile file path */
 $nagiosPercentileUrl      = '/url/tmp/nagios_percentile';
+
+/* nagios.cmd file path */
 $nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
 
+/* user name/email array for gravatar.com icons */
 $usersArray = array(
 	'authUser' => 'email@domain.com',
 	'userName' => 'email@domain.com',
 );
 
+/* grouping by Service count */
 $groupByService = 2;
+
+/* grouping by Host count */
 $groupByHost    = 11;
+
+/* refresh select values in seconds */
 $refreshArray   = [
 	[ 'value' =>  '10', 'name' => '10 sec' ],
 	[ 'value' =>  '20', 'name' => '20 sec' ],

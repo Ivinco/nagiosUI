@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-include_once 'htdocs/config/nagios2Config.php';
+include_once 'htdocs/config/config.php';
 
 /*
 $path - path to *_raw file containing states in the format of one measurement = one state in on byte on the same line, last measurement in the end

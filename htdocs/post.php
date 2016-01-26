@@ -1,17 +1,27 @@
 <?php
 
-include_once 'config/nagios2Config.php';
+include_once 'config/config.php';
 
 $return     = array();
 $type       = $_POST['type'];
 
 if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
-	http_response_code(400);
+	echo "type not in array OR file not exists";
+	http_response_code(404);
+	
+	die;
 }
 
 foreach ($_POST['data'] as $post) {
 	$f = fopen($nagiosPipe, 'w');
 
+	if (!$f) {
+		echo "check file permissions";
+		http_response_code(400);
+		
+		die;
+	}
+	
 	if ($type == 'quickAck' || $type == 'acknowledgeIt') {
 		fwrite($f, "[".time()."] ACKNOWLEDGE_SVC_PROBLEM;{$post['host']};{$post['service']};1;1;0;{$post['author']};{$post['com_data']}\n");
 	}
@@ -43,4 +53,5 @@ foreach ($_POST['data'] as $post) {
 	fclose($f);
 }
 
-return http_response_code(200);
+echo "finished";
+http_response_code(200);

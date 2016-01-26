@@ -47,17 +47,18 @@ Features:
 * services dependency
 
 Installation:
-* you need to change htdocs/config/nagios2Config.php.example file content and rename file to nagios2Config.php:
+* you need to change htdocs/config/config.php.example file content and rename file to config.php:
   - $statusFile_global        = status.dat file path
   - $getNotesUrls_cacheFile   = nagios notes url file path
   - $getDepends_cacheFile     = nagios depends file path
   - $alertsPercentile_global  = nagios alerts critical 50pct file path
-  - $durationsFromFile_global = nagios durations file path
+  - $durationsFromFile_global = nagios percentile durations file path
   - $xmlArchive               = nagios xml output path
   - $nagiosConfigFile         = nagios config file path
   - $nagiosFullHostUrl        = nagios full host url
   - $nagiosCommentUrl         = comments url
   - $nagiosPercentileUrl      = nagios percentile file path
+  - $nagiosPipe               = nagios.cmd file path
   - $usersArray               = user name/email array for gravatar.com icons
   - $groupByService           = grouping by Service count
   - $groupByHost              = grouping by Host count

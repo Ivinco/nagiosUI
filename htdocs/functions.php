@@ -1,6 +1,6 @@
 <?php
 
-include_once 'config/nagios2Config.php';
+include_once 'config/config.php';
 
 function returnDataList($isHash, $xmlFile) {
 	
