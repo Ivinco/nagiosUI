@@ -1671,13 +1671,16 @@ Search.init = function() {
 	$('#mainTable').on('click', '.downtime_id', function () {
 		Search.stopReloads();
 		$(this).hide();
-		var row = $(this).closest('tr'),
-			id  = $(this).attr('data-id');
+		var row     = $(this).closest('tr'),
+			id      = $(this).attr('data-id'),
+			request = [];
+			
+		request.push({ 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': id });
 		
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
-			data:   { data: { 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': id }, type: 'downtime' },
+			data:   { data: request, type: 'downtime' },
 		})
 		.fail(function(jqXHR, textStatus) {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
