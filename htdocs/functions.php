@@ -222,7 +222,7 @@ $xmlContent = '<alerts sort="1">
 $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<host>'.               $host .'</host>
 		<host-url>'.           hostUrl($host) .'</host-url>
-		<service>'.            htmlentities($service, ENT_XML1) .'</service>
+		<service>'.            parseToXML(htmlentities($service, ENT_XML1)) .'</service>
 		<service-url>'.        serviceUrl($host, htmlentities($serviceEncoded, ENT_XML1)) .'</service-url>
 		<notes_url>'.          htmlentities($notesUrl, ENT_XML1) .'</notes_url>
 		<status>'.             $state .'</status>
@@ -232,15 +232,15 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
-		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
-		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
+		<sched_comment>'.      parseToXML(htmlspecialchars($schedComment)) .'</sched_comment>
+		<ack_comment>'.        parseToXML(htmlspecialchars($ackComment)) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>
 		<last_check_sec>'.     $attrs['last_check'] .'</last_check_sec>
 		<durationSec>'.        $durationSec .'</durationSec>
 		<durationSec9Digits>'. sprintf('%09d', $durationSec) .'</durationSec9Digits>
 		<duration>'.           $duration .'</duration>
 		<attempt>'.            $attempt .'</attempt>
-		<status_information>'. $pluginOutput .'</status_information>
+		<status_information>'. parseToXML($pluginOutput) .'</status_information>
 	</alert>
 ';
 		
@@ -318,6 +318,17 @@ function getDepends() {
     return $out;
 }
 
+function parseToXML($htmlStr) {
 
+    $htmlStr = preg_replace('/[^\x{0009}\x{000a}\x{000d}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}]+/u', ' ', $htmlStr);
+    $htmlStr = preg_replace('/(?:
+                  \xF0[\x90-\xBF][\x80-\xBF]{2}      # planes 1-3
+                | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+                | \xF4[\x80-\x8F][\x80-\xBF]{2}      # plane 16
+            )/xs', '', $htmlStr);
+
+    $xmlStr = htmlspecialchars($htmlStr, ENT_QUOTES | ENT_XML1);
+    return $xmlStr;
+}
 
 
