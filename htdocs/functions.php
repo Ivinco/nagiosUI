@@ -232,8 +232,8 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
-		<sched_comment>'.      parseToXML(htmlspecialchars($schedComment)) .'</sched_comment>
-		<ack_comment>'.        parseToXML(htmlspecialchars($ackComment)) .'</ack_comment>
+		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
+		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>
 		<last_check_sec>'.     $attrs['last_check'] .'</last_check_sec>
 		<durationSec>'.        $durationSec .'</durationSec>
