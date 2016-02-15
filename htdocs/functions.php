@@ -256,10 +256,13 @@ foreach ($refreshArray as $item) {
 	$refreshArrayData[] = intval($item['value']) .','. $item['name'];
 }
 
+$userName = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+$userName = ($userName && array_key_exists($userName, $usersArray)) ? $userName : 'default';
+
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
-	<user>'.                 (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '') .'</user>
-	<avatar>'.               (isset($_SERVER['PHP_AUTH_USER']) ? md5(strtolower(trim($usersArray[$_SERVER['PHP_AUTH_USER']]))) : '') .'</avatar>
+	<user>'.                 $userName .'</user>
+	<avatar>'.               md5(strtolower(trim($usersArray[$userName]))) .'</avatar>
 	<nagios-config-file>'.   $nagiosConfigFile .'</nagios-config-file>
 	<nagios-full-list-url>'. $nagiosFullHostUrl .'</nagios-full-list-url>
 	<group-by-service>'.     $groupByService .'</group-by-service>

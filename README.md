@@ -59,7 +59,7 @@ Installation:
   - $nagiosCommentUrl         = comments url
   - $nagiosPercentileUrl      = nagios percentile file path
   - $nagiosPipe               = nagios.cmd file path
-  - $usersArray               = user name/email array for gravatar.com icons
+  - $usersArray               = user name/email array for gravatar.com icons. leave default value.
   - $groupByService           = grouping by Service count
   - $groupByHost              = grouping by Host count
   - $refreshArray             = refresh select values
