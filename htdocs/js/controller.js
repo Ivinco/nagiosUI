@@ -1244,6 +1244,16 @@ Search.countRecordsPlus = function(buttonID) {
 Search.init = function() {
 	Search.filterDataTable();
 	
+	$(document).click(function() {
+		var selection = getSelectedText();
+		
+		if (selection && (Search.backgroundReload || Search.autoRefresh)) {
+			Search.stopReloads();
+		} else if (!selection && !Search.backgroundReload && !Search.autoRefresh) {
+			Search.startReloads();
+		}
+    });
+	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
@@ -1765,6 +1775,14 @@ $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 });
 $.fn.dataTable.ext.errMode = 'none';
 
+function getSelectedText() {
+    if (window.getSelection) {
+        return window.getSelection().toString();
+    } else if (document.selection) {
+        return document.selection.createRange().text;
+    }
+    return '';
+}
 
 /* dateFormat */
 var dateFormat = function () {
