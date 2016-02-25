@@ -5,6 +5,7 @@ include_once 'functions.php';
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
+
 $xmlFile    = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array      = json_decode(json_encode(simplexml_load_string(returnDataList(false, $xmlFile))),TRUE);
 $returnJson = array();

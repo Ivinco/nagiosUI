@@ -21,8 +21,8 @@ function returnDataList($isHash, $xmlFile) {
 $xmlContent = '<alerts sort="1">
 ';
 
-	$verificateCheck   = '';
-	$pregHostStatus    = '/hoststatus {'.
+	$verificateCheck    = '';
+	$pregHostStatus     = '/hoststatus {'.
 							'[^{}]*?host_name=(?P<host>[^{}]*?)\n'.
 							'[^{}]*?current_state=([^0])\n'.
 							'[^{}]*?plugin_output=(?P<plugin_output>[^{}]*?)\n'.
@@ -30,8 +30,10 @@ $xmlContent = '<alerts sort="1">
 							'[^{}]*?current_attempt=(?P<attempts>[^{}]*?)\n'.
 							'[^{}]*?max_attempts=(?P<max_attempts>[^{}]*?)\n'.
 							'[^{}]*?last_state_change=(?P<last_status_change>[^{}]*?)\n'.
+							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
+							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '[^{}]*?}/is';
-	$pregServiceStatus = '/servicestatus {'.
+	$pregServiceStatus  = '/servicestatus {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
 							'.*?current_state=(?P<state>.*?)\n'.
@@ -46,6 +48,13 @@ $xmlContent = '<alerts sort="1">
 	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
+							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+						  '.*?}/is';
+	$pregHostComment    = '/(hostdowntime|hostcomment) {'.
+							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
@@ -69,32 +78,12 @@ $xmlContent = '<alerts sort="1">
 	if (!preg_match_all($pregServiceStatus, $statusFile, $matches)) {
 		die("ERROR: no services found\n");
 	}
-	
-	if (preg_match_all($pregServiceComment, $statusFile, $ackAndSchedMatches)) {
-		$tmp = array();
-	
-		foreach ($ackAndSchedMatches['host'] as $k=>$host) {
-			$commentType = ($ackAndSchedMatches['entry_type'][$k] == 2) ? 'other' : (($ackAndSchedMatches['entry_type'][$k] == 4 || $ackAndSchedMatches['entry_type'][$k] == 1) ? 'ack' : 'sched');
-			
-			$tmp[$host][$ackAndSchedMatches['service'][$k]][] = array(
-				'ackAuthor'        => ($commentType == 'ack')   ? $ackAndSchedMatches['author'][$k]     : '',
-				'ackComment'       => ($commentType == 'ack')   ? $ackAndSchedMatches['comment'][$k]    : '',
-				'ackCommentDate'   => ($commentType == 'ack')   ? $ackAndSchedMatches['entry_time'][$k] : '',
-				'schedAuthor'      => ($commentType == 'sched') ? $ackAndSchedMatches['author'][$k]     : '',
-				'schedComment'     => ($commentType == 'sched') ? $ackAndSchedMatches['comment'][$k]    : '',
-				'schedCommentDate' => ($commentType == 'sched') ? $ackAndSchedMatches['entry_time'][$k] : '',
-				'downtime_id'      => ($commentType != 'other') ? $ackAndSchedMatches['entry_type'][$k] : '',
-			);
-		}
-	
-		$ackAndSchedMatches = $tmp;
-		unset($tmp);
-	}
-	
-	$alertsPercentile  = @unserialize(file_get_contents($alertsPercentile_global));
-	$durationsFromFile = @unserialize(file_get_contents($durationsFromFile_global));
-	$notesUrls         = getNotesUrls();
-	$depends           = getDepends();
+
+	$ackAndSchedMatches = array_merge(returnComments($pregServiceComment, $statusFile, false), returnComments($pregHostComment, $statusFile, true));
+	$alertsPercentile   = @unserialize(file_get_contents($alertsPercentile_global));
+	$durationsFromFile  = @unserialize(file_get_contents($durationsFromFile_global));
+	$notesUrls          = getNotesUrls();
+	$depends            = getDepends();
 	
 	$hosts = array();
 	foreach ($matches['host'] as $k=>$host) {
@@ -115,9 +104,9 @@ $xmlContent = '<alerts sort="1">
 		unset($hosts[$host]);
 		
 		$hosts[$host]['SERVER IS UP'] = array(
-			'acked'              => 0, // we do not care if down host is ack'ed or not
-			'scheduled'          => 0, // we do not care if down host is scheduled for downtime or not
 			'state'              => 2, // down host is always shown as CRITICAL alert
+			'acked'              => $downHostsMatches['acked'][$k],
+			'scheduled'          => $downHostsMatches['scheduled'][$k],
 			'last_status_change' => $downHostsMatches['last_status_change'][$k],
 			'plugin_output'      => $downHostsMatches['plugin_output'][$k],
 			'attempts'           => $downHostsMatches['attempts'][$k],
@@ -274,7 +263,28 @@ $xmlContent .= '
 }
 
 
-
+function returnComments($comments, $statusFile, $isHost) {
+	$return = [];
+	
+	if (preg_match_all($comments, $statusFile, $matches)) {
+		foreach ($matches['host'] as $k=>$host) {
+			$type = ($matches['entry_type'][$k] == 2) ? 'other' : (($matches['entry_type'][$k] == 4 || $matches['entry_type'][$k] == 1) ? 'ack' : 'sched');
+			$name = ($isHost) ? 'SERVER IS UP' : $matches['service'][$k];
+			
+			$return[$host][$name][] = array(
+				'ackAuthor'        => ($type == 'ack')   ? $matches['author'][$k]     : '',
+				'ackComment'       => ($type == 'ack')   ? $matches['comment'][$k]    : '',
+				'ackCommentDate'   => ($type == 'ack')   ? $matches['entry_time'][$k] : '',
+				'schedAuthor'      => ($type == 'sched') ? $matches['author'][$k]     : '',
+				'schedComment'     => ($type == 'sched') ? $matches['comment'][$k]    : '',
+				'schedCommentDate' => ($type == 'sched') ? $matches['entry_time'][$k] : '',
+				'downtime_id'      => ($type != 'other') ? $matches['entry_type'][$k] : '',
+			);
+		}
+	}
+	
+	return $return;
+}
 
 function duration($seconds, $withSeconds = true) {
 	$d   = floor($seconds / 86400);
