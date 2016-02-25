@@ -52,8 +52,7 @@ $xmlContent = '<alerts sort="1">
 							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
 						  '.*?}/is';
 						  
-						  
-	
+
 	if ($xmlFile) {
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
@@ -113,7 +112,6 @@ $xmlContent = '<alerts sort="1">
 	unset($matches);
 	
 	foreach ($downHostsMatches['host'] as $k=>$host) { // copying down host alerts to normal service alerts
-	//TODO: hide links to ack/sched/check for a host
 		unset($hosts[$host]);
 		
 		$hosts[$host]['SERVER IS UP'] = array(
@@ -213,11 +211,11 @@ $xmlContent = '<alerts sort="1">
 					$ackLastAuthor = (!empty($tmpAckAuthor))  ? end($tmpAckAuthor) : '';
 				}
 				
-				$scheduled  = (int)$attrs['scheduled'];
-				$last_check = date('m-d-Y H:i:s', $attrs['last_check']);
-				$attempt    = $attrs['attempts']/$attrs['max_attempts'];
-				
-				$userAvatar = (isset($usersArray[$ackLastAuthor])) ? $usersArray[$ackLastAuthor] : '';
+				$scheduled       = (int)$attrs['scheduled'];
+				$last_check      = date('m-d-Y H:i:s', $attrs['last_check']);
+				$attempt         = $attrs['attempts']/$attrs['max_attempts'];
+				$host_or_service = ($service == "SERVER IS UP") ? "host" : "service";
+				$userAvatar      = (isset($usersArray[$ackLastAuthor])) ? $usersArray[$ackLastAuthor] : '';
 
 $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<host>'.               $host .'</host>
@@ -241,6 +239,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<duration>'.           $duration .'</duration>
 		<attempt>'.            $attempt .'</attempt>
 		<status_information>'. parseToXML($pluginOutput) .'</status_information>
+		<host_or_service>'.    $host_or_service .'</host_or_service>
 	</alert>
 ';
 		

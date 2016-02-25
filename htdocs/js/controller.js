@@ -53,7 +53,7 @@ Search = {}
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
+					return '<a data-host="'+ data.host +'" href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
 				},
 			},
             {
@@ -293,6 +293,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 					'information':    information,
 					'comment':        comment,
 					'groupBy':        groupBy,
+					'isHost':         rowData.host.host,
 				});
 			}
 		});
@@ -379,7 +380,7 @@ function getGroupNormalThead(rowsHeader) {
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host"'+ css +'><span>' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
+			'	<td class="host"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
 			'	<td class="service '+ trClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
@@ -779,26 +780,28 @@ Search.tempHideButtons = function () {
 		var row     = $(this),
 			host    = Search.getHost(row),
 			service = Search.getService(row),
-			check   = Search.getLastCheck(row);
+			check   = Search.getLastCheck(row),
+			forHost = (tableWhere == 'thead') ? 'span' : 'a',
+			isHost  = row.find('.host '+ forHost).attr('data-host');
 			
 		if (whatWeChangeObject.host && whatWeChangeObject.service) {
 			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check });
+				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 			}
 		} else if (whatWeChangeObject.host) {
 			if (host == whatWeChangeObject.host) {
 				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check });
+				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 			}
 		} else if (whatWeChangeObject.service) {
 			if (service == whatWeChangeObject.service) {
 				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check });
+				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 			}
 		} else {
 			Search.tmpHideIcon(row, whatWeChangeObject.type);
-			returnArray.push({ 'host': host, 'service': service, 'check': check });
+			returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 		}
 	});
 	
@@ -841,28 +844,32 @@ Search.prepareSendData = function () {
 				'start_time':  $(this)[0].check,
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
+				'isHost':      $(this)[0].isHost,
 			});
 		}
 		else if (whatWeChangeObject.type == 'quickAck') {
 			requestData.push({
-				'host':              $(this)[0].host,
-				'service':           $(this)[0].service,
-				'com_data':          'temp',
-				'author':            Search.currentUser,
+				'host':        $(this)[0].host,
+				'service':     $(this)[0].service,
+				'com_data':    'temp',
+				'author':      Search.currentUser,
+				'isHost':      $(this)[0].isHost,
 			});
 		}
 		else if (whatWeChangeObject.type == 'quickUnAck' || whatWeChangeObject.type == 'unAck') {
 			requestData.push({
-				'host':              $(this)[0].host,
-				'service':           $(this)[0].service,
+				'host':        $(this)[0].host,
+				'service':     $(this)[0].service,
+				'isHost':      $(this)[0].isHost,
 			});
 		}
 		else if (whatWeChangeObject.type == 'acknowledgeIt') {
 			requestData.push({
-				'host':              $(this)[0].host,
-				'service':           $(this)[0].service,
-				'com_data':          $('input[name="ack_comment_extension"]').val(),
-				'author':            Search.currentUser,
+				'host':        $(this)[0].host,
+				'service':     $(this)[0].service,
+				'com_data':    $('input[name="ack_comment_extension"]').val(),
+				'author':      Search.currentUser,
+				'isHost':      $(this)[0].isHost,
 			});
 		}
 		else if (whatWeChangeObject.type == 'scheduleIt') {
@@ -870,13 +877,14 @@ Search.prepareSendData = function () {
 				hours             = parseInt($('#timeShift').html(),10);
 				
 			requestData.push({
-				'hours':      hours,
-				'start_time': new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
-				'end_time':   new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
-				'host':       $(this)[0].host,
-				'service':    $(this)[0].service,
-				'com_data':   $('#downtimeComment').html(),
-				'author':     Search.currentUser,
+				'hours':       hours,
+				'start_time':  new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
+				'end_time':    new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
+				'host':        $(this)[0].host,
+				'service':     $(this)[0].service,
+				'com_data':    $('#downtimeComment').html(),
+				'author':      Search.currentUser,
+				'isHost':      $(this)[0].isHost,
 			});
 		}
 	});
@@ -1344,7 +1352,7 @@ Search.init = function() {
 	$('#mainTable').on('click', 'thead .quickAckGroup', function () {
 		var host    = $(this).closest('tr').find('.host').text(),
 			service = $(this).closest('tr').find('.service ul li:first').text();
-			
+
 		whatWeChangeObject = {
 			'type':    'quickAck',
 			'what':    'group',
@@ -1703,9 +1711,11 @@ Search.init = function() {
 		$(this).hide();
 		var row     = $(this).closest('tr'),
 			id      = $(this).attr('data-id'),
+			isHost  = row.find('.host a').attr('data-host'),
+			cmd_typ = (isHost == 'service') ? 79 : 78,
 			request = [];
 			
-		request.push({ 'cmd_typ': 79, 'cmd_mod': 2, 'down_id': id });
+		request.push({ 'cmd_typ': cmd_typ, 'cmd_mod': 2, 'down_id': id });
 		
 		$.ajax({
 			url:    'post.php',
