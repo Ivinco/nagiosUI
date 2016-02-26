@@ -1248,9 +1248,26 @@ Search.countRecordsPlus = function(buttonID) {
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
 }
 
+selectTimer = null;
+
+function checkSelectedText() {
+	clearTimeout(selectTimer);
+	
+	var selection = getSelectedText();
+	
+	if (!selection) {
+		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
+	} else {
+		Search.stopReloads();
+	}
+}
 
 Search.init = function() {
 	Search.filterDataTable();
+	
+	$(document).mousedown(function() {
+		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
+    });
 	
 	$(document).click(function() {
 		var selection = getSelectedText();
@@ -1260,6 +1277,8 @@ Search.init = function() {
 		} else if (!selection && !Search.backgroundReload && !Search.autoRefresh) {
 			Search.startReloads();
 		}
+		
+		clearTimeout(selectTimer);
     });
 	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
