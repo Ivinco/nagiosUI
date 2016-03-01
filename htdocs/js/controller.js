@@ -772,17 +772,16 @@ Search.tmpShowIcon = function(item, type) {
 Search.tempHideButtons = function () {
 	Search.stopReloads();
 	
-	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
-		tableNot      = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
-		returnArray   = [];   
-	
+	var tableWhere  = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
+		tableNot    = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
+		returnArray = [];
+		
 	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
 		var row     = $(this),
 			host    = Search.getHost(row),
 			service = Search.getService(row),
 			check   = Search.getLastCheck(row),
-			forHost = (tableWhere == 'thead') ? 'span' : 'a',
-			isHost  = row.find('.host '+ forHost).attr('data-host');
+			isHost  = row.find('.host a').attr('data-host');
 			
 		if (whatWeChangeObject.host && whatWeChangeObject.service) {
 			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
@@ -802,9 +801,9 @@ Search.tempHideButtons = function () {
 		} else {
 			Search.tmpHideIcon(row, whatWeChangeObject.type);
 			returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-		}
+		} 
 	});
-	
+
 	if (whatWeChangeObject.what == 'group' || whatWeChangeObject.what == 'this') {
 		$('#mainTable thead tr').each(function() {
 			var row     = $(this),
