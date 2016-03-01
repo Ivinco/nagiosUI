@@ -417,6 +417,18 @@ function getGroupNormalThead(rowsHeader) {
 
 			$('#mainTable thead').append(newRow); 
 		});
+		$('#mainTable thead').append('' +
+			'<tr data-group="'+ groupNameSmall +'">' +
+			'	<td class="host no-border-th">&nbsp;</td>' +
+			'	<td class="service no-border-th">&nbsp;</td>' +
+			'	<td class="status no-border-th">&nbsp;</td>' +
+			'	<td class="last_check no-border-th">&nbsp;</td>' +
+			'	<td class="duration no-border-th">&nbsp;</td>' +
+			'	<td class="status_information no-border-th">&nbsp;</td>' +
+			'	<td class="comment no-border-th">&nbsp;</td>' +
+			'	<td class="more no-border-th">&nbsp;</td>' +
+			'</tr>'
+		); 
 	});
 	
 	$('#mainTable tbody tr[data-group]').removeAttr('data-group').hide();

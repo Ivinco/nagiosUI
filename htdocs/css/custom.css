@@ -165,6 +165,12 @@ copy
 
 #lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash, #userAvatar, #mainTable .hide-more, #mainTable .for-order, #mainTable .type-th, #serviceDialog, #commentDialog, #groupByService, #groupByHost, #refreshArray { display: none; }
 
+table.dataTable thead .no-border-th {
+  background: #fff !important;
+  font-size: 3px !important;
+  border-bottom: 0 !important;
+}
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
