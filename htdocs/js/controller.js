@@ -1745,7 +1745,7 @@ Search.init = function() {
 			cmd_typ = (isHost == 'service') ? 79 : 78,
 			request = [];
 			
-		request.push({ 'cmd_typ': cmd_typ, 'cmd_mod': 2, 'down_id': id });
+		request.push({ 'cmd_typ': cmd_typ, 'cmd_mod': 2, 'down_id': id, 'isHost': isHost });
 		
 		$.ajax({
 			url:    'post.php',
