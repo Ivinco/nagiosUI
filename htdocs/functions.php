@@ -145,14 +145,14 @@ $xmlContent = '<alerts sort="1">
 					$notesUrl = strstr($notesUrl, 'host=', true) . "host={$host}&" . strstr($notesUrl, 'item=', false);
 				}
 				
-				if ($criticalPercentileDuration && $criticalPercentileDuration > 60*4 && (!isset($attrs['acked']) || !$attrs['acked']) && (!isset($attrs['scheduled']) || !$attrs['scheduled'])) {
+				if ($criticalPercentileDuration /*&& $criticalPercentileDuration > 60*4*/ && (!isset($attrs['acked']) || !$attrs['acked']) && (!isset($attrs['scheduled']) || !$attrs['scheduled']) && $criticalPercentileDuration * 60 - (time() - $attrs['last_status_change']) > 300) {
 					$durationSec = $criticalPercentileDuration * 60;
 					$duration    = duration($durationSec, false)." (50%)";
 					$origState   = $state;
 					$state       = 'CRITICAL';
 				}
 				else {
-					$durationSec = (isset($durationsFromFile[$host.'_'.$service])) ? $durationsFromFile[$host.'_'.$service] * 60 : time() - $attrs['last_status_change'];
+					$durationSec = (isset($durationsFromFile[$host.'_'.$service]) and $durationsFromFile[$host.'_'.$service] * 60 < time() - $attrs['last_status_change']) ? $durationsFromFile[$host.'_'.$service] * 60 : time() - $attrs['last_status_change'];
 					$duration    = duration($durationSec, false);
 				}
 				
