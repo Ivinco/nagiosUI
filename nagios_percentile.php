@@ -21,10 +21,11 @@ function calcDuration($path, $statesToAnalyze, $percentile) {
         $passed++;
         $percentiles[$n] = $matched / $passed * 100;
     }
-	
     //$percentiles[max] means percentile at the LAST minute
     //$percentiles[0] means percentile at the FIRST minute
+    $firstOccurrenceFound = false;
     for ($n=0;$n<=strlen($data) - 1;$n++) {
+        if (!$firstOccurrenceFound and !in_array($data[$n], $statesToAnalyze)) continue;
         if ($percentiles[$n] >= $percentile) return strlen($data) - $n;
     }
 	
