@@ -505,6 +505,7 @@ function getSeconds(str) {
 }
 Search.reorderData = function() {
 	$('#mainTable thead tr').not(':first').remove();
+	$('#mainTable tbody tr').show();
 	
 	var tabsArray = ['normal', 'acked', 'sched'];
 	if (tabsArray.indexOf(Search.currentTab) !== -1) {		
@@ -565,7 +566,7 @@ Search.autoReloadData = function() {
 Search.filterDataTable = function(val, startReload) {
 	var value = (val) ? val : '';
 	
-	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();	
+	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 
 	if (Search.currentGroup != 0) {
