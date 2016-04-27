@@ -41,6 +41,7 @@ Search = {}
 		'acked'         : [[1, 'asc'],[0, 'asc']],
 		'sched'         : [[1, 'asc'],[0, 'asc']],
 		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
+		'planned'       : [[2,'desc'],[4,'desc']],
 	};
 	Search.additionalFile     = (getParameterByName('file')) ? '?file=' + getParameterByName('file') : '';
 	Search.allDataTable       = $('#mainTable').DataTable({
@@ -142,6 +143,9 @@ Search = {}
             if (data.state) {
 				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment, .more').addClass(data.state);
             }
+			if (data.service.sched) {
+				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('grey-text');
+			}
         },
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
@@ -522,7 +526,7 @@ Search.reorderData = function() {
 
 
 Search.stopReloads = function() {
-	$.stopPendingAjax.abortAll();		
+	$.stopPendingAjax.abortAll();
 	clearTimeout(reloadTimer);
 	Search.backgroundReload = false;
 	Search.autoRefresh      = false;
@@ -1276,6 +1280,7 @@ function checkSelectedText() {
 
 Search.init = function() {
 	Search.filterDataTable();
+	getPlanned();
 	
 	$(document).mousedown(function() {
 		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
@@ -1293,7 +1298,80 @@ Search.init = function() {
 		clearTimeout(selectTimer);
     });
 	
-	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
+	function showHidePlanned() {
+		if (Search.currentTab == 'planned') {
+			$('#planned-maintenance').show();
+			$('#mainTable_wrapper').hide();
+		} else {
+			$('#planned-maintenance').hide();
+			$('#mainTable_wrapper').show();
+		}
+	}
+	function getPlanned() {
+		showHidePlanned();
+		
+		$.ajax({
+			url:    'planned.php',
+			method: 'GET',
+		})
+		.always(function(data) {
+			drawPlanned(data);
+			setTimeout(function(){ getPlanned() }, 60000);
+		});
+	}
+	function drawPlanned(data) {
+		$('#planned-list').html('');
+				
+		$.each(data, function( index, value ) {
+			$('#planned-list').append('<li><input type="text" name="host-service" value="'+ value['command'] +'" class="planned-input"><button data-id="'+ (index + 1) +'" class="save-planned">Save</button> <small>till <strong>'+ value['date'] +'</strong></small></li>');
+		});
+	}
+	$(document).on('click', '.save-planned', function() {
+		var li   = $(this).closest('li'),
+			text = li.find('input').val();
+
+		li.find('input').removeAttr('style');
+		
+		if (text) {
+			$.ajax({
+				url:    'planned.php',
+				method: 'POST',
+				data:   { text: text, time: 1, line: li.find('button').attr('data-id') },
+			})
+			.always(function(data) {
+				drawPlanned(data);
+			});
+		} else {
+			li.find('input').css('border-color', 'red');
+		}
+	});
+	$(document).on('click', '#planned-save', function() {
+		$('#host-service, #maintenance-time').removeAttr('style');
+		
+		var text = $('#host-service').val(),
+			time = parseInt($('#maintenance-time').val());
+			
+		if (text && time > 0) {
+			$.ajax({
+				url:    'planned.php',
+				method: 'POST',
+				data:   { text: text, time: time, line: 'new' },
+			})
+			.always(function(data) {
+				$('#host-service, #maintenance-time').val('');
+				drawPlanned(data);
+			});
+		} else {
+			if (!text) {
+				$('#host-service').css('border-color', 'red');
+			}
+			if (!time || time < 1) {
+				$('#maintenance-time').css('border-color', 'red');
+			}
+		}
+	});
+	
+	$('#normal, #acked, #sched, #EMERGENCY, #planned').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
 		    return false;
@@ -1304,6 +1382,7 @@ Search.init = function() {
 		Search.currentTab = localStorage.getItem('currentTabNew');
 
 		Search.filterDataTable(false, true);
+		showHidePlanned();
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();

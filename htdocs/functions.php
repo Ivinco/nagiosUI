@@ -169,6 +169,8 @@ $xmlContent = '<alerts sort="1">
 					$tmpDowntimeId    = array();
 					$tmpAckAuthor     = array();
 					$tmpAckTemp       = array();
+					$tmpSchedAuthor   = array();
+					$tmpSchedTemp     = array();
 					
 					foreach ($ackAndSchedMatches[$host][$service] as $tmpComments) {
 						if ($tmpComments['ackComment']) {
@@ -182,22 +184,27 @@ $xmlContent = '<alerts sort="1">
 							$tmpAckTemp[]     = $tmpComments['ackComment'];
 						}
 						if ($tmpComments['schedComment']) {
+							$tmpValue  = ($tmpComments['schedComment'] == 'planned') ? 'planned' : preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
 							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
 							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
 							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
 							
 							$tmpSchedComments[] = $tmpValue;
+							$tmpSchedAuthor[]   = $tmpComments['schedAuthor'];
+							$tmpSchedTemp[]     = $tmpComments['schedComment'];
 						}
 						if ($tmpComments['downtime_id'] && $state == 'OK') {
 							$tmpDowntimeId[] = $tmpComments['downtime_id'];
 						}
 					}
 					
-					$ackComment    = implode('<br /><br />', $tmpAckComments);
-					$schedComment  = implode('<br /><br />', $tmpSchedComments);
-					$downtime_id   = (!empty($tmpDowntimeId)) ? end($tmpDowntimeId) : '';
-					$ackLastTemp   = (!empty($tmpAckTemp))    ? end($tmpAckTemp) : '';
-					$ackLastAuthor = (!empty($tmpAckAuthor))  ? end($tmpAckAuthor) : '';
+					$ackComment      = implode('<br /><br />', $tmpAckComments);
+					$schedComment    = implode('<br /><br />', $tmpSchedComments);
+					$downtime_id     = (!empty($tmpDowntimeId))  ? end($tmpDowntimeId)  : '';
+					$ackLastTemp     = (!empty($tmpAckTemp))     ? end($tmpAckTemp)     : '';
+					$ackLastAuthor   = (!empty($tmpAckAuthor))   ? end($tmpAckAuthor)   : '';
+					$schedLastTemp   = (!empty($tmpSchedTemp))   ? end($tmpSchedTemp)   : '';
+					$schedLastAuthor = (!empty($tmpSchedAuthor)) ? end($tmpSchedAuthor) : '';
 				}
 				
 				$scheduled       = (int)$attrs['scheduled'];
@@ -218,6 +225,8 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<downtime_id>'.        $downtime_id .'</downtime_id>
 		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
+		<sched_last_temp>'.    $schedLastTemp .'</sched_last_temp>
+		<sched_last_author>'.  $schedLastAuthor .'</sched_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
 		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
 		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
@@ -234,7 +243,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		
 			$verificateCheck .= $state . $origState . $host . $service . $serviceEncoded . $ackLastTemp . $attempt;
 			$verificateCheck .= $notesUrl . $ackedStatus . $scheduled . $downtime_id . $ackLastAuthor . $pluginOutput;
-			$verificateCheck .= $schedComment . $ackComment . $last_check;
+			$verificateCheck .= $schedComment . $ackComment . $last_check . $schedLastAuthor . $schedLastTemp;
 
 		}
 	}

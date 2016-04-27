@@ -126,19 +126,19 @@ copy
 #mainTable .likeTable .list-recheck-icon  { background: url('../images/icons.png') no-repeat -114px 0; }
 
 #normalGrouping { float: right; }
-#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 14px; line-height: 30px; padding: 0 2em 0 1em; }
-#grouping-button { width: 178px !important; }
+#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 13px; line-height: 26px; padding: 0 2em 0 1em; }
+#grouping-button { width: 166px !important; }
 #grouping-button:focus { outline: 0; }
-#grouping-menu { width: 178px !important; }
-#grouping-menu li { font-size: 14px; line-height: 18px; }
+#grouping-menu { width: 166px !important; }
+#grouping-menu li { font-size: 13px; line-height: 16px; }
 #grouping-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 
 #refreshTime { float: right; }
-#refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 14px; line-height: 30px; padding: 0 2em 0 1em; }
+#refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 13px; line-height: 26px; padding: 0 2em 0 1em; }
 #refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
 #refreshTimeSelect-button { width: auto !important; min-width: 150px; }
 #refreshTimeSelect-button:focus { outline: 0; }
-#refreshTimeSelect-menu li { font-size: 14px; line-height: 18px; }
+#refreshTimeSelect-menu li { font-size: 13px; line-height: 16px; }
 #refreshTimeSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 
 #radio { float: left; font-size: 14px; }
@@ -146,11 +146,14 @@ copy
 #radio .top-ack-icon,
 #radio .top-downtime-icon,
 #radio .top-normal-icon,
-#radio .top-emergency-icon { width: 15px; height: 15px; display: inline-block; float: left; margin-top: 2px; }
+#radio .top-emergency-icon,
+#radio .top-planned-icon   { width: 15px; height: 15px; display: inline-block; float: left; margin-top: 1px; }
 #radio .top-ack-icon       { background: url('../images/icons.png') no-repeat    0px -19px; }
 #radio .top-downtime-icon  { background: url('../images/icons.png') no-repeat  -19px -19px; }
 #radio .top-normal-icon    { background: url('../images/icons.png') no-repeat -152px -19px; }
 #radio .top-emergency-icon { background: url('../images/icons.png') no-repeat -171px -19px; }
+#radio .top-planned-icon   { background: url('../images/icons.png') no-repeat -208px -19px; }
+#radio .ui-widget { font-size: 0.93em; }
 
 #loading { width: 100%; margin: 40px auto; text-align: center; }
 #loading img { width: 100px; }
@@ -171,13 +174,29 @@ table.dataTable thead .no-border-th {
   border-bottom: 0 !important;
 }
 
+#planned-maintenance { padding: 20px 0; font-size: 15px; display: none; }
+#planned-maintenance label { font-weight: bold; line-height: 32px; }
+#planned-maintenance button { font-size: 15px; line-height: 20px; margin-top: 12px; }
+#planned-maintenance input { font-size: 15px; border: 1px solid #ccc; outline: none; }
+#planned-maintenance .holder { display: inline-block; width: 45%; vertical-align: top; }
+#planned-maintenance .holder > strong { line-height: 32px; }
+#planned-maintenance .holder ul { list-style: none; margin: 0; padding: 0; }
+#planned-maintenance .holder ul li { margin-bottom: 8px; }
+#planned-maintenance .holder .save-planned { margin-top: 0; }
+#planned-maintenance .holder .planned-input { line-height: 21px; }
+
+
+.grey-text, .grey-text a { color: grey; }
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
     #radio .small-hide { display: none; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 28px; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 25px; }
     #grouping-menu li, #refreshTimeSelect-menu li { font-size: 12px; }
     .ui-button-text-only .ui-button-text { padding: 6px 7px; }
+    #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon, #radio .top-planned-icon { margin-top: 0px; }
+    #planned-label .ui-button-text { padding-right: 3px; }
 }
 
 @media (min-width: 991px) and (max-width: 1199px) {
@@ -209,7 +228,7 @@ table.dataTable thead .no-border-th {
 @media (max-width: 767px) {
     body { margin: 8px 0; }
     #mainTable_filter { margin-left: 8px; }
-    .ui-button-text-only .ui-button-text { padding: 6px 4px; height: 16px; }
+    .ui-button-text-only .ui-button-text { padding: 6px 4px; height: 13px; }
     #mainTable { font-size: 9px; }
     #mainTable td { padding: 1px; }
     #mainTable th { font-size: 11px; }
@@ -218,6 +237,7 @@ table.dataTable thead .no-border-th {
     #mainTable .service, #mainTable .service-th { width: 142px !important; }
     #mainTable .comment { width: 85px !important; }
     #mainTable .duration, #mainTable .duration-th { width: 72px !important; }
+    #planned-maintenance .holder { width: auto; display: block; margin-bottom: 30px; }
 }
 
 @media (max-width: 560px) {
@@ -225,7 +245,6 @@ table.dataTable thead .no-border-th {
     #mainTable .more-info-icon, #mainTable .more-comment-icon { display: inline-block; }
     #mainTable .status_information, #mainTable .status_information-th, #mainTable .comment, #mainTable .comment-th { display: none; }
     #hosts, #hosts-label { display: none; }
-    #EMERGENCY-label { border-bottom-right-radius: 4px; border-top-right-radius: 4px; }
     .ui-buttonset { margin-right: 0; }
     #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { display: none; }
     #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }

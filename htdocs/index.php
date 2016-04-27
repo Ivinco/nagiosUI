@@ -63,7 +63,14 @@
 				<span class="small-hide">&#160;EMERGENCY</span>
 				<span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
-            <input type="radio" id="hosts" name="radio"/><label for="hosts" id="hosts-label">Hosts</label>
+            <input type="radio" id="hosts" name="radio"/>
+			<label for="hosts" id="hosts-label">Hosts</label>
+			<input type="radio" id="planned" name="radio"/>
+			<label for="planned" id="planned-label">
+				<span class="top-planned-icon"></span>
+				<span class="xs-hide">&nbsp;</span>
+				<span class="small-hide">&#160;Planned maintenance</span>
+			</label>
         </div>
     </form>
     <table id="mainTable">
@@ -81,6 +88,34 @@
             </tr>
         </thead>
     </table>
+	<div id="planned-maintenance">
+		<h2>Planned mainetance</h2>
+		<div class="holder">
+			<label for="host-service">Host & Service</label><br />
+			<input type="text" name="host-service" id="host-service" /><br />
+			<label for="maintenance-time">Maintenance Time <small>(minutes)</small></label><br />
+			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
+			<button id="planned-save">Save</button>
+			
+			<p>
+				<small>
+					<strong>?</strong> wildcard replaces any 1 character<br />
+					<strong>*</strong> wildcard replaces any # of characters from 0<br />
+					<strong>_</strong> separates host from service<br /><br />
+					<strong>examples:</strong><br />
+						forumdb01-?_*mysql*<br />
+						forum*,log*_*error*<br />
+						forum*,log*<br />
+						_*error*
+				</small>
+			</p>
+		</div>
+		
+		<div class="holder">
+			<strong>Planned mainetance list:</strong>
+			<ul id="planned-list"></ul>
+		</div>
+	</div>
 	<div id="lastUpdated"></div>
     <div id="openDialogServerTime"></div>
 	<div id="timeShift"></div>
