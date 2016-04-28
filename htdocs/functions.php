@@ -193,7 +193,7 @@ $xmlContent = '<alerts sort="1">
 							$tmpSchedAuthor[]   = $tmpComments['schedAuthor'];
 							$tmpSchedTemp[]     = $tmpComments['schedComment'];
 						}
-						if ($tmpComments['downtime_id'] && $state == 'OK') {
+						if ($tmpComments['downtime_id']) {
 							$tmpDowntimeId[] = $tmpComments['downtime_id'];
 						}
 					}

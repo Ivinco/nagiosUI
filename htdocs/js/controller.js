@@ -35,7 +35,7 @@ Search = {}
 	Search.ackButtonId        = 'acknowledgeIt_button';
 	Search.unackButtonId      = 'unAck_button'; 
 	Search.sdButtonId         = 'scheduleIt_button';
-	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId;
+	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
 		'acked'         : [[1, 'asc'],[0, 'asc']],
@@ -68,7 +68,6 @@ Search = {}
 							notes = (data.notes) ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
 							qAck  = (data.qAck)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
-						
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
@@ -81,7 +80,7 @@ Search = {}
 										qUAck +
 							'		</li>' +
 							'		<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
-							'		<li><span class="list-sched-icon icons scheduleIt" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
+							'		<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
 							'		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 							'	</ul>' +
 							'</div>';
@@ -97,7 +96,7 @@ Search = {}
 					sort:  'order',
 					type:  'num',
 					display: function ( data, type, full, meta ) {
-						return (!data.down) ? data.name : (data.name + ' <span class="downtime_id" data-id="'+ data.down +'">remove</span>');
+						return data.name;
 					},
 				},
 			},
@@ -594,6 +593,29 @@ Search.filterDataTable = function(val, startReload) {
 		$('.comment').hide();
 	}
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked');
+	$('.status .downtime_id').toggle(Search.currentTab == 'sched');
+	$('.service .list-downtime-icon').closest('li').toggle(Search.currentTab != 'sched');
+	$('.service .list-unack-icon').closest('li').toggle(Search.currentTab != 'acked');
+	
+	if (Search.currentTab == 'acked') {
+		$('.service .acknowledgeIt').attr('title', 'Unacknowledge this Service').attr('alt', 'Unacknowledge this Service').removeClass('acknowledgeIt').addClass('unAcknowledgeIt');
+		$('.service .acknowledgeItGroup').attr('title', 'Unacknowledge this Services Group').attr('alt', 'Unacknowledge this Services Group').removeClass('acknowledgeItGroup').addClass('unAcknowledgeItGroup');
+		$('#acknowledgeIt_button').attr('title', 'Unacknowledge All Services').attr('alt', 'Uncknowledge All Services').attr('id', 'unAcknowledgeIt_button');
+	} else {
+		$('.service .unAcknowledgeIt').attr('title', 'Acknowledge this Service').attr('alt', 'Acknowledge this Service').removeClass('unAcknowledgeIt').addClass('acknowledgeIt');
+		$('.service .unAcknowledgeItGroup').attr('title', 'Acknowledge this Services Group').attr('alt', 'Acknowledge this Services Group').removeClass('unAcknowledgeItGroup').addClass('acknowledgeItGroup');
+		$('#unAcknowledgeIt_button').attr('title', 'Acknowledge All Services').attr('alt', 'Acknowledge All Services').attr('id', 'acknowledgeIt_button');
+	}
+	
+	if (Search.currentTab == 'sched') {
+		$('.service .scheduleIt').attr('title', 'Unschedule Downtime for this Service').attr('alt', 'Unschedule Downtime for this Service').removeClass('scheduleIt').addClass('unScheduleIt');
+		$('.service .scheduleItGroup').attr('title', 'Unschedule Downtime for this Group').attr('alt', 'Unschedule Downtime for this Group').removeClass('scheduleItGroup').addClass('unScheduleItGroup');
+		$('#scheduleIt_button').attr('title', 'Unschedule Downtime for All Services').attr('alt', 'Unschedule Downtime for All Services').attr('id', 'unScheduleIt_button');
+	} else {
+		$('.service .unScheduleIt').attr('title', 'Schedule Downtime for this Service').attr('alt', 'Schedule Downtime for this Service').removeClass('unScheduleIt').addClass('scheduleIt');
+		$('.service .unScheduleItGroup').attr('title', 'Schedule Downtime for this Group').attr('alt', 'Sechedule Downtime for this Group').removeClass('unScheduleItGroup').addClass('scheduleItGroup');
+		$('#unScheduleIt_button').attr('title', 'Schedule Downtime for All Services').attr('alt', 'Schedule Downtime for All Services').attr('id', 'scheduleIt_button');
+	}
 	
 	var warnings = 0,
 		critical = 0,
@@ -645,7 +667,6 @@ Search.extension = function () {
 		$('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
 		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
 		$('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
-		$('#ext_search').append('<span id="'+ Search.unackButtonId +'" class="list-unack-icon" alt="Unacknowledge All Services" title="Unacknowledge All Services"></span>');
 		$('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
 		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Refresh Services Status" title="Refresh Services Status"></span>');
 	}
@@ -656,7 +677,6 @@ Search.extensionVisibility = function () {
 		$(Search.filterButtons).show();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
 		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
-		(Search.currentTab == 'acked' && $('#mainTable tbody .icons.unAck').length) ? $('#'+ Search.unackButtonId).show() : $('#'+ Search.unackButtonId).hide();
 	}
 	else {
 		$(Search.filterButtons).hide();
@@ -872,7 +892,7 @@ Search.prepareSendData = function () {
 				'isHost':      $(this)[0].isHost,
 			});
 		}
-		else if (whatWeChangeObject.type == 'quickUnAck' || whatWeChangeObject.type == 'unAck') {
+		else if (whatWeChangeObject.type == 'quickUnAck' || whatWeChangeObject.type == 'unAck' || whatWeChangeObject.type == 'unAcknowledgeIt') {
 			requestData.push({
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
@@ -970,7 +990,7 @@ Search.restoreAllData = function() {
 				d.service.qAck  = true;
 				d.service.qAuth = false;
 			}
-			else if (whatWeChangeObject.type == 'unAck') {
+			else if (whatWeChangeObject.type == 'unAck' || whatWeChangeObject.type == 'unAcknowledgeIt') {
 				d.service.unAck = false;
 				d.service.qUAck = false;
 				d.service.qAck  = true;
@@ -1568,6 +1588,43 @@ Search.init = function() {
 		
 		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
 	});
+
+	
+	$(document).on('click', '#unAcknowledgeIt_button', function () {
+		whatWeChangeObject = {
+			'type':    'unAcknowledgeIt',
+			'what':    'all',
+			'host':    '',
+			'service': '',
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
+	$('#mainTable').on('click', 'thead .unAcknowledgeItGroup', function () {
+		var host    = $(this).closest('tr').find('.host').text(),
+			service = $(this).closest('tr').find('.service ul li:first').text();
+			
+		whatWeChangeObject = {
+			'type':    'unAcknowledgeIt',
+			'what':    'group',
+			'host':    (host    == parseInt(host))    ? '' : host,
+			'service': (service == parseInt(service)) ? '' : service,
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+		
+		return false;
+	});
+	$('#mainTable').on('click', '.unAcknowledgeIt', function () {
+		whatWeChangeObject = {
+			'type':    'unAcknowledgeIt',
+			'what':    'this',
+			'host':    $(this).closest('tr').find('.host').text(),
+			'service': $(this).closest('tr').find('.service ul li:first').text(),
+		};
+		
+		$.when(Search.tempHideButtons()).then(function(){Search.prepareSendData()});
+	});
 	
 	
 	$('#mainTable').on('click', 'thead .acknowledgeItGroup', function () {
@@ -1816,33 +1873,92 @@ Search.init = function() {
 			$('.comment').hide();
 		}
 	})
-	$('#mainTable').on('click', '.downtime_id', function () {
-		Search.stopReloads();
-		$(this).hide();
-		var row     = $(this).closest('tr'),
-			id      = $(this).attr('data-id'),
-			isHost  = row.find('.host a').attr('data-host'),
-			cmd_typ = (isHost == 'service') ? 79 : 78,
-			request = [];
+
+	
+	function unSchedule(type, element) {
+		var button  = element,
+			request = [],
+			ids     = [];
+		
+		if (type == 'all') {
+			var rows = $('#mainTable tbody tr');
 			
-		request.push({ 'cmd_typ': cmd_typ, 'cmd_mod': 2, 'down_id': id, 'isHost': isHost });
+			$('#mainTable tr').find('.service .unScheduleIt').css('visibility', 'hidden');
+			$('#mainTable tr').find('.service .unScheduleItGroup').css('visibility', 'hidden');
+		} else if (type == 'group') {
+			var group = button.closest('tr').attr('data-group'),
+				rows  = $('#mainTable thead tr[data-group="'+ group +'"]:not(.group-list-bottom):not(:last-child)');
+				
+			$('#mainTable thead tr[data-group="'+ group +'"]:not(:last-child) .service .unScheduleIt').css('visibility', 'hidden');
+		} else {
+			var rows = button.closest('tr');
+		}
+		
+		button.css('visibility', 'hidden');
+		
+		$(rows).each(function() {
+			var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
+				isHost  = $(this).find('.host a').attr('data-host');
+			
+			request.push({ 'down_id': down_id, 'isHost': isHost });
+			ids.push(down_id);
+		});
 		
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
-			data:   { data: request, type: 'downtime' },
+			data:   { data: request, 'type': 'downtime' },
 		})
 		.fail(function(jqXHR, textStatus) {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+			
+			if (type == 'all') {
+				rows.find('.service .unScheduleIt').removeAttr('style');
+			}
+			
+			if (type == 'group') {
+				$('#mainTable thead tr[data-group="'+ group +'"]:not(:last-child) .service .unScheduleIt').removeAttr('style');
+			}
+			button.css('visibility', 'visible');
 		})
 		.done(function() {
-			Search.allDataTable.row($('#mainTable tbody tr [data-id="'+ id +'"]').closest('tr')).remove();
+			button.removeAttr('style');
+			$(ids).each(function(key, id) {
+				var dataRow = Search.allDataTable.row($('#mainTable tbody tr [data-id="'+ id +'"]').closest('tr')),
+					data    = dataRow.data();
+				
+				if (data.status.name == 'OK') {
+					dataRow.remove();
+				}
+				else {
+					data.type = (data.type == '__sched__') ? '__normal__' : (data.type.replace('__sched__', ''));
+					dataRow.invalidate();
+				}
+			});
 			Search.filterDataTable($('#mainTable_filter input').val());
 			setTimeout(function(){ Search.startReloads(); }, 3000);
 			quickAckUnAckGroup();
 		});
+	}
+	$('#mainTable').on('click', '.unScheduleIt', function() {
+		Search.stopReloads();
+		
+		unSchedule('this', $(this));
+	});
+	$('#mainTable').on('click', '.unScheduleItGroup', function() {
+		Search.stopReloads();
+		
+		unSchedule('group', $(this));
+		
+		return false;
+	});	
+	$(document).on('click', '#unScheduleIt_button', function() {
+		Search.stopReloads();
+		
+		unSchedule('all', $(this));
 	});
 	
+
 	setInterval(function() {
 		var currentTime = (new Date()).getTime();
 		if (currentTime > (lastTime + 300000)) {

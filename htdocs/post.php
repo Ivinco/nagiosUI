@@ -5,7 +5,7 @@ include_once 'config/config.php';
 $return     = array();
 $type       = $_POST['type'];
 
-if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
+if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
 	echo 'type not in array OR file ('. $nagiosPipe .') not exists, please check in config.php $nagiosPipe value';
 	http_response_code(404);
 	
@@ -31,7 +31,7 @@ foreach ($_POST['data'] as $post) {
 			fwrite($f, "[".time()."] ACKNOWLEDGE_HOST_PROBLEM;{$post['host']};1;1;0;{$post['author']};{$post['com_data']}\n");
 		}
 	}
-	else if ($type == 'quickUnAck' || $type == 'unAck') {
+	else if ($type == 'quickUnAck' || $type == 'unAck' || $type == 'unAcknowledgeIt') {
 		if ($post['isHost'] == 'service') {
 			fwrite($f, "[".time()."] REMOVE_SVC_ACKNOWLEDGEMENT;{$post['host']};{$post['service']}\n");
 		}

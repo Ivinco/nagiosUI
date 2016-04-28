@@ -32,7 +32,7 @@ function planned($host, $service, $planned) {
 			$command = trim($command);
 			
 			if (preg_match("/$command/i", $host) && preg_match("/$pattern[1]/i", $service) && $plan['end'] > time()) {
-				$f = fopen($nagiosPipe, 'a');
+				$f = fopen($nagiosPipe, 'w');
 				fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$plan['end']};1;0;1;{$array['user']};planned\n");
 				fclose($f);
 				
@@ -94,11 +94,11 @@ foreach ($array['alert'] as $item) {
 			'qAck'  => ($tempCommen != 'temp') ? true : false,
 			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
 			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
+			'downId' => $downtimeId,
 		),
 		'status'    => array(
 			'name'  => $state,
 			'order' => ($state == 'CRITICAL') ? 4 : (($state == 'UNKNOWN') ? 3 : (($state == 'WARNING') ? 2 : (($state == 'OK') ? 1 : 0))),
-			'down'  => $downtimeId,
 		),
 		'last'      => array(
 			'name'  => $lastCheck, 

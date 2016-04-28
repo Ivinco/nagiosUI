@@ -78,7 +78,7 @@ copy
 #mainTable td.host { background-color: rgb(219, 219, 219); }
 #mainTable td.status_information { word-break: break-all; }
 #mainTable .comment span { display: block; }
-#mainTable .status .downtime_id { color: red; font-weight: bold; cursor: pointer; }
+#mainTable .status .downtime_id { color: #fff; cursor: pointer; text-shadow: 0px 0px 4px rgba(0, 0, 0, 1); }
 #mainTable .status .downtime_id span { display: none; }
 #mainTable .more button { width: 19px; height: 19px; padding: 0 4px 4px 4px; }
 #mainTable .more-info-icon { display: none; width: 19px; height: 19px; background: url('../images/icons.png') no-repeat -133px 0; margin: 12px 3px 0 0; padding: 0; cursor: pointer; }
@@ -124,6 +124,14 @@ copy
 #mainTable .likeTable .list-ack-icon      { background: url('../images/icons.png') no-repeat  -76px 0; }
 #mainTable .likeTable .list-sched-icon    { background: url('../images/icons.png') no-repeat  -95px 0; }
 #mainTable .likeTable .list-recheck-icon  { background: url('../images/icons.png') no-repeat -114px 0; }
+
+#mainTable .likeTable .list-ack-icon.unAcknowledgeIt,
+#mainTable .likeTable .list-ack-icon.unAcknowledgeItGroup,
+#ext_search #unAcknowledgeIt_button.list-ack-icon { background: url('../images/icons.png') no-repeat  -76px -19px; }
+#mainTable .likeTable .list-sched-icon.unScheduleIt,
+#mainTable .likeTable .list-sched-icon.unScheduleItGroup,
+#ext_search #unScheduleIt_button.list-sched-icon { background: url('../images/icons.png') no-repeat  -95px -19px; }
+
 
 #normalGrouping { float: right; }
 #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 13px; line-height: 26px; padding: 0 2em 0 1em; }
