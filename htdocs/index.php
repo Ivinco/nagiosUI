@@ -89,7 +89,6 @@
         </thead>
     </table>
 	<div id="planned-maintenance">
-		<h2>Planned mainetance</h2>
 		<div class="holder">
 			<label for="host-service">Host & Service</label><br />
 			<input type="text" name="host-service" id="host-service" /><br />

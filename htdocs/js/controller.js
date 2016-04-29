@@ -1390,6 +1390,11 @@ Search.init = function() {
 			}
 		}
 	});
+	$('#host-service, #maintenance-time').on('keypress', function(e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$('#planned-save').trigger('click');
+		}
+	});
 	
 	$('#normal, #acked, #sched, #EMERGENCY, #planned').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {

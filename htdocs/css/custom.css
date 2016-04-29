@@ -182,7 +182,7 @@ table.dataTable thead .no-border-th {
   border-bottom: 0 !important;
 }
 
-#planned-maintenance { padding: 20px 0; font-size: 15px; display: none; }
+#planned-maintenance { padding: 50px 0; font-size: 15px; display: none; }
 #planned-maintenance label { font-weight: bold; line-height: 32px; }
 #planned-maintenance button { font-size: 15px; line-height: 20px; margin-top: 12px; }
 #planned-maintenance input { font-size: 15px; border: 1px solid #ccc; outline: none; }
