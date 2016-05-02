@@ -26,12 +26,12 @@ function planned($host, $service, $planned) {
 		$pattern  = str_replace("?", ".", $pattern);
 		$pattern  = str_replace("&quot;", "\"", $pattern);
 		$pattern  = explode('_', $pattern);
-		$commands = explode(',', $pattern[0]);
+		$commands = explode(',', (!$pattern[0] ? ".+" : $pattern[0]));
 		
 		foreach ($commands as $command) {
 			$command = trim($command);
 			
-			if (preg_match("/$command/i", $host) && preg_match("/$pattern[1]/i", $service) && $plan['end'] > time()) {
+			if (preg_match("/$command/i", " " . $host . " ") && preg_match("/$pattern[1]/i", " " . $service . " ") && $plan['end'] > time()) {
 				$f = fopen($nagiosPipe, 'w');
 				fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$plan['end']};1;0;1;{$array['user']};planned\n");
 				fclose($f);
