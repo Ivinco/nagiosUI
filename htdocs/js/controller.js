@@ -592,10 +592,13 @@ Search.filterDataTable = function(val, startReload) {
 	} else {
 		$('.comment').hide();
 	}
-	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked');
+	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
+	$('.quickAckUnAckIcon').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
 	$('.status .downtime_id').toggle(Search.currentTab == 'sched');
 	$('.service .list-downtime-icon').closest('li').toggle(Search.currentTab != 'sched');
 	$('.service .list-unack-icon').closest('li').toggle(Search.currentTab != 'acked');
+	
+	
 	
 	if (Search.currentTab == 'acked') {
 		$('.service .acknowledgeIt').attr('title', 'Unacknowledge this Service').attr('alt', 'Unacknowledge this Service').removeClass('acknowledgeIt').addClass('unAcknowledgeIt');
@@ -675,8 +678,8 @@ Search.extension = function () {
 Search.extensionVisibility = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength) {
 		$(Search.filterButtons).show();
-		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
-		(Search.currentTab != 'acked' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
+		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
+		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
 	}
 	else {
 		$(Search.filterButtons).hide();
@@ -1341,28 +1344,30 @@ Search.init = function() {
 	}
 	function drawPlanned(data) {
 		$('#planned-list').html('');
-				
-		$.each(data, function( index, value ) {
-			$('#planned-list').append('<li><input type="text" name="host-service" value="'+ value['command'] +'" class="planned-input"><button data-id="'+ (index + 1) +'" class="save-planned">Save</button> <small>till <strong>'+ value['date'] +'</strong></small></li>');
-		});
+		$('#planned-list').closest('div').toggle(data.length > 0);
+		
+		if (data.length > 0) {
+			$.each(data, function( index, value ) {
+				$('#planned-list').append('<li><small><strong>' + value['command'] + '</strong> (till: '+ value['date'] +')</small> <button data-id="'+ (index + 1) +'" class="save-planned">Delete</button></li>');
+			});
+		}
 	}
 	$(document).on('click', '.save-planned', function() {
-		var li   = $(this).closest('li'),
-			text = li.find('input').val();
+		var li = $(this).closest('li');
 
-		li.find('input').removeAttr('style');
-		
-		if (text) {
+		if (confirm('Are You shure?')) {
+			$(this).attr('disabled', 'disabled');
+			
 			$.ajax({
 				url:    'planned.php',
 				method: 'POST',
-				data:   { text: text, time: 1, line: li.find('button').attr('data-id') },
+				data:   { text: 'delete', time: 1, line: li.find('button').attr('data-id') },
 			})
 			.always(function(data) {
 				drawPlanned(data);
+				Search.stopReloads();
+				Search.startReloads();
 			});
-		} else {
-			li.find('input').css('border-color', 'red');
 		}
 	});
 	$(document).on('click', '#planned-save', function() {
@@ -1380,6 +1385,8 @@ Search.init = function() {
 			.always(function(data) {
 				$('#host-service, #maintenance-time').val('');
 				drawPlanned(data);
+				Search.stopReloads();
+				Search.startReloads();
 			});
 		} else {
 			if (!text) {

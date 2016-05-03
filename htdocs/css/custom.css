@@ -204,6 +204,7 @@ table.dataTable thead .no-border-th {
     #grouping-menu li, #refreshTimeSelect-menu li { font-size: 12px; }
     .ui-button-text-only .ui-button-text { padding: 6px 7px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon, #radio .top-planned-icon { margin-top: 0px; }
+    #radio .top-planned-icon { padding: 2px; }
     #planned-label .ui-button-text { padding-right: 3px; }
 }
 
@@ -246,6 +247,7 @@ table.dataTable thead .no-border-th {
     #mainTable .comment { width: 85px !important; }
     #mainTable .duration, #mainTable .duration-th { width: 72px !important; }
     #planned-maintenance .holder { width: auto; display: block; margin-bottom: 30px; }
+    #radio .top-planned-icon { padding: 0px; }
 }
 
 @media (max-width: 560px) {

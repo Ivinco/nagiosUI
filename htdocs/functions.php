@@ -352,4 +352,100 @@ function parseToXML($htmlStr) {
     return $xmlStr;
 }
 
-
+function removePlannedMaintenance($delete) {
+	$pattern  = returnPlannedPattern($delete);
+	$commands = explode(',', $pattern[0]);
+	$array    = json_decode(json_encode(simplexml_load_string(returnDataList(false, ''))),TRUE);
+	
+	if (isset($array['alert']['host'])) {
+		$array['alert'] = [$array['alert']];
+	}
+	
+	foreach ($array['alert'] as $item) {
+		$tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
+		$host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
+		$service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+		$downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(' ', $item['downtime_id']);
+		$text            = returnPlannedText($host, $service);
+		
+		if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
+			foreach ($commands as $command) {
+				$command = returnPlannedCommand($command, $pattern);
+				
+				if (preg_match("/$command/i", $text)) {
+					removeSchedulePlanned($downtimeId);
+				}
+			}
+		}
+	}
+}
+function writePlanned($data) {
+	global $plannedUrl;
+	
+	file_put_contents($plannedUrl, json_encode($data, true));
+	
+	return;
+}
+function returnPlanned() {
+	global $plannedUrl;
+	
+	return json_decode(file_get_contents($plannedUrl), true);
+}
+function returnPlannedPattern($command) {
+	$pattern = $command;
+	$pattern = str_replace("*", ".+", $pattern);
+	$pattern = str_replace("?", ".", $pattern);
+	$pattern = str_replace("&quot;", "\"", $pattern);
+	$pattern = explode('_', $pattern);
+	
+	return $pattern;
+}
+function returnPlannedCommand($command, $pattern) {
+	$command = trim($command);
+	$command = $command . $pattern[1];
+	$command = str_replace(".+.+", ".+", $command);
+	
+	return $command;
+}
+function returnPlannedText($host, $service) {
+	return " " . $host . " " . $service . " ";
+}
+function schedulePlanned($host, $service, $end, $user) {
+	global $nagiosPipe;
+	
+	$f = fopen($nagiosPipe, 'w');
+	fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};planned\n");
+	fclose($f);
+	
+	return true;
+}
+function removeSchedulePlanned($downtimeId) {
+	global $nagiosPipe;
+	
+	$f = fopen($nagiosPipe, 'w');
+	fwrite($f, "[".time()."] DEL_SVC_DOWNTIME;{$downtimeId}\n");
+	fclose($f);
+	
+	return true;
+}
+function findPlanned($host, $service, $user) {
+	global $nagiosPipe;
+	global $planned;
+	
+	foreach ($planned as $plan) {
+		$pattern  = returnPlannedPattern($plan['command']);
+		$commands = explode(',', $pattern[0]);
+		
+		foreach ($commands as $command) {
+			$command = returnPlannedCommand($command, $pattern);
+			$text    = returnPlannedText($host, $service);
+			
+			if (preg_match("/$command/i", $text) && $plan['end'] > time()) {
+				return schedulePlanned($host, $service, $plan['end'], $user);
+			}
+		}
+	}
+	
+	return false;
+}
+$planned = returnPlanned();

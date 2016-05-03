@@ -68,7 +68,6 @@
 			<input type="radio" id="planned" name="radio"/>
 			<label for="planned" id="planned-label">
 				<span class="top-planned-icon"></span>
-				<span class="xs-hide">&nbsp;</span>
 				<span class="small-hide">&#160;Planned maintenance</span>
 			</label>
         </div>

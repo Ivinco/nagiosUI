@@ -14,36 +14,6 @@ if (isset($array['alert']['host'])) {
 	$array['alert'] = [$array['alert']];
 }
 
-$planned = json_decode(file_get_contents('planned.json'), true);
-
-function planned($host, $service, $planned) {
-	global $nagiosPipe;
-	global $array;
-	
-	foreach ($planned as $plan) {
-		$pattern  = $plan['command'];
-		$pattern  = str_replace("*", ".+", $pattern);
-		$pattern  = str_replace("?", ".", $pattern);
-		$pattern  = str_replace("&quot;", "\"", $pattern);
-		$pattern  = explode('_', $pattern);
-		$commands = explode(',', (!$pattern[0] ? ".+" : $pattern[0]));
-		
-		foreach ($commands as $command) {
-			$command = trim($command);
-			
-			if (preg_match("/$command/i", " " . $host . " ") && preg_match("/$pattern[1]/i", " " . $service . " ") && $plan['end'] > time()) {
-				$f = fopen($nagiosPipe, 'w');
-				fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$plan['end']};1;0;1;{$array['user']};planned\n");
-				fclose($f);
-				
-				return true;
-			}
-		}
-	}
-	
-	return false;
-}
-
 foreach ($array['alert'] as $item) {
 	$acked           = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
 	$ackComment      = (!is_array($item['ack_comment']))          ? $item['ack_comment']          : implode(' ', $item['ack_comment']);
@@ -68,7 +38,7 @@ foreach ($array['alert'] as $item) {
 	$quickAckAu      = (!is_array($item['quick_ack_author']))     ? $item['quick_ack_author']     : implode(' ', $item['quick_ack_author']);
 	$hostOrService   = $item['host_or_service'];
 	
-	if ($acked == 0 && $sched == 0 && planned($host, $service, $planned)) {
+	if ($acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
 		$sched = 1;
 		$tempSchedCommen = 'planned';
 	}

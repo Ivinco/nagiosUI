@@ -3,7 +3,8 @@
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
-$file   = 'planned.json';
+include_once 'functions.php';
+
 $return = null;
 
 if (!empty($_POST)) {
@@ -18,8 +19,8 @@ if (!empty($_POST)) {
 	
 	if ($line == 'new') {
 		addData($file, $line, $text, $time);
-	} else if (intval($line) > -1) {
-		addData($file, $line, $text);
+	} else if (intval($line) > 0) {
+		removeData($file, $line); 
 	}	
 }
 
@@ -27,7 +28,7 @@ echo json_encode(recheckData($file), true);
 http_response_code(200);
 
 function addData($file, $line = false, $text = false, $time = false) {
-	$json = json_decode(file_get_contents($file), true);
+	$json = returnPlanned();
 	
 	if ($line == 'new') {
 		$end = (time() + $time * 60);
@@ -38,17 +39,35 @@ function addData($file, $line = false, $text = false, $time = false) {
 			'end'     => $end,
 			'date'    => date('Y-m-d H:i:s', $end),
 		];
-	} else if (intval($line) > 0) {
-		$json[($line - 1)]['command'] = $text;
 	}
 	
-	file_put_contents($file, json_encode($json, true));
+	writePlanned($json);
 	
 	return;
 }
 
+function removeData($file, $line) {
+	$json = returnPlanned();
+	
+	$results = [];
+	$delete  = null;
+	
+	foreach ($json as $key => $record) {
+		if ($record['end'] > time() && $key != ($line - 1)) {
+			$results[] = $record;
+		}
+		
+		if ($record['end'] > time() && $key == ($line - 1)) {
+			$delete = $record['command'];
+		}
+	}
+	
+	removePlannedMaintenance($delete);
+	writePlanned($results);
+}
+
 function recheckData($file) {
-	$json = json_decode(file_get_contents($file), true);
+	$json = returnPlanned();
 	
 	$results = [];
 	
@@ -58,7 +77,7 @@ function recheckData($file) {
 		}
 	}
 	
-	file_put_contents($file, json_encode($results, true));
+	writePlanned($results);
 	
 	return $results;
 }

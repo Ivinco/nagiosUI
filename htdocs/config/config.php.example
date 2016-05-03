@@ -62,6 +62,9 @@ $refreshArray   = [
 	[ 'value' => '600', 'name' => '10 min' ],
 ];
 
+/* Planned Maintenance file */
+$plannedUrl = 'planned.json';
+
 function hostUrl($host) {
 	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;
 }
