@@ -383,8 +383,6 @@ function writePlanned($data) {
 	global $plannedUrl;
 	
 	file_put_contents($plannedUrl, json_encode($data, true));
-	
-	return;
 }
 function returnPlanned() {
 	global $plannedUrl;
@@ -416,8 +414,6 @@ function schedulePlanned($host, $service, $end, $user) {
 	$f = fopen($nagiosPipe, 'w');
 	fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};planned\n");
 	fclose($f);
-	
-	return true;
 }
 function removeSchedulePlanned($downtimeId) {
 	global $nagiosPipe;
@@ -425,8 +421,6 @@ function removeSchedulePlanned($downtimeId) {
 	$f = fopen($nagiosPipe, 'w');
 	fwrite($f, "[".time()."] DEL_SVC_DOWNTIME;{$downtimeId}\n");
 	fclose($f);
-	
-	return true;
 }
 function findPlanned($host, $service, $user) {
 	global $nagiosPipe;

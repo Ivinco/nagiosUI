@@ -20,7 +20,7 @@ if (!empty($_POST)) {
 	if ($line == 'new') {
 		addData($file, $line, $text, $time);
 	} else if (intval($line) > 0) {
-		removeData($file, $line); 
+		removeData($file, $line);
 	}	
 }
 
@@ -42,8 +42,6 @@ function addData($file, $line = false, $text = false, $time = false) {
 	}
 	
 	writePlanned($json);
-	
-	return;
 }
 
 function removeData($file, $line) {
