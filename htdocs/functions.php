@@ -212,6 +212,7 @@ $xmlContent = '<alerts sort="1">
 				$attempt         = $attrs['attempts']/$attrs['max_attempts'];
 				$host_or_service = ($service == "SERVER IS UP") ? "host" : "service";
 				$userAvatar      = (isset($usersArray[$ackLastAuthor])) ? $usersArray[$ackLastAuthor] : '';
+				$scheduserAvatar = (isset($usersArray[$schedLastTemp])) ? $usersArray[$schedLastTemp] : '';
 
 $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<host>'.               $host .'</host>
@@ -228,6 +229,7 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<sched_last_temp>'.    $schedLastTemp .'</sched_last_temp>
 		<sched_last_author>'.  $schedLastAuthor .'</sched_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
+		<planned_author>'.     md5(strtolower(trim($scheduserAvatar))) .'</planned_author>
 		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
 		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
 		<last_check>'.         $last_check .'</last_check>

@@ -36,6 +36,7 @@ foreach ($array['alert'] as $item) {
 	$tempSchedAuthor = (!is_array($item['sched_last_author']))    ? $item['sched_last_author']    : implode(' ', $item['sched_last_author']);
 	$tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
 	$quickAckAu      = (!is_array($item['quick_ack_author']))     ? $item['quick_ack_author']     : implode(' ', $item['quick_ack_author']);
+	$plannedAuthor   = (!is_array($item['planned_author']))       ? $item['planned_author']       : implode(' ', $item['planned_author']);
 	$hostOrService   = $item['host_or_service'];
 	
 	if ($acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
@@ -61,7 +62,7 @@ foreach ($array['alert'] as $item) {
 			'down'  => ($sched == 1 && $tempSchedCommen != 'planned') ? true : false,
 			'notes' => $notesUrl,
 			'sched' => ($sched == 1 && $tempSchedCommen == 'planned') ? true : false,
-			'pAuth' => ($sched == 1 && $tempSchedCommen == 'planned') ? $quickAckAu : false,
+			'pAuth' => ($sched == 1 && $tempSchedCommen == 'planned') ? $plannedAuthor : false,
 			'qAck'  => ($tempCommen != 'temp') ? true : false,
 			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
 			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
