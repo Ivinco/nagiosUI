@@ -61,6 +61,7 @@ foreach ($array['alert'] as $item) {
 			'down'  => ($sched == 1 && $tempSchedCommen != 'planned') ? true : false,
 			'notes' => $notesUrl,
 			'sched' => ($sched == 1 && $tempSchedCommen == 'planned') ? true : false,
+			'pAuth' => ($sched == 1 && $tempSchedCommen == 'planned') ? $quickAckAu : false,
 			'qAck'  => ($tempCommen != 'temp') ? true : false,
 			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
 			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
