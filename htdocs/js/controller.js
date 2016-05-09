@@ -380,30 +380,38 @@ function getGroupNormalThead(rowsHeader) {
 			liClass        = (Search.currentTab == 'acked') ? 'unAckIcon' : 'quickAckUnAckIcon',
 			liImgClass     = (Search.currentTab == 'acked') ? 'unAckGroup' : 'quickAckGroup',
 			liImgSrc       = (Search.currentTab == 'acked') ? 'list-unack-icon' : 'list-qack-icon',
-			liImgTitle     = (Search.currentTab == 'acked') ? 'Unacknowledge All Services' : 'Quick Acknowledge';
+			liImgTitle     = (Search.currentTab == 'acked') ? 'Unacknowledge All Services' : 'Quick Acknowledge',
+			subRows        = $('#mainTable tbody tr:contains("'+ contains +'")').length,
+			subRowsGrey    = $('#mainTable tbody tr:contains("'+ contains +'") .host.grey-text').length,
+			mainGreyClass  = (subRowsGrey == subRows) ? ' grey-text' : '',
+			avatar         = (mainGreyClass) ? $('#mainTable tbody tr:contains("'+ contains +'") .service.grey-text img:first-child').first().attr('src') : '';
 			
+			if (avatar) {
+				var quickAck = '<li><img class="icons" src="'+ avatar +'"></li>';
+			} else {
+				var quickAck = '<li class="'+ liClass +'"><span class="icons '+ liImgClass +' '+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></span></li>';
+			}
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
-			'	<td class="service '+ trClass +'"'+ css +'>' +
+			'	<td class="host'+ mainGreyClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
+			'	<td class="service '+ trClass + mainGreyClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
-			'				<li>' + serviceValue + '</li>' +
-			'				<li class="'+ liClass +'"><span class="icons '+ liImgClass +' '+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></span></li>' +
+			'				<li>' + serviceValue + '</li>' + quickAck +
 			'				<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
 			'				<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
 			'				<li><span class="icons recheckItGroup list-recheck-icon" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 			'			</ul>' +
 			'		</div>' +
 			'	</td>' +
-			'	<td class="status '+ trClass +'">'+ rowData.status +'</td>' +
-			'	<td class="last_check '+ trClass +'">'+ rowData.lastCheck +'</td>' +
+			'	<td class="status '+ trClass + mainGreyClass +'">'+ rowData.status +'</td>' +
+			'	<td class="last_check '+ trClass + mainGreyClass +'">'+ rowData.lastCheck +'</td>' +
 			'	<td class="duration-sec" style="display: none;"></td>' +
-			'	<td class="duration '+ trClass +'">'+ rowData.duration +'</td>' +
-			'	<td class="status_information '+ trClass +'">'+ rowData.information +'</td>' +
-			'	<td class="comment '+ trClass +'">'+ rowData.comment +'</td>' +
-			'	<td class="more '+ trClass +'"><button class="button-more">></button></td>' +
+			'	<td class="duration '+ trClass + mainGreyClass +'">'+ rowData.duration +'</td>' +
+			'	<td class="status_information '+ trClass + mainGreyClass +'">'+ rowData.information +'</td>' +
+			'	<td class="comment '+ trClass + mainGreyClass +'">'+ rowData.comment +'</td>' +
+			'	<td class="more '+ trClass + mainGreyClass +'"><button class="button-more">></button></td>' +
 			'</tr>'
 		);
 		

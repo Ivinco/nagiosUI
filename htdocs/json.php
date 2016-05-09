@@ -5,6 +5,7 @@ include_once 'functions.php';
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
+global $usersArray;
 
 $xmlFile    = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array      = json_decode(json_encode(simplexml_load_string(returnDataList(false, $xmlFile))),TRUE);
@@ -41,6 +42,7 @@ foreach ($array['alert'] as $item) {
 	
 	if ($acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
 		$sched = 1;
+		$plannedAuthor = md5(strtolower(trim($usersArray[$array['user']])));
 		$tempSchedCommen = 'planned';
 	}
 	

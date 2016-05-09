@@ -416,6 +416,8 @@ function schedulePlanned($host, $service, $end, $user) {
 	$f = fopen($nagiosPipe, 'w');
 	fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};planned\n");
 	fclose($f);
+	
+	return true;
 }
 function removeSchedulePlanned($downtimeId) {
 	global $nagiosPipe;
