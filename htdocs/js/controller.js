@@ -65,17 +65,16 @@ Search = {}
 					display: function ( data, type, full, meta ) {
 						var unAck = (data.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
 							down  = (data.down)            ? '<li><span class="list-downtime-icon"></span></li>' : '',
-							notes = (data.notes)           ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
+							notes = (data.notes)           ? '<a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a>' : '',
 							pAuth = (data.pAuth)           ? '<img class="icons" src="http://www.gravatar.com/avatar/'+ data.pAuth +'?size=19" />' : '';
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
-							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a> '+ notes +'</li>' +
 									unAck  +
 									down   +
-									notes  +
 							'		<li>'  +
 										qAck  +
 										qUAck +
@@ -1365,7 +1364,7 @@ Search.init = function() {
 	$(document).on('click', '.save-planned', function() {
 		var li = $(this).closest('li');
 
-		if (confirm('Are You shure?')) {
+		if (confirm('Are you sure?')) {
 			$(this).attr('disabled', 'disabled');
 			
 			$.ajax({
