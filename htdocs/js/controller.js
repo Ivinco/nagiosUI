@@ -72,7 +72,7 @@ Search = {}
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
-							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a> '+ notes +'</li>' +
+							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a>'+ notes +'</li>' +
 									unAck  +
 									down   +
 							'		<li>'  +
