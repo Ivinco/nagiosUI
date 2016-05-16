@@ -2,6 +2,14 @@
 
 include_once 'functions.php';
 
+ignore_user_abort(false);
+set_time_limit(10);
+
+if (connection_aborted()) {
+	http_response_code(404);
+    die;
+}
+
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
@@ -105,4 +113,5 @@ $additional = array(
 
 echo json_encode(array('data' => $returnJson, 'additional' => $additional));
 
-
+http_response_code(200);
+die;
