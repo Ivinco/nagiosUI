@@ -402,7 +402,7 @@ function returnPlannedPattern($command) {
 }
 function returnPlannedCommand($command, $pattern) {
 	$command = trim($command);
-	$command = $command . $pattern[1];
+	$command = (isset($pattern[1])) ? ($command . $pattern[1]) : $command;
 	$command = str_replace(".+.+", ".+", $command);
 	
 	return $command;

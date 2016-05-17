@@ -5,6 +5,9 @@ header('Content-Type: application/json');
 
 include_once 'functions.php';
 
+global $plannedUrl;
+
+$file  = $plannedUrl;
 $return = null;
 
 if (!empty($_POST)) {
