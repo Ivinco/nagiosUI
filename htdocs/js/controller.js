@@ -486,7 +486,7 @@ function quickAckUnAckGroup() {
 			}
 		});
 		
-		if ($('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').length == unAckIcons.length) {
+		if ($('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').length == unAckIcons.length + 1) {
 			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
 				.html(unAckIcons[0])
 				.find('.icons')
