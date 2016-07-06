@@ -1320,10 +1320,10 @@ Search.init = function() {
 	
 	$(document).click(function() {
 		var selection = getSelectedText();
-		
+
 		if (selection && (Search.backgroundReload || Search.autoRefresh)) {
 			Search.stopReloads();
-		} else if (!selection && !Search.backgroundReload && !Search.autoRefresh) {
+		} else if (!selection && !Search.backgroundReload && !Search.autoRefresh && !$('.ui-widget-overlay').length) {
 			Search.startReloads();
 		}
 		
