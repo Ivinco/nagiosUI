@@ -3,7 +3,7 @@
 include_once 'config/config.php';
 
 $return     = array();
-$type       = $_POST['type'];
+$type       = $_REQUEST['type'];
 
 if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime')) || !file_exists($nagiosPipe)) {
 	echo 'type not in array OR file ('. $nagiosPipe .') not exists, please check in config.php $nagiosPipe value';
@@ -12,7 +12,7 @@ if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAc
 	die;
 }
 
-foreach ($_POST['data'] as $post) {
+foreach ($_REQUEST['data'] as $post) {
 	$f = fopen($nagiosPipe, 'w');
 		
 	if (!$f) {
