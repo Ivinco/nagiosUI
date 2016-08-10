@@ -65,3 +65,8 @@ Installation:
   - $refreshArray             = refresh select values
 * you need to set up cron job:
   - * * * * * root php /domain/admin_scripts/cron/nagios_percentile.php >>/domain/log/nagios_percentile.log 2>&1
+* you need to configure .git/hooks/post-receive file:
+  - #!/bin/sh
+  - GIT_WORK_TREE=/path to your git repository git checkout -f
+  - cd /path to your git repository/htdocs
+  - exec sudo chmod 666 planned.json
