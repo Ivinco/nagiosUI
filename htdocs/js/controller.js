@@ -65,16 +65,15 @@ Search = {}
 					display: function ( data, type, full, meta ) {
 						var unAck = (data.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
 							down  = (data.down)            ? '<li><span class="list-downtime-icon"></span></li>' : '',
-							notes = (data.notes)           ? '<a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a>' : '',
+							notes = (data.notes)           ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
 							pAuth = (data.pAuth)           ? '<img class="icons" src="http://www.gravatar.com/avatar/'+ data.pAuth +'?size=19" />' : '';
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
-							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a>'+ notes +'</li>' +
-									unAck  +
-									down   +
+							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+									notes  +
 							'		<li>'  +
 										qAck  +
 										qUAck +
@@ -737,9 +736,9 @@ Search.addDialogJs = function() {
 		autoOpen: false,
 		modal:    true,
 		width:    400,
-		position: { my: "center top", at: "center top+200"},
-		open:     function() { Search.getServerLocalTimeDialog(); $(this).parent().css("position","fixed"); },
-		close:    function() { Search.tempShowButtons() },
+		position: { my: "center center", at: "center top+200"},
+		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); },
+		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		create:   function() {
 			$(this).closest('.ui-dialog').on('keydown', function(ev) {
 			    if (ev.keyCode === $.ui.keyCode.ESCAPE) {
@@ -770,9 +769,9 @@ Search.addDialogJs = function() {
 		autoOpen: false,
 		modal:    true,
 		width:    400,
-		position: { my: "center top", at: "center top+200"},
-		close:    function() { Search.tempShowButtons() },
-		open:	  function() { $(this).parent().css("position","fixed"); },
+		position: { my: "center center", at: "center top+200"},
+		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
+		open:	  function() { $('body').css("overflow", "hidden"); },
 		closeOnEscape: true,
 		buttons: [
 			{
@@ -1850,7 +1849,7 @@ Search.init = function() {
 	function hideMoreMobile(tr) {
 		if (tr) {
 			tr.find('.hide-more').removeAttr('style');
-			tr.find('.service .likeTable ul li:first').removeAttr('style');;
+			tr.find('.service .likeTable ul li:first').removeAttr('style');
 			tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
 			tr.find('.duration').removeAttr('style');
 			tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
@@ -1868,7 +1867,7 @@ Search.init = function() {
 				var tr = $(this);
 				
 				tr.find('.hide-more').removeAttr('style');
-				tr.find('.service .likeTable ul li:first').removeAttr('style');;
+				tr.find('.service .likeTable ul li:first').removeAttr('style');
 				tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
 				tr.find('.duration').removeAttr('style');
 				tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
@@ -1893,6 +1892,12 @@ Search.init = function() {
 		} else {
 			$('.comment').hide();
 		}
+		
+		$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
+		$('.quickAckUnAckIcon').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
+		$('.status .downtime_id').toggle(Search.currentTab == 'sched');
+		$('.service .list-downtime-icon').closest('li').toggle(Search.currentTab != 'sched');
+		$('.service .list-unack-icon').closest('li').toggle(Search.currentTab != 'acked');
 	})
 
 	
