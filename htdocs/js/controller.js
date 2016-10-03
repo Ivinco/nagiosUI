@@ -49,6 +49,7 @@ Search = {}
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
 		'ajax':        'json.php' + Search.additionalFile,
+		'deferRender': true, 
 		'columns':     [
             {
 				data:      'host',
