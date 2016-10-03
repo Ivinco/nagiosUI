@@ -19,6 +19,11 @@ $xmlFile    = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array      = json_decode(json_encode(simplexml_load_string(returnDataList(false, $xmlFile))),TRUE);
 $returnJson = array();
 
+if (!$array) {
+	http_response_code(404);
+	die;	
+}
+
 if (isset($array['alert']['host'])) {
 	$array['alert'] = [$array['alert']];
 }

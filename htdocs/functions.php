@@ -76,7 +76,8 @@ $xmlContent = '<alerts sort="1">
 	preg_match_all($pregHostStatus, $statusFile, $downHostsMatches);
 	
 	if (!preg_match_all($pregServiceStatus, $statusFile, $matches)) {
-		die("ERROR: no services found\n");
+		http_response_code(404);
+		die;
 	}
 
 	$ackAndSchedMatches = array_merge(returnComments($pregServiceComment, $statusFile, false), returnComments($pregHostComment, $statusFile, true));
@@ -197,7 +198,7 @@ $xmlContent = '<alerts sort="1">
 							$tmpDowntimeId[] = $tmpComments['downtime_id'];
 						}
 					}
-					
+
 					$ackComment      = implode('<br /><br />', $tmpAckComments);
 					$schedComment    = implode('<br /><br />', $tmpSchedComments);
 					$downtime_id     = (!empty($tmpDowntimeId))  ? end($tmpDowntimeId)  : '';
@@ -206,40 +207,43 @@ $xmlContent = '<alerts sort="1">
 					$schedLastTemp   = (!empty($tmpSchedTemp))   ? end($tmpSchedTemp)   : '';
 					$schedLastAuthor = (!empty($tmpSchedAuthor)) ? end($tmpSchedAuthor) : '';
 				}
-				
+
 				$scheduled       = (int)$attrs['scheduled'];
 				$last_check      = date('m-d-Y H:i:s', $attrs['last_check']);
 				$attempt         = $attrs['attempts']/$attrs['max_attempts'];
 				$host_or_service = ($service == "SERVER IS UP") ? "host" : "service";
 				$userAvatar      = (isset($usersArray[$ackLastAuthor])) ? $usersArray[$ackLastAuthor] : '';
 				$scheduserAvatar = (isset($usersArray[$schedLastAuthor])) ? $usersArray[$schedLastAuthor] : '';
+				
+				$host = parseToXML($host);
+				$state = parseToXML($state);
 
-$xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
+$xmlContent .= '	<alert state="'. $state .'" origState="'. parseToXML($origState) .'">
 		<host>'.               $host .'</host>
 		<host-url>'.           hostUrl($host) .'</host-url>
-		<service>'.            parseToXML(htmlentities($service, ENT_XML1)) .'</service>
-		<service-url>'.        serviceUrl($host, htmlentities($serviceEncoded, ENT_XML1)) .'</service-url>
-		<notes_url>'.          htmlentities($notesUrl, ENT_XML1) .'</notes_url>
+		<service>'.            parseToXML($service) .'</service>
+		<service-url>'.        serviceUrl($host, parseToXML($serviceEncoded)) .'</service-url>
+		<notes_url>'.          parseToXML($notesUrl) .'</notes_url>
 		<status>'.             $state .'</status>
-		<acked>'.              $ackedStatus .'</acked>
-		<sched>'.              $scheduled .'</sched>
-		<downtime_id>'.        $downtime_id .'</downtime_id>
-		<ack_last_temp>'.      htmlspecialchars($ackLastTemp) .'</ack_last_temp>
-		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
-		<sched_last_temp>'.    htmlspecialchars($schedLastTemp) .'</sched_last_temp>
-		<sched_last_author>'.  $schedLastAuthor .'</sched_last_author>
+		<acked>'.              parseToXML($ackedStatus) .'</acked>
+		<sched>'.              parseToXML($scheduled) .'</sched>
+		<downtime_id>'.        parseToXML($downtime_id) .'</downtime_id>
+		<ack_last_temp>'.      parseToXML($ackLastTemp) .'</ack_last_temp>
+		<ack_last_author>'.    parseToXML($ackLastAuthor) .'</ack_last_author>
+		<sched_last_temp>'.    parseToXML($schedLastTemp) .'</sched_last_temp>
+		<sched_last_author>'.  parseToXML($schedLastAuthor) .'</sched_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
 		<planned_author>'.     md5(strtolower(trim($scheduserAvatar))) .'</planned_author>
-		<sched_comment>'.      htmlspecialchars($schedComment) .'</sched_comment>
-		<ack_comment>'.        htmlspecialchars($ackComment) .'</ack_comment>
-		<last_check>'.         $last_check .'</last_check>
-		<last_check_sec>'.     $attrs['last_check'] .'</last_check_sec>
-		<durationSec>'.        $durationSec .'</durationSec>
-		<durationSec9Digits>'. sprintf('%09d', $durationSec) .'</durationSec9Digits>
-		<duration>'.           $duration .'</duration>
-		<attempt>'.            $attempt .'</attempt>
+		<sched_comment>'.      parseToXML($schedComment) .'</sched_comment>
+		<ack_comment>'.        parseToXML($ackComment) .'</ack_comment>
+		<last_check>'.         parseToXML($last_check) .'</last_check>
+		<last_check_sec>'.     parseToXML($attrs['last_check']) .'</last_check_sec>
+		<durationSec>'.        parseToXML($durationSec) .'</durationSec>
+		<durationSec9Digits>'. parseToXML(sprintf('%09d', $durationSec)) .'</durationSec9Digits>
+		<duration>'.           parseToXML($duration) .'</duration>
+		<attempt>'.            parseToXML($attempt) .'</attempt>
 		<status_information>'. parseToXML($pluginOutput) .'</status_information>
-		<host_or_service>'.    $host_or_service .'</host_or_service>
+		<host_or_service>'.    parseToXML($host_or_service) .'</host_or_service>
 	</alert>
 ';
 		
@@ -260,13 +264,13 @@ $userName = ($userName && array_key_exists($userName, $usersArray)) ? $userName 
 
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
-	<user>'.                 $userName .'</user>
+	<user>'.                 parseToXML($userName) .'</user>
 	<avatar>'.               md5(strtolower(trim($usersArray[$userName]))) .'</avatar>
-	<nagios-config-file>'.   $nagiosConfigFile .'</nagios-config-file>
-	<nagios-full-list-url>'. $nagiosFullHostUrl .'</nagios-full-list-url>
-	<group-by-service>'.     $groupByService .'</group-by-service>
-	<group-by-host>'.        $groupByHost .'</group-by-host>
-	<refresh-array>'.        implode(';', $refreshArrayData) .'</refresh-array>
+	<nagios-config-file>'.   parseToXML($nagiosConfigFile) .'</nagios-config-file>
+	<nagios-full-list-url>'. parseToXML($nagiosFullHostUrl) .'</nagios-full-list-url>
+	<group-by-service>'.     parseToXML($groupByService) .'</group-by-service>
+	<group-by-host>'.        parseToXML($groupByHost) .'</group-by-host>
+	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
 

@@ -2037,6 +2037,13 @@ $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 });
 $.fn.dataTable.ext.errMode = 'none';
 
+$('#mainTable').on('error.dt', function(e, settings, techNote, message) {
+	if (techNote == 7) {
+		$('#loading, #infoHolder').hide();
+		$('#noData').show();
+    }
+})
+
 function getSelectedText() {
     if (window.getSelection) {
         return window.getSelection().toString();
