@@ -26,7 +26,7 @@
 	</div>
 </div>
 <div id="noData" style="display: none;">
-	<h1>No data to draw table. <a href="json.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML.</h1>
+	<h1>No data to draw table. <a href="json.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>.</h1>
 </div>
 <div id="infoHolder" style="display: none;">
 	<form>
