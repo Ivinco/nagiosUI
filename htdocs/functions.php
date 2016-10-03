@@ -224,9 +224,9 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. $origState .'">
 		<acked>'.              $ackedStatus .'</acked>
 		<sched>'.              $scheduled .'</sched>
 		<downtime_id>'.        $downtime_id .'</downtime_id>
-		<ack_last_temp>'.      $ackLastTemp .'</ack_last_temp>
+		<ack_last_temp>'.      htmlspecialchars($ackLastTemp) .'</ack_last_temp>
 		<ack_last_author>'.    $ackLastAuthor .'</ack_last_author>
-		<sched_last_temp>'.    $schedLastTemp .'</sched_last_temp>
+		<sched_last_temp>'.    htmlspecialchars($schedLastTemp) .'</sched_last_temp>
 		<sched_last_author>'.  $schedLastAuthor .'</sched_last_author>
 		<quick_ack_author>'.   md5(strtolower(trim($userAvatar))) .'</quick_ack_author>
 		<planned_author>'.     md5(strtolower(trim($scheduserAvatar))) .'</planned_author>

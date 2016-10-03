@@ -77,7 +77,7 @@ copy
 #mainTable .comment                                               { width: 267px !important; display: table-cell; }
 #mainTable td.host { background-color: rgb(219, 219, 219); }
 #mainTable td.status_information { word-break: break-all; }
-#mainTable .comment span { display: block; }
+#mainTable .comment span { display: block; word-break: break-all; }
 #mainTable .status .downtime_id { color: #fff; cursor: pointer; text-shadow: 0px 0px 4px rgba(0, 0, 0, 1); }
 #mainTable .status .downtime_id span { display: none; }
 #mainTable .more button { width: 19px; height: 19px; padding: 0 4px 4px 4px; }
