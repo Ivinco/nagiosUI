@@ -14,6 +14,7 @@ if (!empty($_POST)) {
 	$text = str_replace("\"", "&quot;", trim($_POST['text']));
 	$time = intval($_POST['time']);
 	$line = $_POST['line'];
+	$user = $_POST['user'];
 	
 	if (!$text || $time < 1) {
 		http_response_code(400);
@@ -21,7 +22,7 @@ if (!empty($_POST)) {
 	}
 	
 	if ($line == 'new') {
-		addData($file, $line, $text, $time);
+		addData($file, $line, $text, $time, $user);
 	} else if (intval($line) > 0) {
 		removeData($file, $line);
 	}	
@@ -30,7 +31,7 @@ if (!empty($_POST)) {
 echo json_encode(recheckData($file), true);
 http_response_code(200);
 
-function addData($file, $line = false, $text = false, $time = false) {
+function addData($file, $line = false, $text = false, $time = false, $user) {
 	$json = returnPlanned();
 	
 	if ($line == 'new') {
@@ -41,6 +42,7 @@ function addData($file, $line = false, $text = false, $time = false) {
 			'time'    => $time,
 			'end'     => $end,
 			'date'    => date('Y-m-d H:i:s', $end),
+			'user'    => $user,
 		];
 	}
 	

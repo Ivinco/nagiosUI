@@ -49,7 +49,7 @@ Search = {}
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
 		'ajax':        'json.php' + Search.additionalFile,
-		'deferRender': true, 
+		'deferRender': true,
 		'columns':     [
             {
 				data:      'host',
@@ -1383,13 +1383,14 @@ Search.init = function() {
 		$('#host-service, #maintenance-time').removeAttr('style');
 		
 		var text = $('#host-service').val(),
-			time = parseInt($('#maintenance-time').val());
+			time = parseInt($('#maintenance-time').val()),
+			user = $('#userName').text();
 			
 		if (text && time > 0) {
 			$.ajax({
 				url:    'planned.php',
 				method: 'POST',
-				data:   { text: text, time: time, line: 'new' },
+				data:   { text: text, time: time, line: 'new', user: user },
 			})
 			.always(function(data) {
 				$('#host-service, #maintenance-time').val('');

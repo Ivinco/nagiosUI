@@ -185,10 +185,13 @@ $xmlContent = '<alerts sort="1">
 							$tmpAckTemp[]     = $tmpComments['ackComment'];
 						}
 						if ($tmpComments['schedComment']) {
-							$tmpValue  = ($tmpComments['schedComment'] == 'planned') ? 'planned' : preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
-							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
-							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
-							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
+							if ($tmpComments['schedComment'] == 'planned') {
+								$tmpValue = 'planned';
+							} else {
+								$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
+								$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
+								$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
+							}
 							
 							$tmpSchedComments[] = $tmpValue;
 							$tmpSchedAuthor[]   = $tmpComments['schedAuthor'];
@@ -442,7 +445,7 @@ function findPlanned($host, $service, $user) {
 			$command = returnPlannedCommand($command, $pattern);
 			$text    = returnPlannedText($host, $service);
 			
-			if (preg_match("/$command/i", $text) && $plan['end'] > time()) {
+			if (preg_match("/$command/i", $text) && $plan['end'] > time() && $user == $plan['user']) {
 				return schedulePlanned($host, $service, $plan['end'], $user);
 			}
 		}
