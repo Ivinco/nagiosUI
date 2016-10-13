@@ -417,6 +417,23 @@ function returnPlannedCommand($command, $pattern) {
 function returnPlannedText($host, $service) {
 	return " " . $host . " " . $service . " ";
 }
+
+function unAckForPlanned($host, $service, $hostOrService) {
+	global $nagiosPipe;
+	
+	$f = fopen($nagiosPipe, 'w');
+	
+	if ($hostOrService == 'service') {
+		fwrite($f, "[".time()."] REMOVE_SVC_ACKNOWLEDGEMENT;{$host};{$service}\n");
+	} else if ($hostOrService == 'host') {
+		fwrite($f, "[".time()."] REMOVE_HOST_ACKNOWLEDGEMENT;{$host}\n");
+	}
+	
+	fclose($f);
+	
+	return true;
+}
+
 function schedulePlanned($host, $service, $end, $user) {
 	global $nagiosPipe;
 	
@@ -433,7 +450,7 @@ function removeSchedulePlanned($downtimeId) {
 	fwrite($f, "[".time()."] DEL_SVC_DOWNTIME;{$downtimeId}\n");
 	fclose($f);
 }
-function findPlanned($host, $service, $user) {
+function findPlanned($host, $service, $user, $schedulePlanned = true) {
 	global $nagiosPipe;
 	global $planned;
 	
@@ -446,7 +463,7 @@ function findPlanned($host, $service, $user) {
 			$text    = returnPlannedText($host, $service);
 			
 			if (preg_match("/$command/i", $text) && $plan['end'] > time() && $user == $plan['user']) {
-				return schedulePlanned($host, $service, $plan['end'], $user);
+				return (($schedulePlanned) ? schedulePlanned($host, $service, $plan['end'], $user) : true);
 			}
 		}
 	}

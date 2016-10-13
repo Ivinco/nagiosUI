@@ -53,6 +53,12 @@ foreach ($array['alert'] as $item) {
 	$plannedAuthor   = (!is_array($item['planned_author']))       ? $item['planned_author']       : implode(' ', $item['planned_author']);
 	$hostOrService   = $item['host_or_service'];
 	
+	if ($acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $array['user'], false)) {
+		unAckForPlanned($host, $service, $hostOrService);
+		$acked = 0;
+		$tempCommen = '';
+	}
+	
 	if ($acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
 		$sched = 1;
 		$plannedAuthor = md5(strtolower(trim($usersArray[$array['user']])));
