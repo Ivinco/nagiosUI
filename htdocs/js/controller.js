@@ -43,12 +43,12 @@ Search = {}
 		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
 		'planned'       : [[2,'desc'],[4,'desc']],
 	};
-	Search.additionalFile     = (getParameterByName('file')) ? '?file=' + getParameterByName('file') : '';
+	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
-		'ajax':        'json.php' + Search.additionalFile,
+		'ajax':        'json.php?filter=' + Search.currentTab + Search.additionalFile,
 		'deferRender': true,
 		'columns':     [
             {
@@ -150,8 +150,6 @@ Search = {}
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
 			$('#infoHolder').show();
-			Search.countRecords();
-			
 			if (Search.firstLoad) {
 				$('#userName').text(json.additional.userName);
 				$('#userAvatar').text(json.additional.userAvatar);
@@ -576,10 +574,15 @@ Search.autoReloadData = function() {
 
 
 Search.filterDataTable = function(val, startReload) {
+	if (!Search.allDataTable.ajax.json()) {
+        return;
+    }
+	
 	var value = (val) ? val : '';
 	
 	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
+	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
 	if (Search.currentGroup != 0) {
 		Search.reorderData(value);
@@ -629,40 +632,14 @@ Search.filterDataTable = function(val, startReload) {
 		$('#unScheduleIt_button').attr('title', 'Schedule Downtime for All Services').attr('alt', 'Schedule Downtime for All Services').attr('id', 'scheduleIt_button');
 	}
 	
-	var warnings = 0,
-		critical = 0,
-		unknown  = 0;
-		
-	$(Search.allDataTable.rows().data()).each(function() {
-		if ($(this)[0].type.search('__normal__') > -1) {
-			if ($(this)[0].status.name.search('WARNING') > -1) {
-				warnings++;
-			}
-			if ($(this)[0].status.name.search('CRITICAL') > -1) {
-				critical++;
-			}
-			if ($(this)[0].status.name.search('UNKNOWN') > -1) {
-				unknown++;
-			}
-		}
-	});
-	
-	if (critical) {
-		Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
-		Tinycon.setBubble(critical);
-	} else if (unknown) {
-		Tinycon.setOptions({ colour: '#ffffff', background: '#dd8500' });
-		Tinycon.setBubble(unknown);
-	} else if (warnings) {
-		Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
-		Tinycon.setBubble(warnings);
-	} else if (typeof Tinycon !== 'undefined') {
-		Tinycon.setBubble(0);
-	}
+	Search.drawTinycon();
 	
 	if (startReload) {
 		Search.startReloads();
 	}
+	
+	$('#mainTable_wrapper').show();
+	$('#loading').hide();  
 }
 Search.emptyHosts = function () {
     var prevHost = '';
@@ -1266,26 +1243,25 @@ Search.getLastCheck = function(row) {
 	return (row.length && row.find('td.last_check').text()) ? row.find('td.last_check').text() : '';
 }
 
-
-Search.countRecords = function() {
-	var normal = 0,
-		acked  = 0,
-		sched  = 0,
-		emerg  = 0;
-
-	if ($(Search.allDataTable.rows().data()).length > 0) {
-		$(Search.allDataTable.rows().data()).each(function() {
-			if ($(this)[0].type.search('__normal__') > -1) { normal++; }
-			if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
-			if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
-			if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
-		});
+Search.drawTinycon = function() {
+	if (Search.ajaxData.critical) {
+		Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
+		Tinycon.setBubble(Search.ajaxData.critical);
+	} else if (Search.ajaxData.unknown) {
+		Tinycon.setOptions({ colour: '#ffffff', background: '#dd8500' });
+		Tinycon.setBubble(Search.ajaxData.unknown);
+	} else if (Search.ajaxData.warnings) {
+		Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
+		Tinycon.setBubble(Search.ajaxData.warnings);
+	} else if (typeof Tinycon !== 'undefined') {
+		Tinycon.setBubble(0);
 	}
-	
-	$('#radio label[for="normal"] em').text(normal);
-	$('#radio label[for="acked"] em').text(acked);
-	$('#radio label[for="sched"] em').text(sched);
-	$('#radio label[for="EMERGENCY"] em').text(emerg);
+}
+Search.countRecords = function() {
+	$('#radio label[for="normal"] em').text(Search.ajaxData.normal);
+	$('#radio label[for="acked"] em').text(Search.ajaxData.acked);
+	$('#radio label[for="sched"] em').text(Search.ajaxData.sched);
+	$('#radio label[for="EMERGENCY"] em').text(Search.ajaxData.EMERGENCY);
 }
 Search.countRecordsMinus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) - 1;
@@ -1423,8 +1399,12 @@ Search.init = function() {
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
 		Search.currentTab = localStorage.getItem('currentTabNew');
 
-		Search.filterDataTable(false, true);
-		showHidePlanned();
+		$('#mainTable_wrapper').hide();
+		$('#loading').show();
+		Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+			Search.filterDataTable($('#mainTable_filter input').val());
+			showHidePlanned();
+		}).order(Search.orderBy[Search.currentTab]);
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();
@@ -2034,11 +2014,12 @@ $.stopPendingAjax = (function() {
 	};
 })();
 
-$.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-	return (Search.currentTab && (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0)) ? true : false;
-});
 $.fn.dataTable.ext.errMode = 'none';
-
+//$('#mainTable').on( 'xhr', function () {
+    //var json = table.ajax.json();
+    //alert( json.data.length +' row(s) were loaded' );
+//	console.log(json);
+//} );
 $('#mainTable').on('error.dt', function(e, settings, techNote, message) {
 	if (techNote == 7) {
 		$('#loading, #infoHolder').hide();
