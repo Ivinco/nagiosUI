@@ -361,12 +361,6 @@ function parseToXML($htmlStr) {
     return $xmlStr;
 }
 
-function implode_r($g, $p) {
-    return is_array($p) ?
-           implode($g, array_map(__FUNCTION__, array_fill(0, count($p), $g), $p)) : 
-           $p;
-}
-
 function removePlannedMaintenance($delete) {
 	$pattern  = returnPlannedPattern($delete);
 	$commands = explode(',', $pattern[0]);

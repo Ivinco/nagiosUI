@@ -8,6 +8,22 @@
 	<link rel="stylesheet" href="css/custom.css" />
 </head>
 <body>
+<div id="loading" style="display: block; float: left;">
+	<div class="sk-circle">
+		<div class="sk-circle1 sk-child"></div>
+		<div class="sk-circle2 sk-child"></div>
+		<div class="sk-circle3 sk-child"></div>
+		<div class="sk-circle4 sk-child"></div>
+		<div class="sk-circle5 sk-child"></div>
+		<div class="sk-circle6 sk-child"></div>
+		<div class="sk-circle7 sk-child"></div>
+		<div class="sk-circle8 sk-child"></div>
+		<div class="sk-circle9 sk-child"></div>
+		<div class="sk-circle10 sk-child"></div>
+		<div class="sk-circle11 sk-child"></div>
+		<div class="sk-circle12 sk-child"></div>
+	</div>
+</div>
 
 <div id="noData" style="display: none;">
 	<h1>No data to draw table. <a href="json.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>.</h1>
@@ -116,23 +132,6 @@
 	<div id="refreshArray"></div>
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
-</div>
-
-<div id="loading" style="display: block; float: left;">
-	<div class="sk-circle">
-		<div class="sk-circle1 sk-child"></div>
-		<div class="sk-circle2 sk-child"></div>
-		<div class="sk-circle3 sk-child"></div>
-		<div class="sk-circle4 sk-child"></div>
-		<div class="sk-circle5 sk-child"></div>
-		<div class="sk-circle6 sk-child"></div>
-		<div class="sk-circle7 sk-child"></div>
-		<div class="sk-circle8 sk-child"></div>
-		<div class="sk-circle9 sk-child"></div>
-		<div class="sk-circle10 sk-child"></div>
-		<div class="sk-circle11 sk-child"></div>
-		<div class="sk-circle12 sk-child"></div>
-	</div>
 </div>
 
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>

@@ -120,64 +120,9 @@ $additional = array(
 	'groupByService'    => $array['group-by-service'],
 	'groupByHost'       => $array['group-by-host'],
 	'refreshArray'      => $array['refresh-array'],
-	'normal'            => 0,
-	'acked'             => 0,
-	'sched'             => 0,
-	'EMERGENCY'         => 0,
-	'warnings'          => 0,
-	'critical'          => 0,
-	'unknown'           => 0,
 );
-
-$filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';
-$filter = ($filter && in_array($filter, ['EMERGENCY', 'normal', 'acked', 'sched'])) ? $filter : '';
-
-if ($filter) {
-	$return = [];
-	$filter = ($filter == 'EMERGENCY') ? $filter : ('__'. $filter .'__');
-	
-	foreach ($returnJson as $record) {
-		$fullText = implode_r(' ', $record);
-		
-		if (strpos($fullText, $filter) !== false) {
-			$return[] = $record;
-		}
-		
-		if (strpos($fullText, '__normal__') !== false) {
-			$additional['normal']++;
-			
-			if ($record['status']['name'] == 'WARNING') {
-				$additional['warnings']++;
-			}
-			
-			if ($record['status']['name'] == 'CRITICAL') {
-				$additional['critical']++;
-			}
-			
-			if ($record['status']['name'] == 'UNKNOWN') {
-				$additional['unknown']++;
-			}
-		}
-		
-		if (strpos($fullText, '__acked__') !== false) {
-			$additional['acked']++;
-		}
-		
-		if (strpos($fullText, '__sched__') !== false) {
-			$additional['sched']++;
-		}
-		
-		if (strpos($fullText, 'EMERGENCY') !== false) {
-			$additional['EMERGENCY']++;
-		}
-	}
-	
-	$returnJson = $return;
-}
 
 echo json_encode(array('data' => $returnJson, 'additional' => $additional));
 
 http_response_code(200);
 die;
-
-
