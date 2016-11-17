@@ -20,6 +20,7 @@ localStorage.setItem('currentGroup', tmpGroup);
 lastTime = (new Date()).getTime();
 
 Search = {}
+	Search.hideMoreArray      = [];
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
@@ -670,6 +671,19 @@ Search.filterDataTable = function(val, startReload) {
 		Tinycon.setBubble(0);
 	}
 	
+	if (Search.hideMoreArray.length) {
+        $('#mainTable tr').each(function() {
+			var tmpHost    = ($(this).find('.host a').text()) ? $(this).find('.host a').text() : $(this).find('.host span:first').text(),
+				tmpService = ($(this).find('.service .service-name').text()) ? $(this).find('.service .service-name').text() : $(this).find('.service li:first').text(),
+				tmpName    = tmpHost + ' ' + tmpService,
+				tmpName    = tmpName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
+				
+				if ($.inArray(tmpName, Search.hideMoreArray) > -1) {
+					Search.showMoreMobile($(this));
+				}
+		});
+    }
+	
 	if (startReload) {
 		Search.startReloads();
 	}
@@ -1276,6 +1290,90 @@ Search.getLastCheck = function(row) {
 	return (row.length && row.find('td.last_check').text()) ? row.find('td.last_check').text() : '';
 }
 
+Search.showMoreMobile = function(tr) {
+    tr.find('.hide-more').show();
+	tr
+		.find('.service .likeTable ul li:first')
+		.css('float',      'left')
+		.css('display',    'block')
+		.css('width',      '100%')
+		.css('margin',     '2px 0 12px 0')
+		.css('text-align', 'left');
+		
+	tr
+		.find('.service .likeTable ul li:not(:first)')
+		.css('float',   'left')
+		.css('display', 'inline-block')
+		.css('margin',  '0 2px 5px 2px') 
+		.show();
+			
+	tr
+		.find('.duration')
+		.css('vertical-align', 'top')
+		.css('padding-top',    '6px');
+			
+	tr
+		.find('.more .button-more')
+		.text('<')
+		.removeClass('button-more')
+		.addClass('button-more-hide');
+		
+	if (Search.currentTab == 'acked') {
+		tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').hide();
+	}
+		
+	if (Search.currentTab == 'normal' || Search.currentTab == 'EMERGENCY') {
+		tr.find('.host .hide-more .more-comment-icon').hide();
+	}
+		
+	if (tr.find('.host').css('visibility') == 'hidden') {
+		tr.find('.host').css('visibility', 'visible');
+		tr.find('.button-more-hide').addClass('hide-host');
+	}
+}
+Search.hideMoreMobile = function(tr) {
+	if (tr) {
+		var tmpHost    = (tr.find('.host a').text()) ? tr.find('.host a').text() : tr.find('.host span:first').text(),
+			tmpService = (tr.find('.service .service-name').text()) ? tr.find('.service .service-name').text() : tr.find('.service li:first').text(),
+			tmpName    = tmpHost + ' ' + tmpService;
+			
+		Search.hideMoreArray.splice($.inArray(tmpName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase(), Search.hideMoreArray), 1 );
+		
+		tr.find('.hide-more').removeAttr('style');
+		tr.find('.service .likeTable ul li:first').removeAttr('style');
+		tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
+		tr.find('.duration').removeAttr('style');
+		tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
+			
+		if (Search.currentTab != 'acked') {
+			tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
+		}
+			
+		if (tr.find('.more .button-more').hasClass('hide-host')) {
+			tr.find('.more .button-more').removeClass('hide-host');
+			tr.find('.host').css('visibility', 'hidden');
+		}
+	} else {
+		$('#mainTable tr').each(function() {
+			var tr = $(this);
+			
+			tr.find('.hide-more').removeAttr('style');
+			tr.find('.service .likeTable ul li:first').removeAttr('style');
+			tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
+			tr.find('.duration').removeAttr('style');
+			tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
+				
+			if (Search.currentTab != 'acked') {
+				tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
+			}
+				
+			if (tr.find('.more .button-more').hasClass('hide-host')) {
+				tr.find('.more .button-more').removeClass('hide-host');
+				tr.find('.host').css('visibility', 'hidden');
+			}
+		});
+	}
+}
 
 Search.countRecords = function() {
 	var normal = 0,
@@ -1428,6 +1526,7 @@ Search.init = function() {
 		    location.reload();
 		    return false;
 		}
+		Search.hideMoreArray = [];
 		Search.stopReloads();
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
@@ -1807,96 +1906,25 @@ Search.init = function() {
 		return false;
 	});
 	$(document).on('click', '.button-more', function() {
-		var tr = $(this).closest('tr');
+		var tr         = $(this).closest('tr'),
+			tmpHost    = (tr.find('.host a').text()) ? tr.find('.host a').text() : tr.find('.host span:first').text(),
+			tmpService = (tr.find('.service .service-name').text()) ? tr.find('.service .service-name').text() : tr.find('.service li:first').text(),
+			tmpName    = tmpHost + ' ' + tmpService;
 		
-		tr.find('.hide-more').show();
-		tr
-			.find('.service .likeTable ul li:first')
-			.css('float',      'left')
-			.css('display',    'block')
-			.css('width',      '100%')
-			.css('margin',     '2px 0 12px 0')
-			.css('text-align', 'left');
-		
-		tr
-			.find('.service .likeTable ul li:not(:first)')
-			.css('float',   'left')
-			.css('display', 'inline-block')
-			.css('margin',  '0 2px 5px 2px') 
-			.show();
-			
-		tr
-			.find('.duration')
-			.css('vertical-align', 'top')
-			.css('padding-top',    '6px');
-			
-		tr
-			.find('.more .button-more')
-			.text('<')
-			.removeClass('button-more')
-			.addClass('button-more-hide');
-		
-		if (Search.currentTab == 'acked') {
-			tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').hide();
-		}
-		
-		if (Search.currentTab == 'normal' || Search.currentTab == 'EMERGENCY') {
-			tr.find('.host .hide-more .more-comment-icon').hide();
-		}
-		
-		if (tr.find('.host').css('visibility') == 'hidden') {
-			tr.find('.host').css('visibility', 'visible');
-			tr.find('.button-more-hide').addClass('hide-host');
-		}
+		Search.hideMoreArray.push(tmpName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase());
+		Search.showMoreMobile(tr);
 		
 		return false;
 	});
 	$(document).on('click', '.button-more-hide', function() {
 		var tr = $(this).closest('tr');
 		
-		hideMoreMobile(tr);
+		Search.hideMoreMobile(tr);
 		
 		return false;
 	});
-	function hideMoreMobile(tr) {
-		if (tr) {
-			tr.find('.hide-more').removeAttr('style');
-			tr.find('.service .likeTable ul li:first').removeAttr('style');
-			tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
-			tr.find('.duration').removeAttr('style');
-			tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
-			
-			if (Search.currentTab != 'acked') {
-				tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
-			}
-			
-			if (tr.find('.more .button-more').hasClass('hide-host')) {
-				tr.find('.more .button-more').removeClass('hide-host');
-				tr.find('.host').css('visibility', 'hidden');
-			}
-		} else {
-			$('#mainTable tr').each(function() {
-				var tr = $(this);
-				
-				tr.find('.hide-more').removeAttr('style');
-				tr.find('.service .likeTable ul li:first').removeAttr('style');
-				tr.find('.service .likeTable ul li:not(:first)').removeAttr('style');
-				tr.find('.duration').removeAttr('style');
-				tr.find('.more .button-more-hide').text('>').removeClass('button-more-hide').addClass('button-more');
-				
-				if (Search.currentTab != 'acked') {
-					tr.find('.service .icons.quickUnAck, .service .icons.quickAck').closest('li').show();
-				}
-				
-				if (tr.find('.more .button-more').hasClass('hide-host')) {
-					tr.find('.more .button-more').removeClass('hide-host');
-					tr.find('.host').css('visibility', 'hidden');
-				}
-			});
-		}
-	}
 	$(window).resize(function(){
-		hideMoreMobile(false);
+		Search.hideMoreMobile(false);
 		if ($(window).width() > 560) {
 			$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
 			$('.comment span.ack').toggle(Search.currentTab == 'acked');
