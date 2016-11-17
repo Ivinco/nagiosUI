@@ -629,6 +629,16 @@ Search.filterDataTable = function(val, startReload) {
 		$('#unScheduleIt_button').attr('title', 'Schedule Downtime for All Services').attr('alt', 'Schedule Downtime for All Services').attr('id', 'scheduleIt_button');
 	}
 	
+	if (Search.currentTab == 'EMERGENCY') {
+		$('#mainTable tbody tr').each(function() {
+			var d = Search.allDataTable.row(this).data();
+			
+			if (d && d.type.search('__acked__') > -1) {
+                $(this).find('.service .acknowledgeIt').attr('title', 'Unacknowledge this Service').attr('alt', 'Unacknowledge this Service').removeClass('acknowledgeIt').addClass('unAcknowledgeIt');
+            }
+		});
+	}
+	
 	var warnings = 0,
 		critical = 0,
 		unknown  = 0;

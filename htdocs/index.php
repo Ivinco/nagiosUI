@@ -29,7 +29,7 @@
 	<h1>No data to draw table. <a href="json.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>.</h1>
 </div>
 <div id="infoHolder" style="display: none;">
-	<form style="float: left; width: 100%">
+	<form>
 		<div id="refreshTime">
 			<select name="files" id="refreshTimeSelect">
 
