@@ -65,6 +65,10 @@ foreach ($array['alert'] as $item) {
 		$tempSchedCommen = 'planned';
 	}
 	
+	if ($sched == 1 && $tempSchedCommen == 'planned' && $state == 'OK') {
+		$tempSchedCommen = $tempSchedCommen . '_';
+	}
+	
 	$returnType = '';
 	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp') || ($sched == 1 && $tempSchedCommen == 'planned')) ? '__normal__' : '';
 	$returnType.= ($acked == 1 && $tempCommen != 'temp') ? '__acked__' : '';
