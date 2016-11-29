@@ -7,15 +7,20 @@ if (!localStorage.getItem('currentReloadNew')) {
 if (!localStorage.getItem('currentGroup')) {
 	localStorage.setItem('currentGroup', '0');
 }
+if (!localStorage.getItem('showInfo')) {
+	localStorage.setItem('showInfo', '0');
+}
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
-	tmpGroup  = localStorage.getItem('currentGroup');
+	tmpGroup  = localStorage.getItem('currentGroup'),
+	tmpInfo   = localStorage.getItem('showInfo');
 	
 localStorage.clear();
 localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
+localStorage.setItem('showInfo', tmpInfo);
 
 lastTime = (new Date()).getTime();
 
@@ -23,6 +28,7 @@ Search = {}
 	Search.hideMoreArray      = [];
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
+	Search.showInfo           = localStorage.getItem('showInfo');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
 	Search.reloadCustomText   = 'Refresh: Custom';
 	Search.autoRefresh        = true;
@@ -70,7 +76,10 @@ Search = {}
 							notes = (data.notes)           ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
 							pAuth = (data.pAuth)           ? '<img class="icons" src="http://www.gravatar.com/avatar/'+ data.pAuth +'?size=19" />' : '';
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
-							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '';
+							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
+							ack   = (!data.info) ? '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' : '',
+							sched = (!data.info) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
+							
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
@@ -81,8 +90,8 @@ Search = {}
 										qUAck +
 										pAuth +
 							'		</li>' +
-							'		<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
-							'		<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
+									ack +
+									sched +
 							'		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 							'	</ul>' +
 							'</div>';
@@ -144,8 +153,14 @@ Search = {}
             if (data.state) {
 				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment, .more').addClass(data.state);
             }
-			if (data.service.sched) {
+			if (!data.service.info && data.service.sched) {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('grey-text');
+			}
+			if (data.service.info && data.state == 'WARNING') {
+				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('blue-text');
+			}
+			if (data.service.info && data.state == 'CRITICAL') {
+				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('brown-text');
 			}
         },
 		'initComplete': function(settings, json) {
@@ -384,7 +399,13 @@ function getGroupNormalThead(rowsHeader) {
 			subRows        = $('#mainTable tbody tr:contains("'+ contains +'")').length,
 			subRowsGrey    = $('#mainTable tbody tr:contains("'+ contains +'") .host.grey-text').length,
 			mainGreyClass  = (subRowsGrey == subRows) ? ' grey-text' : '',
-			avatar         = (mainGreyClass) ? $('#mainTable tbody tr:contains("'+ contains +'") .service.grey-text img:first-child').first().attr('src') : '';
+			avatar         = (mainGreyClass) ? $('#mainTable tbody tr:contains("'+ contains +'") .service.grey-text img:first-child').first().attr('src') : '',
+			subRowsBlue    = $('#mainTable tbody tr:contains("'+ contains +'") .host.blue-text').length,
+			subRowsBrown   = $('#mainTable tbody tr:contains("'+ contains +'") .host.brown-text').length,
+			mainBlueClass  = (subRowsBlue == subRows) ? ' blue-text' : '',
+			mainBrownClass = (subRowsBrown == subRows) ? ' brown-text' : '',
+			ackIconBlock   = (mainBlueClass || mainBrownClass) ? '' : '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
+			schedIconBlock = (mainBlueClass || mainBrownClass) ? '' : '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
 			
 			if (avatar) {
 				var quickAck = '<li><img class="icons" src="'+ avatar +'"></li>';
@@ -394,24 +415,24 @@ function getGroupNormalThead(rowsHeader) {
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host'+ mainGreyClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
-			'	<td class="service '+ trClass + mainGreyClass +'"'+ css +'>' +
+			'	<td class="host'+ mainGreyClass + mainBrownClass + mainBlueClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
+			'	<td class="service '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
 			'				<li>' + serviceValue + '</li>' + quickAck +
-			'				<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' +
-			'				<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' +
+							ackIconBlock +
+							schedIconBlock +
 			'				<li><span class="icons recheckItGroup list-recheck-icon" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
 			'			</ul>' +
 			'		</div>' +
 			'	</td>' +
-			'	<td class="status '+ trClass + mainGreyClass +'">'+ rowData.status +'</td>' +
-			'	<td class="last_check '+ trClass + mainGreyClass +'">'+ rowData.lastCheck +'</td>' +
+			'	<td class="status '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.status +'</td>' +
+			'	<td class="last_check '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.lastCheck +'</td>' +
 			'	<td class="duration-sec" style="display: none;"></td>' +
-			'	<td class="duration '+ trClass + mainGreyClass +'">'+ rowData.duration +'</td>' +
-			'	<td class="status_information '+ trClass + mainGreyClass +'">'+ rowData.information +'</td>' +
-			'	<td class="comment '+ trClass + mainGreyClass +'">'+ rowData.comment +'</td>' +
-			'	<td class="more '+ trClass + mainGreyClass +'"><button class="button-more">></button></td>' +
+			'	<td class="duration '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.duration +'</td>' +
+			'	<td class="status_information '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.information +'</td>' +
+			'	<td class="comment '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.comment +'</td>' +
+			'	<td class="more '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'"><button class="button-more">></button></td>' +
 			'</tr>'
 		);
 		
@@ -645,7 +666,7 @@ Search.filterDataTable = function(val, startReload) {
 		unknown  = 0;
 		
 	$(Search.allDataTable.rows().data()).each(function() {
-		if ($(this)[0].type.search('__normal__') > -1) {
+		if ($(this)[0].type.search('__normal__') > -1 && $(this)[0].type.search('__info__') < 0) {
 			if ($(this)[0].status.name.search('WARNING') > -1) {
 				warnings++;
 			}
@@ -711,8 +732,19 @@ Search.extension = function () {
 Search.extensionVisibility = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength) {
 		$(Search.filterButtons).show();
+		
+		var subRowsBlue    = $('#mainTable tbody tr .host.blue-text').length,
+			subRowsBrown   = $('#mainTable tbody tr .host.brown-text').length;
+			
 		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
 		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
+		if ((subRowsBlue + subRowsBrown) == Search.tableLength) {
+            $('#' + Search.ackButtonId).hide();
+			$('#' + Search.sdButtonId).hide();
+        } else {
+			$('#' + Search.ackButtonId).show();
+			$('#' + Search.sdButtonId).show();
+		}
 	}
 	else {
 		$(Search.filterButtons).hide();
@@ -847,36 +879,40 @@ Search.tempHideButtons = function () {
 	
 	var tableWhere  = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
 		tableNot    = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
-		returnArray = [];
+		returnArray = [],
+		infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
 		
 	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
-		var row     = $(this),
-			host    = Search.getHost(row),
-			service = Search.getService(row),
-			check   = Search.getLastCheck(row),
-			isHost  = row.find('.host a').attr('data-host');
-			
-		if (whatWeChangeObject.host && whatWeChangeObject.service) {
-			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+		var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
+		if (checkInfo) {
+			var row     = $(this),
+				host    = Search.getHost(row),
+				service = Search.getService(row),
+				check   = Search.getLastCheck(row),
+				isHost  = row.find('.host a').attr('data-host');
+				
+			if (whatWeChangeObject.host && whatWeChangeObject.service) {
+				if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+				}
+			} else if (whatWeChangeObject.host) {
+				if (host == whatWeChangeObject.host) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+				}
+			} else if (whatWeChangeObject.service) {
+				if (service == whatWeChangeObject.service) {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+				}
+			} else {
 				Search.tmpHideIcon(row, whatWeChangeObject.type);
 				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 			}
-		} else if (whatWeChangeObject.host) {
-			if (host == whatWeChangeObject.host) {
-				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-			}
-		} else if (whatWeChangeObject.service) {
-			if (service == whatWeChangeObject.service) {
-				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-			}
-		} else {
-			Search.tmpHideIcon(row, whatWeChangeObject.type);
-			returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-		} 
+		}
 	});
-
+	
 	if (whatWeChangeObject.what == 'group' || whatWeChangeObject.what == 'this') {
 		$('#mainTable thead tr').each(function() {
 			var row     = $(this),
@@ -1383,7 +1419,7 @@ Search.countRecords = function() {
 
 	if ($(Search.allDataTable.rows().data()).length > 0) {
 		$(Search.allDataTable.rows().data()).each(function() {
-			if ($(this)[0].type.search('__normal__') > -1) { normal++; }
+			if ($(this)[0].type.search('__normal__') > -1 && $(this)[0].type.search('__info__') < 0) { normal++; }
 			if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
 			if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
 			if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
@@ -1546,6 +1582,16 @@ Search.init = function() {
 			window.location.href = Search.addParameterToUrl('search', val);
 		}
     });
+	
+	$('#info-show option[value="'+ Search.showInfo +'"]').attr('selected', 'selected');
+	$('#info-show').selectmenu({
+		select: function (event, data) {
+			localStorage.setItem('showInfo', data.item.value);
+			Search.showInfo = localStorage.getItem('showInfo');
+			Search.filterDataTable();
+		}
+	});
+	
 	
 	$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
 	$('#grouping').selectmenu({
@@ -2073,7 +2119,15 @@ $.stopPendingAjax = (function() {
 })();
 
 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-	return (Search.currentTab && (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0)) ? true : false;
+	if (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0) {
+		if (Search.showInfo == '0' && data.join(' ').search('__info__') >= 0) {
+			return false;
+		}
+		
+		return true;
+    }
+	
+	return false;
 });
 $.fn.dataTable.ext.errMode = 'none';
 

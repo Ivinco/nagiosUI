@@ -53,13 +53,15 @@ foreach ($array['alert'] as $item) {
 	$plannedAuthor   = (!is_array($item['planned_author']))       ? $item['planned_author']       : implode(' ', $item['planned_author']);
 	$hostOrService   = $item['host_or_service'];
 	
-	if ($acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $array['user'], false)) {
+	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
+	
+	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $array['user'], false)) {
 		unAckForPlanned($host, $service, $hostOrService);
 		$acked = 0;
 		$tempCommen = '';
 	}
 	
-	if ($acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
+	if (!$infoRecord && $acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
 		$sched = 1;
 		$plannedAuthor = md5(strtolower(trim($usersArray[$array['user']])));
 		$tempSchedCommen = 'planned';
@@ -70,10 +72,15 @@ foreach ($array['alert'] as $item) {
 	}
 	
 	$returnType = '';
-	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp') || ($sched == 1 && $tempSchedCommen == 'planned')) ? '__normal__' : '';
-	$returnType.= ($acked == 1 && $tempCommen != 'temp') ? '__acked__' : '';
-	$returnType.= ($sched == 1 && $tempSchedCommen != 'planned') ? '__sched__' : '';
-				
+	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp') || ($sched == 1 && $tempSchedCommen == 'planned') || $infoRecord) ? '__normal__' : '';
+	$returnType.= ($acked == 1 && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
+	$returnType.= ($sched == 1 && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
+	
+	if ($infoRecord) {
+		$returnType .= '__info__';
+		$service = substr($service, 1);
+	}
+	
 	$returnJson[] = array(
 		'host'      => array(
 			'name'  => $host,
@@ -92,6 +99,7 @@ foreach ($array['alert'] as $item) {
 			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
 			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
 			'downId' => $downtimeId,
+			'info'   => $infoRecord
 		),
 		'status'    => array(
 			'name'  => $state,

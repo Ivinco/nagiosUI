@@ -41,6 +41,12 @@
 				<option value="1">Grouping: Enabled</option>
 			</select>
 		</div>
+		<div id="infoShow">
+			<select name="files" id="info-show">
+				<option value="0">Info: Hidden</option>
+				<option value="1">Info: Visible</option>
+			</select>
+		</div>
 		<div id="radio">
             <input type="radio" id="normal" name="radio"/>
 			<label for="normal">
