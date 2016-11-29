@@ -1921,7 +1921,7 @@ Search.init = function() {
 	
 	
 	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; Search.emptyHosts(); });
-	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').html().replace('&amp;', '&'), '_blank'); });
+	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').text().replace('&amp;', '&'), '_blank'); });
 	$('img').error(function() { $(this).attr('src', 'images/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
