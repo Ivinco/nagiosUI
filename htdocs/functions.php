@@ -2,8 +2,10 @@
 
 include_once 'config/config.php';
 
+$memcache = new Memcache;
+$memcache->connect($memcacheHost, $memcachePort);
+
 function returnDataList($isHash, $xmlFile) {
-	
 	global $statusFile_global;
 	global $getNotesUrls_cacheFile;
 	global $getDepends_cacheFile;
@@ -17,6 +19,11 @@ function returnDataList($isHash, $xmlFile) {
 	global $groupByService;
 	global $groupByHost;
 	global $refreshArray;
+	global $memcacheHost;
+	global $memcachePort;
+	global $memcache;
+	
+	$memcache->set('nagiosUI_check', 'started', 0, 10);
 
 $xmlContent = '<alerts sort="1">
 ';
@@ -66,8 +73,8 @@ $xmlContent = '<alerts sort="1">
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
 		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
+			$memcache->delete('nagiosUI_check');
 			return file_get_contents($files[0]);
-
 		}
 	}
 	
@@ -276,10 +283,29 @@ $xmlContent .= '
 	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
+	if (!$memcache->get('nagiosUI_verify') || !$memcache->get('nagiosUI_data') || $memcache->get('nagiosUI_verify') != md5($verificateCheck)) {
+		$memcache->set('nagiosUI_verify', md5($verificateCheck), 0, 120);
+		$memcache->set('nagiosUI_data', serialize($xmlContent), 0, 120);
+	}
+	
+	$memcache->delete('nagiosUI_check');
 
-	return ($isHash) ? md5($verificateCheck) : $xmlContent;
+	return true;
 }
 
+function returnMemcacheData($xmlFile) {
+	global $memcache;
+	
+	if ($xmlFile) {
+		return returnDataList(false, $xmlFile);
+	}
+	
+	if (!$memcache->get('nagiosUI_check') && (!$memcache->get('nagiosUI_verify') || !$memcache->get('nagiosUI_data'))) {
+		returnDataList(false, $xmlFile);
+	}
+
+	return unserialize($memcache->get('nagiosUI_data'));
+}
 
 function returnComments($comments, $statusFile, $isHost) {
 	$return = [];
@@ -469,5 +495,10 @@ function findPlanned($host, $service, $user, $schedulePlanned = true) {
 	}
 	
 	return false;
+}
+function implode_r($g, $p) {
+    return is_array($p) ?
+            implode($g, array_map(__FUNCTION__, array_fill(0, count($p), $g), $p)) : 
+            $p;
 }
 $planned = returnPlanned();

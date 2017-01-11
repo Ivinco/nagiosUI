@@ -15,9 +15,10 @@ header('Content-Type: application/json');
 
 global $usersArray;
 
-$xmlFile    = (isset($_GET['file'])) ? $_GET['file'] : '';
-$array      = json_decode(json_encode(simplexml_load_string(returnDataList(false, $xmlFile))),TRUE);
-$returnJson = array();
+$xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
+$infoRecords = (isset($_GET['show_info'])) ? $_GET['show_info'] : '';
+$array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData($xmlFile))),TRUE);
+$returnJson  = array();
 
 if (!$array) {
 	http_response_code(404);
@@ -54,6 +55,10 @@ foreach ($array['alert'] as $item) {
 	$hostOrService   = $item['host_or_service'];
 	
 	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
+	
+	if ($infoRecord && !$infoRecords) {
+		continue;
+	}
 	
 	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $array['user'], false)) {
 		unAckForPlanned($host, $service, $hostOrService);
@@ -120,6 +125,7 @@ foreach ($array['alert'] as $item) {
 		'type'      => $returnType,
 		'state'     => $state,
 		'info'      => $statusInfo,
+		'search'    => strtolower(implode('_', [$host, $service, $state, $lastCheck, $duration, $ackComment, $schComment, $state, $statusInfo])),
 	);
 }
 
@@ -132,9 +138,128 @@ $additional = array(
 	'groupByService'    => $array['group-by-service'],
 	'groupByHost'       => $array['group-by-host'],
 	'refreshArray'      => $array['refresh-array'],
+	'normal'            => 0,
+	'acked'             => 0,
+    'sched'             => 0,
+    'EMERGENCY'         => 0,
+    'warnings'          => 0,
+    'critical'          => 0,
+    'unknown'           => 0,
 );
+
+$filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';
+$filter = ($filter && in_array($filter, ['EMERGENCY', 'normal', 'acked', 'sched'])) ? $filter : 'normal';
+
+if ($filter) {
+    $return = [];
+    $filter = ($filter == 'EMERGENCY') ? $filter : ('__'. $filter .'__');
+
+    foreach ($returnJson as $record) {
+        $fullText = implode_r(' ', $record);
+
+        if (strpos($fullText, $filter) !== false) {
+            $return[] = $record;
+        }
+	
+        if (strpos($fullText, '__normal__') !== false && strpos($fullText, '__info__') === false) {
+            $additional['normal']++;
+
+            if ($record['status']['name'] == 'WARNING') {
+                $additional['warnings']++;
+            }
+
+            if ($record['status']['name'] == 'CRITICAL') {
+                $additional['critical']++;
+            }
+
+            if ($record['status']['name'] == 'UNKNOWN') {
+                $additional['unknown']++;
+            }
+		}
+
+        if (strpos($fullText, '__acked__') !== false) {
+            $additional['acked']++;
+        }
+
+        if (strpos($fullText, '__sched__') !== false) {
+            $additional['sched']++;
+        }
+
+        if (strpos($fullText, 'EMERGENCY') !== false) {
+            $additional['EMERGENCY']++;
+        }
+    }
+
+    $returnJson = $return;
+}
+
+if ($_GET['search'] && $_GET['search']['value']) {
+	$return = [];
+	
+	$keywords = explode(' ', trim($_GET['search']['value']));
+	
+	foreach ($returnJson as $record) {
+		$total = count($keywords);
+		$match = 0;
+		
+		foreach($keywords as $keyword){
+			if (strpos($record['search'], $keyword) !== false) {
+				$match++;
+			}
+		}
+		
+		if ($total == $match) {
+			$return[] = $record;
+		}
+	}
+	
+	$returnJson = $return;
+}
+
+
+if (!isset($_GET['order']) || !is_array($_GET['order'])) {
+	$_GET['order'] = [['column' => 2, 'dir' => 'desc'], ['column' => 4, 'dir' => 'desc']];
+}
+
+if (count($_GET['order']) == 1) {
+	$first  = returnOrder($returnJson, 0);
+	
+	array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $returnJson);
+}
+
+if (count($_GET['order']) > 1) {
+	$first  = returnOrder($returnJson, 0);
+	$second = returnOrder($returnJson, 1);
+	
+	array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $second, (($_GET['order'][1]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $returnJson);
+}
 
 echo json_encode(array('data' => $returnJson, 'additional' => $additional));
 
 http_response_code(200);
 die;
+
+
+function returnOrder($data, $order) {
+	$return = [];
+	
+	foreach ($data as $key => $row) {
+		if ($_GET['order'][$order]['column'] == 0) {
+			$return[$key] = $row['host']['name'];
+		} else if ($_GET['order'][$order]['column'] == 1) {
+			$return[$key] = $row['service']['name'];
+		} else if ($_GET['order'][$order]['column'] == 2) {
+			$return[$key] = intval($row['status']['order']);
+		} else if ($_GET['order'][$order]['column'] == 3) {
+			$return[$key] = intval($row['last']['order']);
+		} else if ($_GET['order'][$order]['column'] == 4) {
+			$return[$key] = intval($row['duration']['order']);
+		} else if ($_GET['order'][$order]['column'] == 5) {
+			$return[$key] = $row['info'];
+		} else {
+			$return[$key] = $row['comment']['ack'];
+		}
+	}
+	
+	return $return;
+}

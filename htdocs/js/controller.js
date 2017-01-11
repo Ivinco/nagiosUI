@@ -26,6 +26,7 @@ lastTime = (new Date()).getTime();
 
 Search = {}
 	Search.hideMoreArray      = [];
+	Search.allHeaderRows      = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
 	Search.showInfo           = localStorage.getItem('showInfo');
@@ -42,6 +43,7 @@ Search = {}
 	Search.ackButtonId        = 'acknowledgeIt_button';
 	Search.unackButtonId      = 'unAck_button'; 
 	Search.sdButtonId         = 'scheduleIt_button';
+	Search.searchValue        = '';
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
@@ -50,13 +52,16 @@ Search = {}
 		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
 		'planned'       : [[2,'desc'],[4,'desc']],
 	};
-	Search.additionalFile     = (getParameterByName('file')) ? '?file=' + getParameterByName('file') : '';
+	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
+	Search.getInfoRecords     = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
-		'ajax':        'json.php' + Search.additionalFile,
+		'ajax':        'json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile,
 		'deferRender': true,
+		'processing':  false,
+        'serverSide':  true,
 		'columns':     [
             {
 				data:      'host',
@@ -150,7 +155,7 @@ Search = {}
 			}
         ],
 		'createdRow': function(row, data, index) {
-            if (data.state) {
+			if (data.state) {
 				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment, .more').addClass(data.state);
             }
 			if (!data.service.info && data.service.sched) {
@@ -163,10 +168,13 @@ Search = {}
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('brown-text');
 			}
         },
+		"drawCallback": function( settings ) {
+			Search.filterDataTable($('#mainTable_filter input').val());
+			Search.countRecords();
+		},
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
 			$('#infoHolder').show();
-			Search.countRecords();
 			
 			if (Search.firstLoad) {
 				$('#userName').text(json.additional.userName);
@@ -209,7 +217,6 @@ Search = {}
 				$('#' + Search.currentTab).attr('checked', 'checked');
 				$('#radio').buttonset();
 				Search.addDialog();
-				$('#mainTable_filter input').val(Search.getParameterByName('search')).trigger('keyup').focus();
 				
 				refreshValues = [];
 				$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
@@ -252,12 +259,10 @@ Search = {}
 				Search.startReloads();
 			}
 			
-			Search.filterDataTable();
+			Search.filterDataTable(); 
 		}
 	});
 	
-
-
 
 function getGroupNormalCount(columnData, limit) {
 	var counts       = [],
@@ -384,6 +389,8 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 	return returnArray;
 }
 function getGroupNormalThead(rowsHeader) {
+	Search.allHeaderRows = {};
+	
 	$(rowsHeader).each(function() {
 		var rowData        = $(this)[0],
 			trClass        = rowData.status,
@@ -436,21 +443,28 @@ function getGroupNormalThead(rowsHeader) {
 			'</tr>'
 		);
 		
-		var prevHost = '';
+		var prevHost = '',
+			allRows  = [];
 		
 		$('#mainTable tbody tr:contains("'+ contains +'")').each(function() {
-			var oldRow = $(this),
-				newRow = oldRow.clone(),
-				host   = newRow.find('td.host').text();
+			var row  = $(this),
+				host = row.find('td.host').text();
 			
-			newRow.attr('data-group', groupNameSmall);
-			oldRow.attr('data-group', groupNameSmall);
+			row.attr('data-group', groupNameSmall);
+			row.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');
 			
-			newRow.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');			
+			if (Search.currentTab == 'normal') {
+                row.find('td.comment').hide();
+            }
+			
 			prevHost = host;
-
-			$('#mainTable thead').append(newRow); 
+			allRows.push(row);
+			
+			row.remove();
 		});
+		
+		Search.allHeaderRows[Search.currentTab + '_' + groupNameSmall + '_rows'] = allRows;
+		
 		$('#mainTable thead').append('' +
 			'<tr data-group="'+ groupNameSmall +'">' +
 			'	<td class="host no-border-th">&nbsp;</td>' +
@@ -465,15 +479,20 @@ function getGroupNormalThead(rowsHeader) {
 		); 
 	});
 	
-	$('#mainTable tbody tr[data-group]').removeAttr('data-group').hide();
 	$('#mainTable thead tr[data-group]:not(.group-list)').hide();
 	$('#mainTable thead tr.group-list').removeClass('open');
 	
-	$('#mainTable thead tr[data-group]:not(.group-list)').each(function() {
-		if (localStorage.getItem(Search.currentTab + '_' + $(this).attr('data-group'))) {
-			$('#mainTable tr[data-group="'+ $(this).attr('data-group') +'"]').show();
-			$('#mainTable tr.group-list[data-group="'+ $(this).attr('data-group') +'"]').addClass('open');
-			$('#mainTable tr[data-group="'+  $(this).attr('data-group') +'"]:not(.group-list):last').addClass('group-list-bottom');
+	$('#mainTable thead tr[data-group].group-list').each(function() {
+		var attr = $(this).attr('data-group');
+		
+		if (localStorage.getItem(Search.currentTab + '_' + attr)) {
+			for (var i = 0; i < Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length; i++) {
+				$(Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i]).insertBefore('#mainTable thead tr[data-group="'+ attr +'"]:last');
+			}
+			
+			$('#mainTable thead tr[data-group="'+ attr +'"]:not(.group-list):last').addClass('group-list-bottom').show();
+			
+			$(this).addClass('open');
 		}
 	});
 	
@@ -500,29 +519,35 @@ function getGroupNormalHosts (rows) {
 function quickAckUnAckGroup() {
 	$('#mainTable thead tr.group-list[data-group]').each(function() {
 		var dataGroup = $(this).attr('data-group'),
+			selected  = Search.allHeaderRows[Search.currentTab + '_' + dataGroup + '_rows'],
 			unAckIcons  = [];
 			
-		$('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').each(function() {
-			if ($(this).find('.quickUnAck').length) {
-				unAckIcons.push($(this).find('.quickUnAck').clone());
-			}
-		});
+		for (var i = 0; i < selected.length; i++) {
+			var item = selected[i].find('.quickUnAck');
+			
+			if (item.length) {
+                unAckIcons.push(item.clone());
+            }
+		}
 		
-		if ($('#mainTable thead tr[data-group="'+ dataGroup +'"]:not(.group-list)').length == unAckIcons.length + 1) {
-			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
+		if (selected.length == unAckIcons.length) {
+            $('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
 				.html(unAckIcons[0])
 				.find('.icons')
 				.attr('alt', 'Quick UnAcknowledge All')
 				.attr('title', 'Quick UnAcknowledge All')
 				.removeClass('quickUnAck')
-				.addClass('quickUnAckGroup');  
-		}
-		else {
+				.addClass('quickUnAckGroup');
+        } else {
 			$('#mainTable thead tr.group-list[data-group="'+ dataGroup +'"] .quickAckUnAckIcon')
 				.html('<span class="icons quickAckGroup list-qack-icon" alt="Quick Acknowledge" title="Quick Acknowledge"></span>');
 		}
 		
 		$('#mainTable thead tr .quickAckUnAckIcon').show();
+		
+		if (Search.currentTab != 'normal') {
+            $('#mainTable thead tr .quickAckUnAckIcon').hide();
+        }
 	});
 }
 function getSeconds(str) {
@@ -579,7 +604,7 @@ Search.getContent = function() {
 			success: function(data){
 				Search.stopReloads();
 				Search.updateHash = data;
-				Search.allDataTable.ajax.reload(function() { Search.filterDataTable($('#mainTable_filter input').val()); });
+				Search.allDataTable.ajax.reload();
 				Search.startReloads();
 			},
 			error: function() {
@@ -591,17 +616,21 @@ Search.getContent = function() {
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {
 		Search.stopReloads();
-		Search.allDataTable.ajax.reload(function() { Search.filterDataTable($('#mainTable_filter input').val()); });
+		Search.allDataTable.ajax.reload();
 		Search.startReloads();
 	}
 }
 
 
 Search.filterDataTable = function(val, startReload) {
+	if (!Search.allDataTable.ajax.json()) {
+        return;
+    }
+
 	var value = (val) ? val : '';
 	
-	Search.allDataTable.search(value).order(Search.orderBy[Search.currentTab]).draw();
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
+	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
 	if (Search.currentGroup != 0) {
 		Search.reorderData(value);
@@ -611,10 +640,8 @@ Search.filterDataTable = function(val, startReload) {
 		$('#mainTable tbody tr').show();
 	}
 
-	Search.countRecords();
 	Search.extension();
 	Search.emptyHosts();
-	
 	
 	if ($(window).width() > 560) {
 		$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
@@ -661,49 +688,7 @@ Search.filterDataTable = function(val, startReload) {
 		});
 	}
 	
-	var warnings = 0,
-		critical = 0,
-		unknown  = 0;
-		
-	$(Search.allDataTable.rows().data()).each(function() {
-		if ($(this)[0].type.search('__normal__') > -1 && $(this)[0].type.search('__info__') < 0) {
-			if ($(this)[0].status.name.search('WARNING') > -1) {
-				warnings++;
-			}
-			if ($(this)[0].status.name.search('CRITICAL') > -1) {
-				critical++;
-			}
-			if ($(this)[0].status.name.search('UNKNOWN') > -1) {
-				unknown++;
-			}
-		}
-	});
-	
-	if (critical) {
-		Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
-		Tinycon.setBubble(critical);
-	} else if (unknown) {
-		Tinycon.setOptions({ colour: '#ffffff', background: '#dd8500' });
-		Tinycon.setBubble(unknown);
-	} else if (warnings) {
-		Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
-		Tinycon.setBubble(warnings);
-	} else if (typeof Tinycon !== 'undefined') {
-		Tinycon.setBubble(0);
-	}
-	
-	if (Search.hideMoreArray.length) {
-        $('#mainTable tr').each(function() {
-			var tmpHost    = ($(this).find('.host a').text()) ? $(this).find('.host a').text() : $(this).find('.host span:first').text(),
-				tmpService = ($(this).find('.service .service-name').text()) ? $(this).find('.service .service-name').text() : $(this).find('.service li:first').text(),
-				tmpName    = tmpHost + ' ' + tmpService,
-				tmpName    = tmpName.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
-				
-				if ($.inArray(tmpName, Search.hideMoreArray) > -1) {
-					Search.showMoreMobile($(this));
-				}
-		});
-    }
+	Search.drawTinycon();
 	
 	if (startReload) {
 		Search.startReloads();
@@ -874,56 +859,47 @@ Search.tmpHideIcon = function(item, type) {
 Search.tmpShowIcon = function(item, type) {
 	item.find('.icons.'+ type).show();
 }
+Search.tmpHideIconArray = function(attr, type, i) {
+	Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('.icons.'+ type).hide();
+}
 Search.tempHideButtons = function () {
 	Search.stopReloads();
 	
-	var tableWhere  = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
-		tableNot    = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
-		returnArray = [],
-		infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
+	if (whatWeChangeObject.what == 'group') {
+		var attr        = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase(),
+			returnArray = [],
+			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false,
+			item        = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'];
 		
-	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
-		var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
-		if (checkInfo) {
-			var row     = $(this),
-				host    = Search.getHost(row),
-				service = Search.getService(row),
-				check   = Search.getLastCheck(row),
-				isHost  = row.find('.host a').attr('data-host');
-				
-			if (whatWeChangeObject.host && whatWeChangeObject.service) {
-				if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
-					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+		for (var i = 0; i < item.length; i++) {
+			var checkInfo = (infoCheck) ? ((item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? false : true) : true;
+			
+			if (checkInfo) {
+				var host    = Search.getHost(item[i]),
+					service = Search.getService(item[i]),
+					check   = Search.getLastCheck(item[i]),
+					isHost  = item[i].find('.host a').attr('data-host');
+					
+				if (whatWeChangeObject.host) {
+					if (host == whatWeChangeObject.host) {
+						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else if (whatWeChangeObject.service) {
+					if (service == whatWeChangeObject.service) {
+						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
 				}
-			} else if (whatWeChangeObject.host) {
-				if (host == whatWeChangeObject.host) {
-					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-				}
-			} else if (whatWeChangeObject.service) {
-				if (service == whatWeChangeObject.service) {
-					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
-				}
-			} else {
-				Search.tmpHideIcon(row, whatWeChangeObject.type);
-				returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
 			}
 		}
-	});
-	
-	if (whatWeChangeObject.what == 'group' || whatWeChangeObject.what == 'this') {
-		$('#mainTable thead tr').each(function() {
+		
+		$('#mainTable thead tr[data-group="'+ attr +'"]:not(:last)').each(function() {
 			var row     = $(this),
 				host    = Search.getHost(row),
 				service = Search.getService(row);
 			
-			if (whatWeChangeObject.host && whatWeChangeObject.service) {
-				if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
-					Search.tmpHideIcon(row, whatWeChangeObject.type);
-				}
-			} else if (whatWeChangeObject.host) {
+			if (whatWeChangeObject.host) {
 				if (host == whatWeChangeObject.host) {
 					Search.tmpHideIcon(row, whatWeChangeObject.type +'Group');
 				}
@@ -933,10 +909,138 @@ Search.tempHideButtons = function () {
 				}
 			}
 		});
+    }
+	else if (whatWeChangeObject.what == 'all') {
+		var returnArray = [],
+			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
+			
+		$('#mainTable tbody tr').each(function() {
+			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
+			if (checkInfo) {
+				var row     = $(this),
+					host    = Search.getHost(row),
+					service = Search.getService(row),
+					check   = Search.getLastCheck(row),
+					isHost  = row.find('.host a').attr('data-host');
+					
+				if (whatWeChangeObject.host && whatWeChangeObject.service) {
+					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else if (whatWeChangeObject.host) {
+					if (host == whatWeChangeObject.host) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else if (whatWeChangeObject.service) {
+					if (service == whatWeChangeObject.service) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+				}
+			}
+		});
+		
+		var groupNames = [];
+		
+		$('#mainTable thead tr').each(function() {
+			var attr = $(this).attr('data-group');
+				
+			if (attr && groupNames.indexOf(attr) === -1) {
+				groupNames.push(attr);
+			}
+		});
+		
+		for (var a = 0; a < groupNames.length; a++) {
+            if (Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'].length) {
+				var headerRows = Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'];
+					
+				for (var i = 0; i < headerRows.length; i++) {
+					var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
+					
+					if (checkInfo) {
+						var row     = headerRows[i],
+							host    = Search.getHost(row),
+							service = Search.getService(row),
+							check   = Search.getLastCheck(row),
+							isHost  = row.find('.host a').attr('data-host');
+							
+						if (whatWeChangeObject.host && whatWeChangeObject.service) {
+							if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+								Search.tmpHideIcon(row, whatWeChangeObject.type);
+								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+							}
+						} else if (whatWeChangeObject.host) {
+							if (host == whatWeChangeObject.host) {
+								Search.tmpHideIcon(row, whatWeChangeObject.type);
+								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+							}
+						} else if (whatWeChangeObject.service) {
+							if (service == whatWeChangeObject.service) {
+								Search.tmpHideIcon(row, whatWeChangeObject.type);
+								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+							}
+						} else {
+							Search.tmpHideIcon(row, whatWeChangeObject.type);
+							returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						}
+					}
+				}
+			}
+        }
 	}
-	
-	if (whatWeChangeObject.what == 'all') {
-		$('#mainTable tr .icons.'+ whatWeChangeObject.type +'Group, #mainTable tr .icons.'+ whatWeChangeObject.type +', #'+ whatWeChangeObject.type +'_button').hide();
+	else {
+		var returnArray = [],
+			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
+			
+		$('#mainTable tr').each(function() {
+			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
+			if (checkInfo) {
+				var row     = $(this),
+					host    = Search.getHost(row),
+					service = Search.getService(row),
+					check   = Search.getLastCheck(row),
+					isHost  = row.find('.host a').attr('data-host');
+					
+				if (whatWeChangeObject.host && whatWeChangeObject.service) {
+					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else if (whatWeChangeObject.host) {
+					if (host == whatWeChangeObject.host) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else if (whatWeChangeObject.service) {
+					if (service == whatWeChangeObject.service) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					}
+				} else {
+					Search.tmpHideIcon(row, whatWeChangeObject.type);
+					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+				}
+			}
+		});
+		
+		if (whatWeChangeObject.what == 'this') {
+			$('#mainTable thead tr').each(function() {
+				var row     = $(this),
+					host    = Search.getHost(row),
+					service = Search.getService(row);
+				
+				if (whatWeChangeObject.host && whatWeChangeObject.service) {
+					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
+						Search.tmpHideIcon(row, whatWeChangeObject.type);
+					}
+				}
+			});
+		}
 	}
 	
 	whatWeChangeDataObject = returnArray;
@@ -1039,7 +1143,7 @@ Search.restoreAllData = function() {
 	Search.allDataTable.rows({ page:'current', search:'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
 		var d      = this.data(),
 			change = 0;
-			
+		
 		if (whatWeChangeObject.what == 'all') {
 			change = 1;
 		}
@@ -1069,9 +1173,77 @@ Search.restoreAllData = function() {
 				d.service.qAuth = false;
 				d.comment.ack   = '';
 				
-				if (d.type.search('__acked__') > -1) {
-					d.type = (d.type.replace('__acked__', '')) ? d.type.replace('__acked__', '') : '__normal__';
-				}
+				if (whatWeChangeObject.what == 'this') {
+                    $('#mainTable tbody tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text();
+							
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+                            $(this).remove();
+							Search.countRecordsPlus('normal');
+							Search.countRecordsMinus('acked');
+                        }
+					});
+					
+					$('#mainTable thead tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text(),
+							attr    = $(this).attr('data-group');
+						
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+							var count = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text()) - 1;
+							$('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text(count);
+							$(this).remove();
+							Search.countRecordsPlus('normal');
+							Search.countRecordsMinus('acked');
+							
+							if (Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length) {
+								for (var i = 0; i < Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length; i++) {
+									var host    = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.host a').text(),
+										service = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.service a.service-name').text()
+							
+									if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+										Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].splice(i, 1);
+									}
+								}
+							}
+						}
+					});	
+                }
+				
+				if (whatWeChangeObject.what == 'all') {
+                    $('#mainTable tbody tr').each(function() {
+						$(this).remove();
+					});
+					
+					$('#mainTable thead tr:not(:first)').each(function() {
+						$(this).remove();
+						Search.allHeaderRows = {};
+					});
+					
+					var oldCount = parseInt($('#radio label[for="acked"] em').text()),
+						newCount = parseInt($('#radio label[for="normal"] em').text());
+						
+					$('#radio label[for="normal"] em').text(oldCount + newCount);
+					$('#radio label[for="acked"] em').text('0');
+                }
+				
+				if (whatWeChangeObject.what == 'group') {
+					var attr     = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
+					
+					if ($('#mainTable thead tr[data-group="'+ attr +'"]').length) {
+                        var count    = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first td.host span:first').text()),
+							oldCount = parseInt($('#radio label[for="normal"] em').text()),
+							newCount = parseInt($('#radio label[for="acked"] em').text());
+						
+						$('#radio label[for="normal"] em').text(oldCount + count);
+						$('#radio label[for="acked"] em').text(newCount - count);
+						
+						$('#mainTable thead tr[data-group="'+ attr +'"]').remove();
+                    }
+                }
+				
+
 			}
 			else if (whatWeChangeObject.type == 'acknowledgeIt') {
 				if (!commentDate) {
@@ -1082,11 +1254,76 @@ Search.restoreAllData = function() {
 				d.comment.ack   = (d.comment.ack) ? (d.comment.ack +'<br /><br />'+ newComment) : newComment;
 				d.service.unAck = true;
 				d.service.qAck  = true;
-				d.type          = d.type.replace('__normal__', '');
 				
-				if (d.type.search('__acked__') < 0) {
-					d.type += '__acked__';
-				}
+				if (whatWeChangeObject.what == 'this') {
+                    $('#mainTable tbody tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text();
+							
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+                            $(this).remove();
+							Search.countRecordsMinus(Search.currentTab);
+							Search.countRecordsPlus('acked');
+                        }
+					});
+					
+					$('#mainTable thead tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text(),
+							attr    = $(this).attr('data-group');
+						
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+							var count = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text()) - 1;
+							$('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text(count);
+							$(this).remove();
+							Search.countRecordsMinus(Search.currentTab);
+							Search.countRecordsPlus('acked');
+							
+							if (Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length) {
+								for (var i = 0; i < Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length; i++) {
+									var host    = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.host a').text(),
+										service = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.service a.service-name').text()
+							
+									if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+										Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].splice(i, 1);
+									}
+								}
+							}
+						}
+					});	
+                }
+				
+				if (whatWeChangeObject.what == 'all') {
+                    $('#mainTable tbody tr').each(function() {
+						$(this).remove();
+					});
+					
+					$('#mainTable thead tr:not(:first)').each(function() {
+						$(this).remove();
+						Search.allHeaderRows = {};
+					});
+					
+					var oldCount = parseInt($('#radio label[for="' + Search.currentTab + '"] em').text()),
+						newCount = parseInt($('#radio label[for="acked"] em').text());
+						
+					$('#radio label[for="' + Search.currentTab + '"] em').text('0');
+					$('#radio label[for="acked"] em').text(oldCount + newCount);
+                }
+				
+				if (whatWeChangeObject.what == 'group') {
+					var attr     = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
+					
+					if ($('#mainTable thead tr[data-group="'+ attr +'"]').length) {
+                        var count    = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first td.host span:first').text()),
+							oldCount = parseInt($('#radio label[for="' + Search.currentTab + '"] em').text()),
+							newCount = parseInt($('#radio label[for="acked"] em').text());
+						
+						$('#radio label[for="' + Search.currentTab + '"] em').text(oldCount - count);
+						$('#radio label[for="acked"] em').text(newCount + count);
+						
+						$('#mainTable thead tr[data-group="'+ attr +'"]').remove();
+                    }
+                }
 			}
 			else if (whatWeChangeObject.type == 'scheduleIt') {
 				if (!commentDate) {
@@ -1099,17 +1336,82 @@ Search.restoreAllData = function() {
 				d.service.qUAck = false;
 				d.service.qAck  = true;
 				d.service.qAuth = false;
-				d.type          = d.type.replace('__normal__', '');
-				if (d.type.search('__sched__') < 0) {
-					d.type += '__sched__';
-				}
+				
+				if (whatWeChangeObject.what == 'this') {
+                    $('#mainTable tbody tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text();
+							
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+                            $(this).remove();
+							Search.countRecordsMinus(Search.currentTab);
+							Search.countRecordsPlus('sched');
+                        }
+					});
+					
+					$('#mainTable thead tr').each(function() {
+						var host    = $(this).find('td.host a').text(),
+							service = $(this).find('td.service a.service-name').text(),
+							attr    = $(this).attr('data-group');
+						
+						if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+							var count = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text()) - 1;
+							$('#mainTable thead tr[data-group="'+ attr +'"]:first span:first').text(count);
+							$(this).remove();
+							Search.countRecordsMinus(Search.currentTab);
+							Search.countRecordsPlus('sched');
+							
+							if (Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length) {
+								for (var i = 0; i < Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length; i++) {
+									var host    = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.host a').text(),
+										service = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('td.service a.service-name').text()
+							
+									if (whatWeChangeObject.service == service && whatWeChangeObject.host == host) {
+										Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].splice(i, 1);
+									}
+								}
+							}
+						}
+					});	
+                }
+				
+				if (whatWeChangeObject.what == 'all') {
+                    $('#mainTable tbody tr').each(function() {
+						$(this).remove();
+					});
+					
+					$('#mainTable thead tr:not(:first)').each(function() {
+						$(this).remove();
+						Search.allHeaderRows = {};
+					});
+					
+					var oldCount = parseInt($('#radio label[for="' + Search.currentTab + '"] em').text()),
+						newCount = parseInt($('#radio label[for="sched"] em').text());
+						
+					$('#radio label[for="' + Search.currentTab + '"] em').text('0');
+					$('#radio label[for="sched"] em').text(oldCount + newCount);
+                }
+				
+				if (whatWeChangeObject.what == 'group') {
+					var attr     = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
+					
+					if ($('#mainTable thead tr[data-group="'+ attr +'"]').length) {
+                        var count    = parseInt($('#mainTable thead tr[data-group="'+ attr +'"]:first td.host span:first').text()),
+							oldCount = parseInt($('#radio label[for="' + Search.currentTab + '"] em').text()),
+							newCount = parseInt($('#radio label[for="sched"] em').text());
+						
+						$('#radio label[for="' + Search.currentTab + '"] em').text(oldCount - count);
+						$('#radio label[for="sched"] em').text(newCount + count);
+						
+						$('#mainTable thead tr[data-group="'+ attr +'"]').remove();
+                    }
+                }
 			}
 			this.invalidate();
 		}
 	});
 	
-	Search.filterDataTable($('#mainTable_filter input').val());
-	setTimeout(function(){ Search.startReloads(); }, 3000);
+	setTimeout(function(){ Search.startReloads(); }, 4000);
 	quickAckUnAckGroup();
 				
 	$('#dialogAck').dialog('close');
@@ -1411,25 +1713,25 @@ Search.hideMoreMobile = function(tr) {
 	}
 }
 
+Search.drawTinycon = function() {
+    if (Search.ajaxData.critical) {
+        Tinycon.setOptions({ colour: '#ffffff', background: '#ff0000' });
+        Tinycon.setBubble(Search.ajaxData.critical);
+    } else if (Search.ajaxData.unknown) {
+        Tinycon.setOptions({ colour: '#ffffff', background: '#dd8500' });
+        Tinycon.setBubble(Search.ajaxData.unknown);
+    } else if (Search.ajaxData.warnings) {
+        Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
+        Tinycon.setBubble(Search.ajaxData.warnings);
+    } else if (typeof Tinycon !== 'undefined') {
+    Tinycon.setBubble(0);
+    }
+}
 Search.countRecords = function() {
-	var normal = 0,
-		acked  = 0,
-		sched  = 0,
-		emerg  = 0;
-
-	if ($(Search.allDataTable.rows().data()).length > 0) {
-		$(Search.allDataTable.rows().data()).each(function() {
-			if ($(this)[0].type.search('__normal__') > -1 && $(this)[0].type.search('__info__') < 0) { normal++; }
-			if ($(this)[0].type.search('__acked__')  > -1) { acked++;  }
-			if ($(this)[0].type.search('__sched__')  > -1) { sched++;  }
-			if ($(this)[0].service.name.search('EMERGENCY')  > -1) { emerg++;  }
-		});
-	}
-	
-	$('#radio label[for="normal"] em').text(normal);
-	$('#radio label[for="acked"] em').text(acked);
-	$('#radio label[for="sched"] em').text(sched);
-	$('#radio label[for="EMERGENCY"] em').text(emerg);
+    $('#radio label[for="normal"] em').text(Search.ajaxData.normal);
+    $('#radio label[for="acked"] em').text(Search.ajaxData.acked);
+    $('#radio label[for="sched"] em').text(Search.ajaxData.sched);
+    $('#radio label[for="EMERGENCY"] em').text(Search.ajaxData.EMERGENCY);
 }
 Search.countRecordsMinus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) - 1;
@@ -1438,6 +1740,14 @@ Search.countRecordsMinus = function(buttonID) {
 Search.countRecordsPlus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) + 1;
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
+}
+
+Search.getNewData = function() {
+	Search.getInfoRecords = (localStorage.getItem('showInfo')) ? '&show_info=1' : '';
+	
+	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+        showHidePlanned();
+    }).order(Search.orderBy[Search.currentTab]);
 }
 
 selectTimer = null;
@@ -1455,7 +1765,6 @@ function checkSelectedText() {
 }
 
 Search.init = function() {
-	Search.filterDataTable();
 	getPlanned();
 	
 	$(document).mousedown(function() {
@@ -1557,6 +1866,7 @@ Search.init = function() {
 		}
 	});
 	
+	
 	$('#normal, #acked, #sched, #EMERGENCY, #planned').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
@@ -1566,29 +1876,53 @@ Search.init = function() {
 		Search.stopReloads();
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
-		Search.currentTab = localStorage.getItem('currentTabNew');
-
-		Search.filterDataTable(false, true);
-		showHidePlanned();
+		Search.currentTab     = localStorage.getItem('currentTabNew');
+		Search.getInfoRecords = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
+		
+		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
+		
+		if (Search.currentTab != 'planned') {
+            Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+				showHidePlanned();
+			}).order(Search.orderBy[Search.currentTab]);
+        } else {
+			showHidePlanned();
+		}
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();
+		
+		if (Search.searchValue != $(this).val()) {
+			Search.searchValue = val;
+			
+			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
+				showHidePlanned();
+					
+				setTimeout(function(){
+					showHidePlanned();
+				}, 400);
+			});
+        }
 
-		typingTimer = setTimeout(function(){
-			Search.filterDataTable(val);
-		}, Search.doneTypingInterval);
 		
         if (e.keyCode && e.keyCode == 13) {
 			window.location.href = Search.addParameterToUrl('search', val);
 		}
     });
+	$('#mainTable_filter input').val(Search.getParameterByName('search')).trigger('keyup').focus();
 	
 	$('#info-show option[value="'+ Search.showInfo +'"]').attr('selected', 'selected');
 	$('#info-show').selectmenu({
 		select: function (event, data) {
 			localStorage.setItem('showInfo', data.item.value);
-			Search.showInfo = localStorage.getItem('showInfo');
-			Search.filterDataTable();
+			Search.showInfo       = localStorage.getItem('showInfo');
+			Search.getInfoRecords = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
+			
+			Search.allDataTable.order(Search.orderBy[Search.currentTab]);
+		
+			Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+				showHidePlanned();
+			}).order(Search.orderBy[Search.currentTab]);
 		}
 	});
 	
@@ -1598,7 +1932,14 @@ Search.init = function() {
 		select: function (event, data) {
 			localStorage.setItem('currentGroup', data.item.value);
 			Search.currentGroup = localStorage.getItem('currentGroup');
-			Search.filterDataTable();
+			
+			if (data.item.value == '1') {
+                Search.filterDataTable();
+            } else {
+				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+					showHidePlanned();
+				}).order(Search.orderBy[Search.currentTab]);
+			}
 		}
 	});
 	$(document).on('click', '.group-list', function () {
@@ -1606,13 +1947,21 @@ Search.init = function() {
 
 		if ($(this).hasClass('open')) {
 			localStorage.removeItem(Search.currentTab + '_' + attr);
-			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list)').removeClass('group-list-bottom').hide();
+			
+			$('#mainTable thead tr[data-group="'+ attr +'"]:not(.group-list-bottom)').remove();
+			$('#mainTable thead tr[data-group="'+ attr +'"]:not(.group-list):last').removeClass('group-list-bottom').hide();
+			
 			$(this).removeClass('open');
 		}
 		else {
 			localStorage.setItem(Search.currentTab + '_' + attr, true);
-			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list)').show();
-			$('#mainTable tr[data-group="'+ attr +'"]:not(.group-list):last').addClass('group-list-bottom');
+			
+			for (var i = 0; i < Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length; i++) {
+				$(Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i]).insertBefore('#mainTable thead tr[data-group="'+ attr +'"]:last');
+			}
+			
+			$('#mainTable thead tr[data-group="'+ attr +'"]:not(.group-list):last').addClass('group-list-bottom').show();
+			
 			$(this).addClass('open');
 		}
 		
@@ -1920,7 +2269,11 @@ Search.init = function() {
 	});
 	
 	
-	Search.allDataTable.on('order.dt', function(e, settings) { Search.orderBy[Search.currentTab] = settings.aaSorting; Search.emptyHosts(); });
+	Search.allDataTable.on('order.dt', function(e, settings) {
+		Search.orderBy[Search.currentTab] = settings.aaSorting;
+		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
+		Search.emptyHosts();
+	});
 	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').text().replace('&amp;', '&'), '_blank'); });
 	$('img').error(function() { $(this).attr('src', 'images/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
@@ -1990,31 +2343,90 @@ Search.init = function() {
 	function unSchedule(type, element) {
 		var button  = element,
 			request = [],
-			ids     = [];
+			ids     = [],
+			group   = '';
 		
 		if (type == 'all') {
-			var rows = $('#mainTable tbody tr');
+			var groupNames = [];
+			
+			$('#mainTable tr').each(function() {
+				var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
+					isHost  = $(this).find('.host a').attr('data-host');
+					
+				if (down_id && ids.indexOf(down_id) === -1) {
+                    request.push({ 'down_id': down_id, 'isHost': isHost });
+					ids.push(down_id);
+                }
+			});
+			
+			$('#mainTable thead tr').each(function() {
+				var attr = $(this).attr('data-group');
+				
+				if (attr && groupNames.indexOf(attr) === -1) {
+					groupNames.push(attr);
+				}
+			});
+			
+			for (var a = 0; a < groupNames.length; a++) {
+                if (Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'].length) {
+					var headerRows = Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'];
+					
+					for (var i = 0; i < headerRows.length; i++) {
+						var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
+							isHost  = headerRows[i].find('.host a').attr('data-host');
+							
+							
+						if (down_id && ids.indexOf(down_id) === -1) {
+							request.push({ 'down_id': down_id, 'isHost': isHost });
+							ids.push(down_id);
+						}
+					}
+				}
+            }
 			
 			$('#mainTable tr').find('.service .unScheduleIt').css('visibility', 'hidden');
 			$('#mainTable tr').find('.service .unScheduleItGroup').css('visibility', 'hidden');
-		} else if (type == 'group') {
-			var group = button.closest('tr').attr('data-group'),
-				rows  = $('#mainTable thead tr[data-group="'+ group +'"]:not(.group-list-bottom):not(:last-child)');
-				
-			$('#mainTable thead tr[data-group="'+ group +'"]:not(:last-child) .service .unScheduleIt').css('visibility', 'hidden');
-		} else {
-			var rows = button.closest('tr');
+		}
+		else if (type == 'group') {
+			var attr = button.closest('tr').attr('data-group');
+			
+			if (Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'].length) {
+				var headerRows = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'];
+					
+				for (var i = 0; i < headerRows.length; i++) {
+					var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
+						isHost  = headerRows[i].find('.host a').attr('data-host');
+							
+							
+					if (down_id && ids.indexOf(down_id) === -1) {
+						request.push({ 'down_id': down_id, 'isHost': isHost });
+						ids.push(down_id);
+					}
+				}
+			}
+			
+			group = attr;
+			
+			$('#mainTable thead tr[data-group="' + attr + '"]').find('.service .unScheduleIt').css('visibility', 'hidden');
+			$('#mainTable thead tr[data-group="' + attr + '"]').find('.service .unScheduleItGroup').css('visibility', 'hidden');
+		}
+		else {
+			var rows     = button.closest('tr'),
+				down_id  = rows.find('.service .unScheduleIt').attr('data-id'),
+				isHost   = rows.find('.host a').attr('data-host'),
+				hasGroup = rows.attr('data-group');
+					
+			if (down_id && ids.indexOf(down_id) === -1) {
+                request.push({ 'down_id': down_id, 'isHost': isHost });
+				ids.push(down_id);
+            }
+			
+			if (hasGroup) {
+                group = hasGroup;
+            }
 		}
 		
 		button.css('visibility', 'hidden');
-		
-		$(rows).each(function() {
-			var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
-				isHost  = $(this).find('.host a').attr('data-host');
-			
-			request.push({ 'down_id': down_id, 'isHost': isHost });
-			ids.push(down_id);
-		});
 		
 		$.ajax({
 			url:    'post.php',
@@ -2035,20 +2447,105 @@ Search.init = function() {
 		})
 		.done(function() {
 			button.removeAttr('style');
-			$(ids).each(function(key, id) {
-				var dataRow = Search.allDataTable.row($('#mainTable tbody tr [data-id="'+ id +'"]').closest('tr')),
-					data    = dataRow.data();
+			
+			var countOK    = 0,
+				countTotal = 0;
 				
-				if (data.status.name == 'OK') {
-					dataRow.remove();
+			if (type == 'all') {
+				var groupNames = [];
+				
+				$('#mainTable tbody tr').each(function() {
+					var status = $(this).find('td.status').text();
+					
+					if (status == 'OK') {
+                        countOK++;
+                    }
+					countTotal++;
+					
+					$(this).remove();
+				});
+				
+				$('#mainTable thead tr').each(function() {
+					var attr = $(this).attr('data-group');
+					
+					if (attr && groupNames.indexOf(attr) === -1) {
+						groupNames.push(attr);
+					}
+					
+					$(this).remove();
+				});
+                
+				for (var a = 0; a < groupNames.length; a++) {
+					if (Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'].length) {
+						var headerRows = Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'];
+						
+						for (var i = 0; i < headerRows.length; i++) {
+							var status = headerRows[i].find('td.status').text();
+							
+							if (status == 'OK') {
+								countOK++;
+							}
+							countTotal++;
+						}
+					}
 				}
-				else {
-					data.type = (data.type == '__sched__') ? '__normal__' : (data.type.replace('__sched__', ''));
-					dataRow.invalidate();
+				
+				Search.allHeaderRows = {};
+				
+				$('#radio label[for="sched"] em').text('0');
+				$('#radio label[for="normal"] em').text(parseInt($('#radio label[for="normal"] em').text()) + countTotal - countOK);
+            }
+			else if (type == 'group') {
+				var row   = $('#mainTable thead tr[data-group="' + group + '"]:first'),
+					count = parseInt(row.find('td.host span:first').text());
+					
+				$('#radio label[for="sched"] em').text(parseInt($('#radio label[for="sched"] em').text()) - count);
+				
+				if (row.find('td.status').text() != 'OK') {
+                    $('#radio label[for="normal"] em').text(parseInt($('#radio label[for="normal"] em').text()) + count);
+                }
+				
+				$('#mainTable thead tr[data-group="' + group + '"]').remove();
+			}
+			else {
+				if (!group) {
+                    var row = $('#mainTable tbody tr [data-id="' + ids[0] + '"]').closest('tr');
+					
+					$('#radio label[for="sched"] em').text(parseInt($('#radio label[for="sched"] em').text()) - 1);
+					
+					if (row.find('td.status').text() != 'OK') {
+                        $('#radio label[for="normal"] em').text(parseInt($('#radio label[for="normal"] em').text()) + 1);
+                    }
+					
+					row.remove();
+                } else {
+					var row    = $('#mainTable thead tr [data-id="' + ids[0] + '"]').closest('tr'),
+						count  = parseInt($('#mainTable thead tr[data-group="' + group + '"]:first td.host span:first').text());
+						
+					$('#mainTable thead tr[data-group="' + group + '"]:first td.host span:first').text(count - 1);
+					$('#radio label[for="sched"] em').text(parseInt($('#radio label[for="sched"] em').text()) - 1);
+					
+					if (row.find('td.status').text() != 'OK') {
+                        $('#radio label[for="normal"] em').text(parseInt($('#radio label[for="normal"] em').text()) + 1);
+                    }
+					
+					row.remove();
+					
+					if (Search.allHeaderRows[Search.currentTab + '_' + group + '_rows'].length) {
+						var headerRows = Search.allHeaderRows[Search.currentTab + '_' + group + '_rows'];
+						
+						for (var i = 0; i < headerRows.length; i++) {
+							var rowId = parseInt(headerRows[i].find('[data-id]').attr('data-id'));
+							
+							if (rowId == ids[0]) {
+                                Search.allHeaderRows[Search.currentTab + '_' + group + '_rows'].splice(i, 1);
+                            }
+						}
+					}
 				}
-			});
-			Search.filterDataTable($('#mainTable_filter input').val());
-			setTimeout(function(){ Search.startReloads(); }, 3000);
+			}
+			
+			setTimeout(function(){ Search.startReloads(); }, 4000);
 			quickAckUnAckGroup();
 		});
 	}

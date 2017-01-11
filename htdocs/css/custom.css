@@ -203,6 +203,7 @@ table.dataTable thead .no-border-th {
 .blue-text, .blue-text a { color: #68a5ff; }
 .brown-text, .brown-text a { color: #a98e64; }
 
+#mainTable_info { display: none; }
 
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }

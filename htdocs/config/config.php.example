@@ -65,6 +65,12 @@ $refreshArray   = [
 /* Planned Maintenance file */
 $plannedUrl = 'planned.json';
 
+/* Memcache Host */
+$memcacheHost = 'localhost';
+
+/* Memcache Port */
+$memcachePort = 12345;
+
 function hostUrl($host) {
 	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;
 }
