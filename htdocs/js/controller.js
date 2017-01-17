@@ -2596,12 +2596,16 @@ function getParameterByName (name) {
 $.stopPendingAjax = (function() {
 	var id = 0, Q = {};
 
-	$(document).ajaxSend(function(e, jqx){
-		jqx._id = ++id;
-		Q[jqx._id] = jqx;
+	$(document).ajaxSend(function(e, jqx, settings){
+		if (settings.url != 'planned.php') {
+            jqx._id = ++id;
+			Q[jqx._id] = jqx;
+        }
 	});
-	$(document).ajaxComplete(function(e, jqx){
-		delete Q[jqx._id];
+	$(document).ajaxComplete(function(e, jqx, settings){
+		if (settings.url != 'planned.php') {
+			delete Q[jqx._id];
+		}
 	});
 	return {
 		abortAll: function(){
