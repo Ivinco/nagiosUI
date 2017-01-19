@@ -200,8 +200,28 @@ table.dataTable thead .no-border-th {
 
 
 .grey-text, .grey-text a { color: grey; }
-.blue-text, .blue-text a { color: #68a5ff; }
-.brown-text, .brown-text a { color: #a98e64; }
+
+#mainTable td.service.WARNING.blue-text,
+#mainTable td.duration.WARNING.blue-text,
+#mainTable td.status_information.WARNING.blue-text,
+#mainTable td.comment.WARNING.blue-text,
+#mainTable td.last_check.WARNING.blue-text,
+#mainTable td.more.WARNING.blue-text,
+#mainTable td.service.UNKNOWN.blue-text,
+#mainTable td.duration.UNKNOWN.blue-text,
+#mainTable td.status_information.UNKNOWN.blue-text,
+#mainTable td.comment.UNKNOWN.blue-text,
+#mainTable td.last_check.UNKNOWN.blue-text,
+#mainTable td.more.UNKNOWN.blue-text { background-color: #bed8ff; }
+#mainTable td.status.UNKNOWN.blue-text, #mainTable td.status.WARNING.blue-text { background-color: #67a4ff; }
+
+#mainTable td.service.CRITICAL.brown-text,
+#mainTable td.duration.CRITICAL.brown-text,
+#mainTable td.status_information.CRITICAL.brown-text,
+#mainTable td.comment.CRITICAL.brown-text,
+#mainTable td.last_check.CRITICAL.brown-text,
+#mainTable td.more.CRITICAL.brown-text { background-color: #d8a961; }
+#mainTable td.status.CRITICAL.brown-text { background-color: #ad7e36; }
 
 #mainTable_info { display: none; }
 

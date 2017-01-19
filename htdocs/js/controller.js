@@ -161,7 +161,7 @@ Search = {}
 			if (!data.service.info && data.service.sched) {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('grey-text');
 			}
-			if (data.service.info && data.state == 'WARNING') {
+			if (data.service.info && (data.state == 'WARNING' || data.state == 'UNKNOWN')) {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('blue-text');
 			}
 			if (data.service.info && data.state == 'CRITICAL') {
@@ -875,20 +875,21 @@ Search.tempHideButtons = function () {
 			var checkInfo = (infoCheck) ? ((item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? false : true) : true;
 			
 			if (checkInfo) {
-				var host    = Search.getHost(item[i]),
-					service = Search.getService(item[i]),
-					check   = Search.getLastCheck(item[i]),
-					isHost  = item[i].find('.host a').attr('data-host');
+				var host        = Search.getHost(item[i]),
+					service     = Search.getService(item[i]),
+					check       = Search.getLastCheck(item[i]),
+					isHost      = item[i].find('.host a').attr('data-host'),
+					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
 					
 				if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				}
 			}
@@ -917,30 +918,31 @@ Search.tempHideButtons = function () {
 		$('#mainTable tbody tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
 			if (checkInfo) {
-				var row     = $(this),
-					host    = Search.getHost(row),
-					service = Search.getService(row),
-					check   = Search.getLastCheck(row),
-					isHost  = row.find('.host a').attr('data-host');
+				var row         = $(this),
+					host        = Search.getHost(row),
+					service     = Search.getService(row),
+					check       = Search.getLastCheck(row),
+					isHost      = row.find('.host a').attr('data-host'),
+					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
 					
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 				}
 			}
 		});
@@ -963,30 +965,31 @@ Search.tempHideButtons = function () {
 					var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
 					
 					if (checkInfo) {
-						var row     = headerRows[i],
-							host    = Search.getHost(row),
-							service = Search.getService(row),
-							check   = Search.getLastCheck(row),
-							isHost  = row.find('.host a').attr('data-host');
+						var row         = headerRows[i],
+							host        = Search.getHost(row),
+							service     = Search.getService(row),
+							check       = Search.getLastCheck(row),
+							isHost      = row.find('.host a').attr('data-host'),
+							infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
 							
 						if (whatWeChangeObject.host && whatWeChangeObject.service) {
 							if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 							}
 						} else if (whatWeChangeObject.host) {
 							if (host == whatWeChangeObject.host) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 							}
 						} else if (whatWeChangeObject.service) {
 							if (service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 							}
 						} else {
 							Search.tmpHideIcon(row, whatWeChangeObject.type);
-							returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+							returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 						}
 					}
 				}
@@ -1000,43 +1003,51 @@ Search.tempHideButtons = function () {
 		$('#mainTable tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
 			if (checkInfo) {
-				var row     = $(this),
-					host    = Search.getHost(row),
-					service = Search.getService(row),
-					check   = Search.getLastCheck(row),
-					isHost  = row.find('.host a').attr('data-host');
-					
+				var row         = $(this),
+					host        = Search.getHost(row),
+					service     = Search.getService(row),
+					check       = Search.getLastCheck(row),
+					isHost      = row.find('.host a').attr('data-host'),
+					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
+	
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						console.log(' - ' + infoService);
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+						console.log(' - ' + infoService);
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': service, 'check': check, 'isHost': isHost });
+					console.log(' - ' + infoService);
+					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 				}
 			}
 		});
 		
 		if (whatWeChangeObject.what == 'this') {
 			$('#mainTable thead tr').each(function() {
-				var row     = $(this),
-					host    = Search.getHost(row),
-					service = Search.getService(row);
+				var row         = $(this),
+					host        = Search.getHost(row),
+					service     = Search.getService(row),
+					check       = Search.getLastCheck(row),
+					isHost      = row.find('.host a').attr('data-host'),
+					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
 				
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				}
 			});
@@ -1895,7 +1906,7 @@ Search.init = function() {
 		if (Search.searchValue != $(this).val()) {
 			Search.searchValue = val;
 			
-			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
+			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function () {
 				showHidePlanned();
 					
 				setTimeout(function(){
