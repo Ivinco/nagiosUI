@@ -879,7 +879,7 @@ Search.tempHideButtons = function () {
 					service     = Search.getService(item[i]),
 					check       = Search.getLastCheck(item[i]),
 					isHost      = item[i].find('.host a').attr('data-host'),
-					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '';
+					infoService = (item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? '_' : '';
 					
 				if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
