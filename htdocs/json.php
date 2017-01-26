@@ -2,6 +2,10 @@
 
 include_once 'functions.php';
 
+if (!isset($_SESSION)) {
+    session_start();
+}
+
 ignore_user_abort(false);
 set_time_limit(10);
 

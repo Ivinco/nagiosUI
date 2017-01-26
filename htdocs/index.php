@@ -1,5 +1,13 @@
 <?php
 	$rev = exec('git rev-parse HEAD');
+	
+	if (!isset($_SESSION)) {
+        session_start();
+    }
+	
+	if (!isset($_SESSION["user"]) || !$_SESSION["user"]) {
+		$_SESSION["user"] = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+	}
 ?><html>
 <head>
     <title>Current Network Status</title>

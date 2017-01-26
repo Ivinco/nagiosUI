@@ -2,6 +2,10 @@
 
 include_once 'config/config.php';
 
+if (!isset($_SESSION)) {
+    session_start();
+}
+
 $memcache = new Memcache;
 $memcache->connect($memcacheHost, $memcachePort);
 
@@ -269,8 +273,8 @@ foreach ($refreshArray as $item) {
 	$refreshArrayData[] = intval($item['value']) .','. $item['name'];
 }
 
-$userName = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
-$userName = ($userName && array_key_exists($userName, $usersArray)) ? $userName : 'default';
+$userName = ($_SESSION["user"] && array_key_exists($_SESSION["user"], $usersArray)) ? $_SESSION["user"] : 'default';
+$_SESSION["user"] = $userName;
 
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
