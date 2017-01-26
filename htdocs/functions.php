@@ -2,10 +2,6 @@
 
 include_once 'config/config.php';
 
-if (!isset($_SESSION)) {
-    session_start();
-}
-
 $memcache = new Memcache;
 $memcache->connect($memcacheHost, $memcachePort);
 
@@ -273,13 +269,8 @@ foreach ($refreshArray as $item) {
 	$refreshArrayData[] = intval($item['value']) .','. $item['name'];
 }
 
-$userName = ($_SESSION["user"] && array_key_exists($_SESSION["user"], $usersArray)) ? $_SESSION["user"] : 'default';
-$_SESSION["user"] = $userName;
-
 $xmlContent .= '
 	<hash>'.                 md5($verificateCheck) .'</hash>
-	<user>'.                 parseToXML($userName) .'</user>
-	<avatar>'.               md5(strtolower(trim($usersArray[$userName]))) .'</avatar>
 	<nagios-config-file>'.   parseToXML($nagiosConfigFile) .'</nagios-config-file>
 	<nagios-full-list-url>'. parseToXML($nagiosFullHostUrl) .'</nagios-full-list-url>
 	<group-by-service>'.     parseToXML($groupByService) .'</group-by-service>

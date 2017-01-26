@@ -5,9 +5,18 @@
         session_start();
     }
 	
-	if (!isset($_SESSION["user"]) || !$_SESSION["user"]) {
-		$_SESSION["user"] = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+	if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
+		include_once 'config/config.php';
+		
+		$user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+		$user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
+		
+		$_SESSION["currentUser"] = $user;
+		$_SESSION["currentAvatar"] = md5(strtolower(trim($usersArray[$user])));
 	}
+	
+	$userName = $_SESSION["currentUser"];
+	$userAvatar = $_SESSION["currentAvatar"];
 ?><html>
 <head>
     <title>Current Network Status</title>
@@ -137,8 +146,8 @@
     <div id="openDialogServerTime"></div>
 	<div id="timeShift"></div>
 	<div id="downtimeComment"></div>
-    <div id="userName"></div>
-	<div id="userAvatar"></div>
+	<div id="userName"><?php echo $userName; ?></div>
+	<div id="userAvatar"><?php echo $userAvatar; ?></div>
 	<div id="nagiosConfigFile"></div>
 	<div id="nagiosPostFile"></div>
 	<div id="nagiosFullListUrl"></div>

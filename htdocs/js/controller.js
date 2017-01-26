@@ -177,8 +177,6 @@ Search = {}
 			$('#infoHolder').show();
 			
 			if (Search.firstLoad) {
-				$('#userName').text(json.additional.userName);
-				$('#userAvatar').text(json.additional.userAvatar);
 				$('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
 				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);

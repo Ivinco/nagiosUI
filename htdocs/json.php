@@ -2,10 +2,6 @@
 
 include_once 'functions.php';
 
-if (!isset($_SESSION)) {
-    session_start();
-}
-
 ignore_user_abort(false);
 set_time_limit(10);
 
@@ -134,8 +130,6 @@ foreach ($array['alert'] as $item) {
 }
 
 $additional = array(
-	'userName'          => $array['user'],
-	'userAvatar'        => $array['avatar'],
 	'nagiosConfigFile'  => $array['nagios-config-file'],
 	'nagiosFullListUrl' => $array['nagios-full-list-url'],
 	'updateHash'        => $array['hash'],
