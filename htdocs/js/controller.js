@@ -1028,18 +1028,15 @@ Search.tempHideButtons = function () {
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						console.log(' - ' + infoService);
 						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						console.log(' - ' + infoService);
 						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					console.log(' - ' + infoService);
 					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost });
 				}
 			}
