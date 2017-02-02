@@ -24,11 +24,11 @@ foreach ($_REQUEST['data'] as $post) {
 	
 	if ($type == 'quickAck' || $type == 'acknowledgeIt') {
 		if ($post['isHost'] == 'service') {
-			fwrite($f, "[".time()."] ACKNOWLEDGE_SVC_PROBLEM;{$post['host']};{$post['service']};1;1;0;{$post['author']};{$post['com_data']}\n");
+			fwrite($f, "[".time()."] ACKNOWLEDGE_SVC_PROBLEM;{$post['host']};{$post['service']};2;1;0;{$post['author']};{$post['com_data']}\n");
 		}
 		
 		if ($post['isHost'] == 'host') {
-			fwrite($f, "[".time()."] ACKNOWLEDGE_HOST_PROBLEM;{$post['host']};1;1;0;{$post['author']};{$post['com_data']}\n");
+			fwrite($f, "[".time()."] ACKNOWLEDGE_HOST_PROBLEM;{$post['host']};2;1;0;{$post['author']};{$post['com_data']}\n");
 		}
 	}
 	else if ($type == 'quickUnAck' || $type == 'unAck' || $type == 'unAcknowledgeIt') {
