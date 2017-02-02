@@ -10,6 +10,9 @@ if (!localStorage.getItem('currentGroup')) {
 if (!localStorage.getItem('showInfo')) {
 	localStorage.setItem('showInfo', '0');
 }
+if (!localStorage.getItem('canceledReloads')) {
+	localStorage.setItem('canceledReloads', '0');
+}
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
@@ -21,6 +24,7 @@ localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
 localStorage.setItem('showInfo', tmpInfo);
+localStorage.setItem('canceledReloads', '0');
 
 lastTime = (new Date()).getTime();
 
@@ -445,20 +449,25 @@ function getGroupNormalThead(rowsHeader) {
 			allRows  = [];
 		
 		$('#mainTable tbody tr:contains("'+ contains +'")').each(function() {
-			var row  = $(this),
-				host = row.find('td.host').text();
+			var row        = $(this).clone(),
+				verifyName = (rowData.type == 'service') ? 'td.service li:first a' : 'td.host a:first',
+				verify     = row.find(verifyName).text();
 			
-			row.attr('data-group', groupNameSmall);
-			row.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');
+			if (verify == contains) {
+                var	host = row.find('td.host').text();
 			
-			if (Search.currentTab == 'normal') {
-                row.find('td.comment').hide();
+				row.attr('data-group', groupNameSmall);
+				row.find('td.host').css('visibility', (host == prevHost) ? 'hidden' : 'visible');
+				
+				if (Search.currentTab == 'normal') {
+					row.find('td.comment').hide();
+				}
+				
+				prevHost = host;
+				allRows.push(row);
+				
+				$(this).find('td.host').addClass('toRemove');
             }
-			
-			prevHost = host;
-			allRows.push(row);
-			
-			row.remove();
 		});
 		
 		Search.allHeaderRows[Search.currentTab + '_' + groupNameSmall + '_rows'] = allRows;
@@ -477,6 +486,7 @@ function getGroupNormalThead(rowsHeader) {
 		); 
 	});
 	
+	$('#mainTable tbody .toRemove').closest('tr').remove();
 	$('#mainTable thead tr[data-group]:not(.group-list)').hide();
 	$('#mainTable thead tr.group-list').removeClass('open');
 	
@@ -578,20 +588,22 @@ Search.reorderData = function() {
 }
 
 
-Search.stopReloads = function() {
-	$.stopPendingAjax.abortAll();
+Search.stopReloads = function(stop) {
+	$.stopPendingAjax.abortAll(stop);
 	clearTimeout(reloadTimer);
 	Search.backgroundReload = false;
 	Search.autoRefresh      = false;
 }
 Search.startReloads = function() {
-	if (Search.currentReload == 'auto') {
-		reloadTimer             = setTimeout(function () { Search.getContent(); }, 0);
-		Search.backgroundReload = true;
-	} else {
-		reloadTimer        = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
-		Search.autoRefresh = true;
-	}
+	if (localStorage.getItem('canceledReloads') == '0') {
+        if (Search.currentReload == 'auto') {
+			reloadTimer             = setTimeout(function () { Search.getContent(); }, 0);
+			Search.backgroundReload = true;
+		} else {
+			reloadTimer        = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
+			Search.autoRefresh = true;
+		}
+    }
 }
 Search.getContent = function() {
 	if (Search.backgroundReload) {
@@ -861,7 +873,7 @@ Search.tmpHideIconArray = function(attr, type, i) {
 	Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'][i].find('.icons.'+ type).hide();
 }
 Search.tempHideButtons = function () {
-	Search.stopReloads();
+	Search.stopReloads(true);
 	
 	if (whatWeChangeObject.what == 'group') {
 		var attr        = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase(),
@@ -1420,7 +1432,7 @@ Search.restoreAllData = function() {
 		}
 	});
 	
-	setTimeout(function(){ Search.startReloads(); }, 4000);
+	setTimeout(function(){ localStorage.setItem('canceledReloads', '0'); Search.startReloads(); }, 5000);
 	quickAckUnAckGroup();
 				
 	$('#dialogAck').dialog('close');
@@ -2554,24 +2566,24 @@ Search.init = function() {
 				}
 			}
 			
-			setTimeout(function(){ Search.startReloads(); }, 4000);
+			setTimeout(function(){ localStorage.setItem('canceledReloads', '0'); Search.startReloads(); }, 5000);
 			quickAckUnAckGroup();
 		});
 	}
 	$('#mainTable').on('click', '.unScheduleIt', function() {
-		Search.stopReloads();
+		Search.stopReloads(true);
 		
 		unSchedule('this', $(this));
 	});
 	$('#mainTable').on('click', '.unScheduleItGroup', function() {
-		Search.stopReloads();
+		Search.stopReloads(true);
 		
 		unSchedule('group', $(this));
 		
 		return false;
 	});	
 	$(document).on('click', '#unScheduleIt_button', function() {
-		Search.stopReloads();
+		Search.stopReloads(true);
 		
 		unSchedule('all', $(this));
 	});
@@ -2617,12 +2629,16 @@ $.stopPendingAjax = (function() {
 		}
 	});
 	return {
-		abortAll: function(){
+		abortAll: function(stop){
 			var r = [];
 			$.each(Q, function(i, jqx){
 				r.push(jqx._id);
 				jqx.abort();
 			});
+			if (stop) {
+                localStorage.setItem('canceledReloads', '1');
+            }
+			
 			return r;
 		}
 	};
