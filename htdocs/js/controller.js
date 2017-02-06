@@ -1750,14 +1750,21 @@ Search.countRecords = function() {
     $('#radio label[for="acked"] em').text(Search.ajaxData.acked);
     $('#radio label[for="sched"] em').text(Search.ajaxData.sched);
     $('#radio label[for="EMERGENCY"] em').text(Search.ajaxData.EMERGENCY);
+	Search.infoRowCounter();
 }
 Search.countRecordsMinus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) - 1;
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
+	
+	Search.ajaxData.total_tab = Search.ajaxData.total_tab - 1;
+	Search.infoRowCounter();
 }
 Search.countRecordsPlus = function(buttonID) {
 	var count = parseInt($('#radio label[for="'+ buttonID +'"] em').text()) + 1;
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
+}
+Search.infoRowCounter = function() {
+	$('#mainTable_info').text('Showing 1 to '+ Search.ajaxData.total_tab +' of '+ Search.ajaxData.total_tab +' entries (filtered from '+ Search.ajaxData.total +' total entries)');
 }
 
 Search.getNewData = function() {

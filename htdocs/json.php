@@ -60,13 +60,13 @@ foreach ($array['alert'] as $item) {
 		continue;
 	}
 	
-	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $array['user'], false)) {
+	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $_SESSION["currentUser"], false)) {
 		unAckForPlanned($host, $service, $hostOrService);
 		$acked = 0;
 		$tempCommen = '';
 	}
 	
-	if (!$infoRecord && $acked == 0 && $sched == 0 && findPlanned($host, $service, $array['user'])) {
+	if (!$infoRecord && $acked == 0 && $sched == 0 && findPlanned($host, $service, $_SESSION["currentUser"])) {
 		$sched = 1;
 		$plannedAuthor = md5(strtolower(trim($usersArray[$array['user']])));
 		$tempSchedCommen = 'planned';
@@ -143,6 +143,7 @@ $additional = array(
     'warnings'          => 0,
     'critical'          => 0,
     'unknown'           => 0,
+    'total'             => count($returnJson),
 );
 
 $filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';
@@ -231,6 +232,8 @@ if (count($_GET['order']) > 1) {
 	
 	array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $second, (($_GET['order'][1]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $returnJson);
 }
+
+$additional['total_tab'] = count($returnJson);
 
 echo json_encode(array('data' => $returnJson, 'additional' => $additional));
 

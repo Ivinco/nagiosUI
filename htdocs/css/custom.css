@@ -223,8 +223,6 @@ table.dataTable thead .no-border-th {
 #mainTable td.more.CRITICAL.brown-text { background-color: #d8a961; }
 #mainTable td.status.CRITICAL.brown-text { background-color: #ad7e36; }
 
-#mainTable_info { display: none; }
-
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
