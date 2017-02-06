@@ -411,10 +411,10 @@ function getGroupNormalThead(rowsHeader) {
 			avatar         = (mainGreyClass) ? $('#mainTable tbody tr:contains("'+ contains +'") .service.grey-text img:first-child').first().attr('src') : '',
 			subRowsBlue    = $('#mainTable tbody tr:contains("'+ contains +'") .host.blue-text').length,
 			subRowsBrown   = $('#mainTable tbody tr:contains("'+ contains +'") .host.brown-text').length,
-			mainBlueClass  = (subRowsBlue == subRows) ? ' blue-text' : '',
-			mainBrownClass = (subRowsBrown == subRows) ? ' brown-text' : '',
-			ackIconBlock   = (mainBlueClass || mainBrownClass) ? '' : '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-			schedIconBlock = (mainBlueClass || mainBrownClass) ? '' : '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
+			subRowsInfo    = ((subRowsBlue + subRowsBrown) == subRows) ? true : false;
+			subRowsClass   = (subRowsInfo) ? ((subRowsBrown) ? ' brown-text' : ' blue-text') : '';
+			ackIconBlock   = (subRowsClass) ? '' : '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
+			schedIconBlock = (subRowsClass) ? '' : '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
 			
 			if (avatar) {
 				var quickAck = '<li><img class="icons" src="'+ avatar +'"></li>';
@@ -424,8 +424,8 @@ function getGroupNormalThead(rowsHeader) {
 		
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
-			'	<td class="host'+ mainGreyClass + mainBrownClass + mainBlueClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
-			'	<td class="service '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'"'+ css +'>' +
+			'	<td class="host'+ mainGreyClass + subRowsClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
+			'	<td class="service '+ trClass + mainGreyClass + subRowsClass +'"'+ css +'>' +
 			'		<div class="likeTable">' +
 			'			<ul>' +
 			'				<li>' + serviceValue + '</li>' + quickAck +
@@ -435,13 +435,13 @@ function getGroupNormalThead(rowsHeader) {
 			'			</ul>' +
 			'		</div>' +
 			'	</td>' +
-			'	<td class="status '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.status +'</td>' +
-			'	<td class="last_check '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.lastCheck +'</td>' +
+			'	<td class="status '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.status +'</td>' +
+			'	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.lastCheck +'</td>' +
 			'	<td class="duration-sec" style="display: none;"></td>' +
-			'	<td class="duration '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.duration +'</td>' +
-			'	<td class="status_information '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.information +'</td>' +
-			'	<td class="comment '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'">'+ rowData.comment +'</td>' +
-			'	<td class="more '+ trClass + mainGreyClass + mainBrownClass + mainBlueClass +'"><button class="button-more">></button></td>' +
+			'	<td class="duration '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.duration +'</td>' +
+			'	<td class="status_information '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.information +'</td>' +
+			'	<td class="comment '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.comment +'</td>' +
+			'	<td class="more '+ trClass + mainGreyClass + subRowsClass +'"><button class="button-more">></button></td>' +
 			'</tr>'
 		);
 		
