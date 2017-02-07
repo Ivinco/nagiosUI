@@ -79,7 +79,7 @@ foreach ($array['alert'] as $item) {
 	$returnType = '';
 	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp') || ($sched == 1 && $tempSchedCommen == 'planned') || $infoRecord) ? '__normal__' : '';
 	$returnType.= ($acked == 1 && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
-	$returnType.= ($sched == 1 && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
+	$returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
 	
 	if ($infoRecord) {
 		$returnType .= '__info__';
