@@ -463,6 +463,14 @@ function getGroupNormalThead(rowsHeader) {
 					row.find('td.comment').hide();
 				}
 				
+				if (Search.currentTab == 'acked') {
+					row.find('td.comment .sched').hide();
+				}
+				
+				if (Search.currentTab == 'sched') {
+					row.find('td.comment .ack').hide();
+				}
+				
 				prevHost = host;
 				allRows.push(row);
 				
@@ -1765,7 +1773,8 @@ Search.countRecordsPlus = function(buttonID) {
 	$('#radio label[for="'+ buttonID +'"] em').text(count);
 }
 Search.infoRowCounter = function() {
-	$('#mainTable_info').text('Showing 1 to '+ Search.ajaxData.total_tab +' of '+ Search.ajaxData.total_tab +' entries (filtered from '+ Search.ajaxData.total +' total entries)');
+	var from = (Search.ajaxData.total_tab) ? 1 : 0;
+	$('#mainTable_info').text('Showing '+ from +' to '+ Search.ajaxData.total_tab +' of '+ Search.ajaxData.total_tab +' entries (filtered from '+ Search.ajaxData.total +' total entries)');
 }
 
 Search.getNewData = function() {
