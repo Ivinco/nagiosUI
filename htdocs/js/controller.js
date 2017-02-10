@@ -800,7 +800,7 @@ Search.addDialogJs = function() {
 		modal:    true,
 		width:    400,
 		position: { my: "center center", at: "center top+200"},
-		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); $('#dialogAck .select-comment').hide(); },
+		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); $('#dialog .select-comment').hide(); },
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		create:   function() {
 			$(this).closest('.ui-dialog').on('keydown', function(ev) {
