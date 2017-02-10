@@ -762,15 +762,16 @@ Search.addDialog = function() {
 	dialog += '    <fieldset>';
 	dialog += '      <table><tr><td>';
 	dialog += '        <label for="sched_interval_extension">Interval, hours</label>';
-	dialog += '      </td><td>';
+	dialog += '      </td><td style="text-align: right;">';
 	dialog += '        <input type="text" name="sched_interval_extension" id="sched_interval_extension" class="text ui-widget-content">';
 	dialog += '      </td></tr><tr><td>';
 	dialog += '        <label for="sched_comment_extension">Comment</label>';
 	dialog += '      </td><td>';
-	dialog += '        <input type="text" name="sched_comment_extension" id="sched_comment_extension" class="text ui-widget-content">';
+	dialog += '        <div class="select-comment"><span>Select</span><select name="comment_select"></select></div>';
+	dialog += '        <div class="write-comment"><span>Write</span><input type="text" name="sched_comment_extension" id="sched_comment_extension" class="text ui-widget-content"></div>';
 	dialog += '      </td></tr><tr><td>';
 	dialog += '        <label for="sched_finish_date_time">Finish date/time</label>';
-	dialog += '      </td><td>';
+	dialog += '      </td><td style="text-align: right;">';
 	dialog += '        <input type="text" name="sched_finish_date_time" id="sched_finish_date_time" class="text ui-widget-content">';
 	dialog += '      </td></tr></table>';
 	dialog += '    </fieldset>';
@@ -781,9 +782,10 @@ Search.addDialog = function() {
 	dialog += '  <form name="acknowledge">';
 	dialog += '    <fieldset>';
 	dialog += '      <table><tr><td>';
-	dialog += '        <label for="ack_comment">Comment</label>';
+	dialog += '        <label for="ack_comment_extension">Comment</label>';
 	dialog += '      </td><td>';
-	dialog += '        <input type="text" name="ack_comment_extension" id="ack_comment_extension" class="text ui-widget-content">';
+	dialog += '        <div class="select-comment"><span>Select</span><select name="comment_select"></select></div>';
+	dialog += '        <div class="write-comment"><span>Write</span><input type="text" name="ack_comment_extension" id="ack_comment_extension" class="text ui-widget-content"></div>';
 	dialog += '      </td></tr></table>';
 	dialog += '    </fieldset>';
 	dialog += '  </form>';
@@ -798,7 +800,7 @@ Search.addDialogJs = function() {
 		modal:    true,
 		width:    400,
 		position: { my: "center center", at: "center top+200"},
-		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); },
+		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); $('#dialogAck .select-comment').hide(); },
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		create:   function() {
 			$(this).closest('.ui-dialog').on('keydown', function(ev) {
@@ -832,7 +834,7 @@ Search.addDialogJs = function() {
 		width:    400,
 		position: { my: "center center", at: "center top+200"},
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
-		open:	  function() { $('body').css("overflow", "hidden"); },
+		open:	  function() { $('body').css("overflow", "hidden"); $('#ack_comment_extension').focus(); $('#dialogAck .select-comment').hide(); },
 		closeOnEscape: true,
 		buttons: [
 			{
@@ -1785,6 +1787,31 @@ Search.getNewData = function() {
     }).order(Search.orderBy[Search.currentTab]);
 }
 
+Search.returnComments = function(modal) {
+	if (Search.ajaxData.commentsSelect) {
+        $.ajax({
+			url:    'comments.php',
+			method: 'GET',
+			data:   { host: whatWeChangeObject.host, service: whatWeChangeObject.service },
+		})
+		.success(function(data) {
+			if (data.length) {
+				var html  = '<select name="select-comment-list">';
+					html += '<option value=""></option>';
+				
+				for (var i = 0; i < data.length; i++) {
+					html += '<option value="'+ data[i].name +'">'+ data[i].name +'</option>';
+				}
+	
+				html += '</select>';
+				
+				$(modal + ' .select-comment').show();
+				$(modal + ' .select-comment select').html(html);
+			}
+		});
+    }
+}
+
 selectTimer = null;
 
 function checkSelectedText() {
@@ -1817,6 +1844,10 @@ Search.init = function() {
 		
 		clearTimeout(selectTimer);
     });
+	
+	$(document).on('change', '.select-comment select', function() {
+		$(this).closest('td').find('.write-comment input').val($(this).val()).focus();
+	});
 	
 	function showHidePlanned() {
 		if (Search.currentTab == 'planned') {
@@ -2202,6 +2233,7 @@ Search.init = function() {
 		
 		Search.tempHideButtons();
 		$('#dialogAck').dialog('open');
+		Search.returnComments('#dialogAck');
 		
 		return false;
 	});
@@ -2215,6 +2247,7 @@ Search.init = function() {
 		
 		Search.tempHideButtons();
 		$('#dialogAck').dialog('open');
+		Search.returnComments('#dialogAck');
 	});
 	$(document).on('click', '#'+ Search.ackButtonId, function () {
 		whatWeChangeObject = {
@@ -2246,6 +2279,7 @@ Search.init = function() {
 		
 		Search.tempHideButtons();
 		$('#dialog').dialog('open');
+		Search.returnComments('#dialog');
 		
 		return false;
 	});
@@ -2259,6 +2293,7 @@ Search.init = function() {
 		
 		Search.tempHideButtons();
 		$('#dialog').dialog('open');
+		Search.returnComments('#dialog');
 	});
 	$(document).on('click', '#'+ Search.sdButtonId, function () {
 		whatWeChangeObject = {

@@ -223,6 +223,18 @@ table.dataTable thead .no-border-th {
 #mainTable td.more.CRITICAL.brown-text { background-color: #d8a961; }
 #mainTable td.status.CRITICAL.brown-text { background-color: #ad7e36; }
 
+.select-comment { display: none; padding-bottom: 8px; }
+.select-comment select { width: 191px; }
+.select-comment span, .write-comment span {
+  width: 50px;
+  text-align: right;
+  display: inline-block;
+  font-size: 12px;
+  padding-right: 5px;
+}
+#dialog label { font-size: 14px; }
+#dialog input, #dialog select { width: 161px; }
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }

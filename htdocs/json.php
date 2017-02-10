@@ -14,6 +14,7 @@ ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
 global $usersArray;
+global $commentsSelect;
 
 $xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
 $infoRecords = (isset($_GET['show_info'])) ? $_GET['show_info'] : '';
@@ -144,6 +145,7 @@ $additional = array(
     'critical'          => 0,
     'unknown'           => 0,
     'total'             => count($returnJson),
+    'commentsSelect'    => $commentsSelect,
 );
 
 $filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';

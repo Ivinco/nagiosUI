@@ -78,3 +78,16 @@ function hostUrl($host) {
 function serviceUrl($host, $service) {
 	return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
 }
+
+
+/* enable/disable last comments for acknowledge and schedule downtime */
+$commentsSelect            = false;
+
+/* command example only for host */
+$commentsSelectHost        = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' group by comment order by last_seen desc limit 10\" 2>&1";
+
+/* command example only for service */
+$commentsSelectService     = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
+
+/* command example only for host & service */
+$commentsSelectHostService = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
