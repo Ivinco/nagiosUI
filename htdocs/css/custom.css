@@ -142,16 +142,14 @@ copy
 #refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
 #refreshTimeSelect-button { width: auto !important; min-width: 122px; }
 
-#refreshTime, #normalGrouping, #infoShow { float: right; }
+#refreshTime, #normalGrouping { float: right; }
 #refreshTimeSelect-button, #grouping-button, #info-show-button { outline: none; }
 #refreshTimeSelect-menu li, #grouping-menu li, #info-show-menu li { font-size: 12px; line-height: 16px; }
 #refreshTimeSelect-menu li.ui-selectmenu-optgroup, #grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 #refreshTime .ui-selectmenu-button span.ui-selectmenu-text,
-#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text,
-#infoShow .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 26px; padding: 0 15px 0 3px; }
+#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 26px; padding: 0 15px 0 3px; }
 #refreshTime .ui-selectmenu-button span.ui-icon,
-#normalGrouping .ui-selectmenu-button span.ui-icon,
-#infoShow .ui-selectmenu-button span.ui-icon { right: 0; }
+#normalGrouping .ui-selectmenu-button span.ui-icon { right: 0; }
 
 #radio { float: left; font-size: 14px; }
 #radio em { font-style: normal; }
@@ -239,7 +237,7 @@ table.dataTable thead .no-border-th {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
     #radio .small-hide { display: none; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text, #infoShow .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 25px; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 25px; }
     #grouping-menu li, #refreshTimeSelect-menu li { font-size: 12px; }
     .ui-button-text-only .ui-button-text { padding: 6px 7px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon, #radio .top-planned-icon { margin-top: 0px; }
@@ -288,10 +286,10 @@ table.dataTable thead .no-border-th {
     #planned-maintenance .holder { width: auto; display: block; margin-bottom: 30px; }
     #radio .top-planned-icon { padding: 0px; }
     
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text, #infoShow .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; line-height: 22px; padding: 0 9px 0 0; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; line-height: 22px; padding: 0 9px 0 0; }
     #info-show-button, #info-show-menu { width: 80px !important; }
     #grouping-button, #grouping-menu { width: 116px !important; }
-    #refreshTime .ui-selectmenu-button span.ui-icon, #normalGrouping .ui-selectmenu-button span.ui-icon, #infoShow .ui-selectmenu-button span.ui-icon { right: -2px; }
+    #refreshTime .ui-selectmenu-button span.ui-icon, #normalGrouping .ui-selectmenu-button span.ui-icon { right: -2px; }
     #refreshTimeSelect-button { width: 105px !important; min-width: 105px; }
     #info-show-menu li { font-size: 11px; padding: 3px; }
 }
@@ -302,8 +300,8 @@ table.dataTable thead .no-border-th {
     #mainTable .status_information, #mainTable .status_information-th, #mainTable .comment, #mainTable .comment-th { display: none; }
     #hosts, #hosts-label { display: none; }
     .ui-buttonset { margin-right: 0; }
-    #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon, #infoShow .ui-selectmenu-button span.ui-icon { display: none; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text, #infoShow .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }
+    #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { display: none; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }
     #grouping-button { width: 113px !important; }
     #grouping-menu { width: 113px !important; }
     #refreshTimeSelect-button { width: 98px !important; min-width: 98px; }
@@ -315,7 +313,6 @@ table.dataTable thead .no-border-th {
     #mainTable .duration, #mainTable .duration-th { width: 43px !important; }
     #mainTable .service, #mainTable .service-th { width: 122px !important; }
     #mainTable .comment { width: 48px !important; }
-    #info-show-button, #info-show-menu { width: 76px !important; }
 }
 
 

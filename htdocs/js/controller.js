@@ -7,23 +7,18 @@ if (!localStorage.getItem('currentReloadNew')) {
 if (!localStorage.getItem('currentGroup')) {
 	localStorage.setItem('currentGroup', '0');
 }
-if (!localStorage.getItem('showInfo')) {
-	localStorage.setItem('showInfo', '0');
-}
 if (!localStorage.getItem('canceledReloads')) {
 	localStorage.setItem('canceledReloads', '0');
 }
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
-	tmpGroup  = localStorage.getItem('currentGroup'),
-	tmpInfo   = localStorage.getItem('showInfo');
+	tmpGroup  = localStorage.getItem('currentGroup');
 	
 localStorage.clear();
 localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
-localStorage.setItem('showInfo', tmpInfo);
 localStorage.setItem('canceledReloads', '0');
 
 lastTime = (new Date()).getTime();
@@ -33,7 +28,6 @@ Search = {}
 	Search.allHeaderRows      = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
-	Search.showInfo           = localStorage.getItem('showInfo');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
 	Search.reloadCustomText   = 'Refresh: Custom';
 	Search.autoRefresh        = true;
@@ -57,12 +51,11 @@ Search = {}
 		'planned'       : [[2,'desc'],[4,'desc']],
 	};
 	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
-	Search.getInfoRecords     = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
-		'ajax':        'json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile,
+		'ajax':        'json.php?filter=' + Search.currentTab + Search.additionalFile,
 		'deferRender': true,
 		'processing':  false,
         'serverSide':  true,
@@ -1780,9 +1773,7 @@ Search.infoRowCounter = function() {
 }
 
 Search.getNewData = function() {
-	Search.getInfoRecords = (localStorage.getItem('showInfo')) ? '&show_info=1' : '';
-	
-	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
         showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
 }
@@ -1943,12 +1934,11 @@ Search.init = function() {
 		
 		localStorage.setItem('currentTabNew', $(this).attr('id'));
 		Search.currentTab     = localStorage.getItem('currentTabNew');
-		Search.getInfoRecords = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
 		
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 		
 		if (Search.currentTab != 'planned') {
-            Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+            Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 				showHidePlanned();
 			}).order(Search.orderBy[Search.currentTab]);
         } else {
@@ -1977,22 +1967,6 @@ Search.init = function() {
     });
 	$('#mainTable_filter input').val(Search.getParameterByName('search')).trigger('keyup').focus();
 	
-	$('#info-show option[value="'+ Search.showInfo +'"]').attr('selected', 'selected');
-	$('#info-show').selectmenu({
-		select: function (event, data) {
-			localStorage.setItem('showInfo', data.item.value);
-			Search.showInfo       = localStorage.getItem('showInfo');
-			Search.getInfoRecords = (localStorage.getItem('showInfo') != '0') ? '&show_info=1' : '';
-			
-			Search.allDataTable.order(Search.orderBy[Search.currentTab]);
-		
-			Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
-				showHidePlanned();
-			}).order(Search.orderBy[Search.currentTab]);
-		}
-	});
-	
-	
 	$('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
 	$('#grouping').selectmenu({
 		select: function (event, data) {
@@ -2002,7 +1976,7 @@ Search.init = function() {
 			if (data.item.value == '1') {
                 Search.filterDataTable();
             } else {
-				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function() {
+				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 					showHidePlanned();
 				}).order(Search.orderBy[Search.currentTab]);
 			}
@@ -2696,10 +2670,6 @@ $.stopPendingAjax = (function() {
 
 $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 	if (data.join(' ').search((Search.currentTab == 'EMERGENCY') ? Search.currentTab : '__' + Search.currentTab + '__') >= 0) {
-		if (Search.showInfo == '0' && data.join(' ').search('__info__') >= 0) {
-			return false;
-		}
-		
 		return true;
     }
 	

@@ -17,7 +17,6 @@ global $usersArray;
 global $commentsSelect;
 
 $xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
-$infoRecords = (isset($_GET['show_info'])) ? $_GET['show_info'] : '';
 $array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData($xmlFile))),TRUE);
 $returnJson  = array();
 
@@ -56,10 +55,6 @@ foreach ($array['alert'] as $item) {
 	$hostOrService   = $item['host_or_service'];
 	
 	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
-	
-	if ($infoRecord && !$infoRecords) {
-		continue;
-	}
 	
 	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $_SESSION["currentUser"], false)) {
 		unAckForPlanned($host, $service, $hostOrService);
