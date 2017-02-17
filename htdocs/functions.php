@@ -22,8 +22,9 @@ function returnDataList($isHash, $xmlFile) {
 	global $memcacheHost;
 	global $memcachePort;
 	global $memcache;
+	global $memcacheName;
 	
-	$memcache->set('nagiosUI_check', 'started', 0, 10);
+	$memcache->set("nagiosUI_{$memcacheName}_check", "started", 0, 10);
 
 $xmlContent = '<alerts sort="1">
 ';
@@ -73,7 +74,7 @@ $xmlContent = '<alerts sort="1">
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
 		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
-			$memcache->delete('nagiosUI_check');
+			//$memcache->delete('nagiosUI_check');
 			return file_get_contents($files[0]);
 		}
 	}
@@ -81,8 +82,9 @@ $xmlContent = '<alerts sort="1">
 	$statusFile = file_get_contents($statusFile_global);
 	
 	preg_match_all($pregHostStatus, $statusFile, $downHostsMatches);
-	
-	if (!preg_match_all($pregServiceStatus, $statusFile, $matches)) {
+	preg_match_all($pregServiceStatus, $statusFile, $matches);
+
+	if (!count($matches) || !count($matches['host'])) {
 		http_response_code(404);
 		die;
 	}
@@ -122,7 +124,7 @@ $xmlContent = '<alerts sort="1">
 			'last_check'         => $downHostsMatches['last_check'][$k]
 		);
 	}
-	
+
 	foreach ($hosts as $host=>$services) {
 		foreach ($services as $service=>$attrs) {
 			if (isset($depends[$service])) { // dependency found, let's check if we should hide the alert
@@ -278,28 +280,29 @@ $xmlContent .= '
 	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
-	if (!$memcache->get('nagiosUI_verify') || !$memcache->get('nagiosUI_data') || $memcache->get('nagiosUI_verify') != md5($verificateCheck)) {
-		$memcache->set('nagiosUI_verify', md5($verificateCheck), 0, 120);
-		$memcache->set('nagiosUI_data', serialize($xmlContent), 0, 120);
+	if (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI__{$memcacheName}_data") || $memcache->get("nagiosUI_{$memcacheName}_verify") != md5($verificateCheck)) {
+		$memcache->set("nagiosUI_{$memcacheName}_verify", md5($verificateCheck), 0, 120);
+		$memcache->set("nagiosUI_{$memcacheName}_data", serialize($xmlContent), 0, 120);
 	}
 	
-	$memcache->delete('nagiosUI_check');
+	$memcache->delete("nagiosUI_{$memcacheName}_check");
 
 	return true;
 }
 
 function returnMemcacheData($xmlFile) {
 	global $memcache;
+	global $memcacheName;
 	
 	if ($xmlFile) {
 		return returnDataList(false, $xmlFile);
 	}
 	
-	if (!$memcache->get('nagiosUI_check') && (!$memcache->get('nagiosUI_verify') || !$memcache->get('nagiosUI_data'))) {
+	if (!$memcache->get("nagiosUI_{$memcacheName}_check") && (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data"))) {
 		returnDataList(false, $xmlFile);
 	}
 
-	return unserialize($memcache->get('nagiosUI_data'));
+	return unserialize($memcache->get("nagiosUI_{$memcacheName}_data"));
 }
 
 function returnComments($comments, $statusFile, $isHost) {

@@ -71,6 +71,9 @@ $memcacheHost = 'localhost';
 /* Memcache Port */
 $memcachePort = 12345;
 
+/* memcache key (if you have few nagiosUI) */
+$memcacheName = 'nagiosUI';
+
 function hostUrl($host) {
 	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;
 }

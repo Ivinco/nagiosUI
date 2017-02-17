@@ -21,7 +21,7 @@ while (!connection_aborted() and connection_status() == CONNECTION_NORMAL) {
     clearstatcache();
     returnDataList(false, false);
     
-    $lastFileHash = $memcache->get('nagiosUI_verify');
+    $lastFileHash = $memcache->get("nagiosUI_{$memcacheName}_verify");
 
     if ($lastFileHash != $_GET['hash']) {
         echo $lastFileHash;
