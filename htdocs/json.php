@@ -2,6 +2,10 @@
 
 include_once 'functions.php';
 
+if (!isset($_SESSION)) {
+    session_start();
+}
+
 ignore_user_abort(false);
 set_time_limit(10);
 
@@ -64,7 +68,7 @@ foreach ($array['alert'] as $item) {
 	
 	if (!$infoRecord && $acked == 0 && $sched == 0 && findPlanned($host, $service, $_SESSION["currentUser"])) {
 		$sched = 1;
-		$plannedAuthor = md5(strtolower(trim($usersArray[$array['user']])));
+		$plannedAuthor = md5(strtolower(trim($usersArray[$_SESSION["currentUser"]])));
 		$tempSchedCommen = 'planned';
 	}
 	
