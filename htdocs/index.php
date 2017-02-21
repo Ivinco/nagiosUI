@@ -156,6 +156,7 @@
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
 	<script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
     <script src="//cdn.datatables.net/s/dt/dt-1.10.10,kt-2.1.0,r-2.0.0/datatables.min.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
 	<script>
 		$(document).ready(function() {

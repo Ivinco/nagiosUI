@@ -1791,7 +1791,7 @@ Search.returnComments = function(modal) {
 					html += '<option value=""></option>';
 				
 				for (var i = 0; i < data.length; i++) {
-					html += '<option value="'+ data[i].name +'">'+ data[i].name +'</option>';
+					html += '<option value="'+ data[i].name +'">'+ data[i].name +' - '+ moment(data[i].date, 'YYYY-MM-DD HH:mm:ss').fromNow() +'</option>';
 				}
 	
 				html += '</select>';
