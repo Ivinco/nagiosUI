@@ -3,6 +3,7 @@ Features:
 * Responsive design: you can use phone, tablet or computer
 * Real-time status update: no need to refresh the page to see new alerts
 * XML and JSON: decreases traffic from the server few times which gives lower response time
+* Memcache & server side rendering
 * Actions:
   * quick acknowledgement:
     - ![Image of quickAck](https://github.com/Ivinco/nagiosUI/blob/master/htdocs/images/examples/quick.gif)
@@ -63,6 +64,14 @@ Installation:
   - $groupByService           = grouping by Service count
   - $groupByHost              = grouping by Host count
   - $refreshArray             = refresh select values
+  - $memcacheHost             = memcache host
+  - $memcachePort             = memcache port
+  - $memcacheName             = memcache key (if you have few nagiosUI)
+  - $commentsSelect           = enable/disable last comments for acknowledge and schedule downtime
+  - $commentsSelectHost       = command example only for host
+  - $commentsSelectService    = command example only for service
+  - $commentsSelectHostService = command example only for host & service
+
 * you need to set up cron job:
   - * * * * * root php /domain/admin_scripts/cron/nagios_percentile.php >>/domain/log/nagios_percentile.log 2>&1
 * you need to configure .git/hooks/post-receive file:
