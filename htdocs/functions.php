@@ -23,6 +23,7 @@ function returnDataList($isHash, $xmlFile) {
 	global $memcachePort;
 	global $memcache;
 	global $memcacheName;
+	global $icinga;
 	
 	$memcache->set("nagiosUI_{$memcacheName}_check", "started", 0, 10);
 
@@ -41,6 +42,20 @@ $xmlContent = '<alerts sort="1">
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '[^{}]*?}/is';
+if ($icinga) {
+	$pregServiceStatus  = '/servicestatus {'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?service_description=(?P<service>.*?)\n'.
+							'.*?current_state=(?P<state>.*?)\n'.
+							'.*?plugin_output=(?P<plugin_output>.*?)\n'.
+							'.*?last_check=(?P<last_check>.*?)\n'.
+							'.*?current_attempt=(?P<attempts>.*?)\n'.
+							'.*?max_attempts=(?P<max_attempts>.*?)\n'.
+							'.*?last_state_change=(?P<last_status_change>.*?)\n'.
+							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
+							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
+						 '.*?}/is';
+} else {
 	$pregServiceStatus  = '/servicestatus {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
@@ -53,6 +68,7 @@ $xmlContent = '<alerts sort="1">
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
+}
 	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
@@ -74,7 +90,7 @@ $xmlContent = '<alerts sort="1">
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
 		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
-			//$memcache->delete('nagiosUI_check');
+			$memcache->delete("nagiosUI_{$memcacheName}_check");
 			return file_get_contents($files[0]);
 		}
 	}
