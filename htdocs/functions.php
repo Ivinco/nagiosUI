@@ -449,7 +449,7 @@ function returnPlannedPattern($command) {
 }
 function returnPlannedCommand($command, $pattern) {
 	$command = trim($command);
-	$command = (isset($pattern[1])) ? ($command . $pattern[1]) : $command;
+	$command = (isset($pattern[1])) ? ($command . ' ' . $pattern[1]) : $command;
 	$command = str_replace(".+.+", ".+", $command);
 	
 	return $command;
@@ -457,7 +457,6 @@ function returnPlannedCommand($command, $pattern) {
 function returnPlannedText($host, $service) {
 	return " " . $host . " " . $service . " ";
 }
-
 function unAckForPlanned($host, $service, $hostOrService) {
 	global $nagiosPipe;
 	
@@ -501,8 +500,8 @@ function findPlanned($host, $service, $user, $schedulePlanned = true) {
 		foreach ($commands as $command) {
 			$command = returnPlannedCommand($command, $pattern);
 			$text    = returnPlannedText($host, $service);
-			
-			if (preg_match("/$command/i", $text) && $plan['end'] > time() && $user == $plan['user']) {
+
+			if (preg_match("/$command/iu", $text) && $plan['end'] > time() && $user == $plan['user']) {
 				return (($schedulePlanned) ? schedulePlanned($host, $service, $plan['end'], $user) : true);
 			}
 		}
