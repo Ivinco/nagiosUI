@@ -5,6 +5,8 @@ include_once 'config/config.php';
 $memcache = new Memcache;
 $memcache->connect($memcacheHost, $memcachePort);
 
+date_default_timezone_set("America/New_York");
+
 function returnDataList($isHash, $xmlFile) {
 	global $statusFile_global;
 	global $getNotesUrls_cacheFile;
@@ -55,6 +57,14 @@ if ($icinga) {
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
+	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
+							'.*?service_description=(?P<service>.*?)\n'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+						  '.*?}/is';
 } else {
 	$pregServiceStatus  = '/servicestatus {'.
 							'.*?host_name=(?P<host>.*?)\n'.
@@ -68,7 +78,6 @@ if ($icinga) {
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
-}
 	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
@@ -77,6 +86,7 @@ if ($icinga) {
 							'.*?author=(?P<author>.*?)\n'.
 							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
 						  '.*?}/is';
+}
 	$pregHostComment    = '/(hostdowntime|hostcomment) {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.

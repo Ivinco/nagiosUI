@@ -14,6 +14,12 @@ if (connection_aborted()) {
     die;
 }
 
+if (isset($_GET['returndate'])) {
+	echo "Last Updated: " . date('D M j H:i:s T Y');
+	http_response_code(200);
+	die;
+}
+
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
