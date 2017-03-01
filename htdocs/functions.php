@@ -453,7 +453,7 @@ function parseToXML($htmlStr) {
 function removePlannedMaintenance($delete) {
 	$pattern  = returnPlannedPattern($delete);
 	$commands = explode(',', $pattern[0]);
-	$array    = json_decode(json_encode(simplexml_load_string(returnDataList(false, ''))),TRUE);
+	$array    = json_decode(json_encode(simplexml_load_string(returnMemcacheData())),TRUE);
 	
 	if (isset($array['alert']['host'])) {
 		$array['alert'] = [$array['alert']];
@@ -470,7 +470,7 @@ function removePlannedMaintenance($delete) {
 			foreach ($commands as $command) {
 				$command = returnPlannedCommand($command, $pattern);
 				
-				if (preg_match("/$command/i", $text)) {
+				if (preg_match("/$command/iu", $text)) {
 					removeSchedulePlanned($downtimeId);
 				}
 			}
