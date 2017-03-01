@@ -619,7 +619,11 @@ Search.getContent = function() {
 				Search.startReloads();
 			},
 			error: function() {
-				Search.startReloads();
+				if (!Search.updateHash) {
+					location.reload();
+				} else {
+					Search.startReloads();
+				}
 			},
 		});
 	}
@@ -1951,7 +1955,7 @@ Search.init = function() {
 		if (Search.searchValue != $(this).val()) {
 			Search.searchValue = val;
 			
-			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.getInfoRecords + Search.additionalFile).load(function () {
+			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
 				showHidePlanned();
 					
 				setTimeout(function(){
