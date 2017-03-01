@@ -57,13 +57,21 @@ if ($icinga) {
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
-	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
+	$pregServiceComment = '/servicecomment {'.
 							'.*?service_description=(?P<service>.*?)\n'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
-							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
+							'.*?entry_type=(?P<entry_type>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
-							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+							'.*?comment_data=(?P<comment>.*?)\n'.
+						  '.*?}/is';
+	$pregDowntimeComment = '/servicedowntime {'.
+							'.*?service_description=(?P<service>.*?)\n'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?downtime_id=(?P<downtime_id>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?comment=(?P<comment>.*?)\n'.
 						  '.*?}/is';
 } else {
 	$pregServiceStatus  = '/servicestatus {'.
@@ -78,13 +86,21 @@ if ($icinga) {
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
-	$pregServiceComment = '/(servicedowntime|servicecomment) {'.
+	$pregServiceComment = '/servicecomment {'.
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?service_description=(?P<service>.*?)\n'.
-							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
+							'.*?entry_type=(?P<entry_type>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
-							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+							'.*?comment_data=(?P<comment>.*?)\n'.
+						  '.*?}/is';
+	$pregDowntimeComment = '/servicedowntime {'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?service_description=(?P<service>.*?)\n'.
+							'.*?downtime_id=(?P<downtime_id>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?comment=(?P<comment>.*?)\n'.
 						  '.*?}/is';
 }
 	$pregHostComment    = '/(hostdowntime|hostcomment) {'.
@@ -115,7 +131,11 @@ if ($icinga) {
 		die;
 	}
 
-	$ackAndSchedMatches = array_merge(returnComments($pregServiceComment, $statusFile, false), returnComments($pregHostComment, $statusFile, true));
+	$ackAndSchedMatches = mergeComments([
+								returnComments($pregServiceComment, $statusFile, false),
+								returnComments($pregDowntimeComment, $statusFile, false),
+								returnComments($pregHostComment, $statusFile, true)
+							]);
 	$alertsPercentile   = @unserialize(file_get_contents($alertsPercentile_global));
 	$durationsFromFile  = @unserialize(file_get_contents($durationsFromFile_global));
 	$notesUrls          = getNotesUrls();
@@ -330,13 +350,32 @@ function returnMemcacheData($xmlFile) {
 
 	return unserialize($memcache->get("nagiosUI_{$memcacheName}_data"));
 }
-
+function mergeComments($arrays) {
+	$return = [];
+	
+	foreach ($arrays as $array) {
+		foreach ($array as $host=>$data) {
+			foreach ($data as $service=>$item) {
+				$return[$host][$service][] = $item[0];
+			}
+		}
+	}
+	
+	return $return;
+}
 function returnComments($comments, $statusFile, $isHost) {
 	$return = [];
 	
 	if (preg_match_all($comments, $statusFile, $matches)) {
 		foreach ($matches['host'] as $k=>$host) {
-			$type = ($matches['entry_type'][$k] == 2) ? 'other' : (($matches['entry_type'][$k] == 4 || $matches['entry_type'][$k] == 1) ? 'ack' : 'sched');
+			if (isset($matches['downtime_id'])) {
+				$type = 'sched';
+				$id   = $matches['downtime_id'][$k];
+			} else {
+				$type = ($matches['entry_type'][$k] == 2) ? 'other' : 'ack';
+				$id   = $matches['entry_type'][$k];
+			}
+			
 			$name = ($isHost) ? 'SERVER IS UP' : $matches['service'][$k];
 			
 			$return[$host][$name][] = array(
@@ -346,7 +385,7 @@ function returnComments($comments, $statusFile, $isHost) {
 				'schedAuthor'      => ($type == 'sched') ? $matches['author'][$k]     : '',
 				'schedComment'     => ($type == 'sched') ? $matches['comment'][$k]    : '',
 				'schedCommentDate' => ($type == 'sched') ? $matches['entry_time'][$k] : '',
-				'downtime_id'      => ($type != 'other') ? $matches['entry_type'][$k] : '',
+				'downtime_id'      => ($type != 'other') ? $id : '',
 			);
 		}
 	}
