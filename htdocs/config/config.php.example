@@ -79,6 +79,10 @@ function hostUrl($host) {
 }
 
 function serviceUrl($host, $service) {
+   if ($service == 'SERVER+IS+UP') {
+		return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=1&amp;host='. $host;
+	}
+	
 	return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
 }
 
