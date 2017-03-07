@@ -103,12 +103,19 @@ if ($icinga) {
 							'.*?comment=(?P<comment>.*?)\n'.
 						  '.*?}/is';
 }
-	$pregHostComment    = '/(hostdowntime|hostcomment) {'.
+	$pregHostDownComment = '/hostdowntime {'.
 							'.*?host_name=(?P<host>.*?)\n'.
-							'.*?(downtime_id|entry_type)=(?P<entry_type>.*?)\n'.
+							'.*?downtime_id=(?P<downtime_id>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
-							'.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+							'.*?comment=(?P<comment>.*?)\n'.
+						  '.*?}/is';
+	$pregHostSchedComment = '/hostcomment {'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?entry_type=(?P<entry_type>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?comment_data=(?P<comment>.*?)\n'.
 						  '.*?}/is';
 						  
 
@@ -130,11 +137,12 @@ if ($icinga) {
 		http_response_code(404);
 		die;
 	}
-
+	
 	$ackAndSchedMatches = mergeComments([
 								returnComments($pregServiceComment, $statusFile, false),
 								returnComments($pregDowntimeComment, $statusFile, false),
-								returnComments($pregHostComment, $statusFile, true)
+								returnComments($pregHostDownComment, $statusFile, true),
+								returnComments($pregHostSchedComment, $statusFile, true)
 							]);
 	$alertsPercentile   = @unserialize(file_get_contents($alertsPercentile_global));
 	$durationsFromFile  = @unserialize(file_get_contents($durationsFromFile_global));
@@ -356,7 +364,9 @@ function mergeComments($arrays) {
 	foreach ($arrays as $array) {
 		foreach ($array as $host=>$data) {
 			foreach ($data as $service=>$item) {
-				$return[$host][$service][] = $item[0];
+				foreach ($item as $record) {
+					$return[$host][$service][] = $record;
+				}
 			}
 		}
 	}
