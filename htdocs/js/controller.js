@@ -42,6 +42,7 @@ Search = {}
 	Search.unackButtonId      = 'unAck_button'; 
 	Search.sdButtonId         = 'scheduleIt_button';
 	Search.searchValue        = '';
+	Search.lastUpdateAgo      = 0;
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
@@ -613,6 +614,7 @@ Search.getContent = function() {
 			url:     'update.php',
 			data:    {'hash' : Search.updateHash},
 			success: function(data){
+				Search.resetAgo();
 				Search.stopReloads();
 				Search.updateHash = data;
 				Search.allDataTable.ajax.reload();
@@ -630,6 +632,7 @@ Search.getContent = function() {
 }
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {
+		Search.resetAgo();
 		Search.stopReloads();
 		Search.allDataTable.ajax.reload();
 		Search.startReloads();
@@ -1778,6 +1781,7 @@ Search.infoRowCounter = function() {
 
 Search.getNewData = function() {
 	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+		Search.resetAgo();
         showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
 }
@@ -1806,7 +1810,19 @@ Search.returnComments = function(modal) {
 		});
     }
 }
-
+Search.addToAgo = function() {
+	Search.lastUpdateAgo++;
+	$('#updatedAgo').text(Search.lastUpdateAgo);
+}
+Search.resetAgo = function() {
+	window.clearInterval(Search.agoInterval);
+	Search.lastUpdateAgo = 0;
+	$('#updatedAgo').text(Search.lastUpdateAgo);
+	Search.startAgo();
+}
+Search.startAgo = function() {
+	Search.agoInterval = setInterval(function(){ Search.addToAgo(); }, 1000);
+}
 selectTimer = null;
 
 function checkSelectedText() {
@@ -1822,6 +1838,7 @@ function checkSelectedText() {
 }
 
 Search.init = function() {
+	Search.startAgo();
 	getPlanned();
 	
 	$(document).mousedown(function() {
@@ -1943,6 +1960,7 @@ Search.init = function() {
 		
 		if (Search.currentTab != 'planned') {
             Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+				Search.resetAgo();
 				showHidePlanned();
 			}).order(Search.orderBy[Search.currentTab]);
         } else {
@@ -1956,6 +1974,7 @@ Search.init = function() {
 			Search.searchValue = val;
 			
 			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
+				Search.resetAgo();
 				showHidePlanned();
 					
 				setTimeout(function(){
@@ -1981,6 +2000,7 @@ Search.init = function() {
                 Search.filterDataTable();
             } else {
 				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+					Search.resetAgo();
 					showHidePlanned();
 				}).order(Search.orderBy[Search.currentTab]);
 			}

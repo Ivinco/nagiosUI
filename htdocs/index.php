@@ -94,6 +94,7 @@
 			</label>
         </div>
     </form>
+	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
     <table id="mainTable">
         <thead>
             <tr>
