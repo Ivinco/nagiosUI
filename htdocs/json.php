@@ -243,7 +243,7 @@ if (count($_GET['order']) > 1) {
 	$first  = returnOrder($returnJson, 0);
 	$second = returnOrder($returnJson, 1);
 	
-	array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $second, (($_GET['order'][1]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $returnJson);
+	array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), SORT_NATURAL | SORT_FLAG_CASE, $second, (($_GET['order'][1]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), SORT_NATURAL | SORT_FLAG_CASE, $returnJson);
 }
 
 $additional['total_tab'] = count($returnJson);
