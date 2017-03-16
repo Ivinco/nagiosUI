@@ -62,6 +62,9 @@ foreach ($array['alert'] as $item) {
 	$tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
 	$quickAckAu      = (!is_array($item['quick_ack_author']))     ? $item['quick_ack_author']     : implode(' ', $item['quick_ack_author']);
 	$plannedAuthor   = (!is_array($item['planned_author']))       ? $item['planned_author']       : implode(' ', $item['planned_author']);
+	$schedStart      = (!is_array($item['sched_start']))          ? $item['sched_start']          : implode(' ', $item['sched_start']);
+	$schedEnd        = (!is_array($item['sched_end']))            ? $item['sched_end']            : implode(' ', $item['sched_end']);
+	$schedDuration   = (!is_array($item['sched_duration']))       ? $item['sched_duration']       : implode(' ', $item['sched_duration']);
 	$hostOrService   = $item['host_or_service'];
 	
 	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
@@ -127,6 +130,9 @@ foreach ($array['alert'] as $item) {
 		'comment'   => array(
 			'ack'   => $ackComment,
 			'sched' => $schComment,
+			'start' => $schedStart,
+			'end'   => $schedEnd,
+			'duration' => $schedDuration,
 		),
 		'type'      => $returnType,
 		'state'     => $state,

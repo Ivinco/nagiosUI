@@ -45,6 +45,7 @@ Search = {}
 	Search.commentsDate       = '';
 	Search.lastUpdateAgo      = 0;
 	Search.editComment        = false;
+	Search.editCommentText    = '';
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
@@ -145,7 +146,7 @@ Search = {}
 							'	<ul>' +
 							'		<li class="ack text">' + data.ack + '</li>' +
 							'		<li class="ack"><em class="edit_acknowledgeIt" alt="Edit comment" title="Edit comment"></em></li>' +
-							'		<li class="sched text">' + data.sched + '</li>' +
+							'		<li class="sched text" data-start="'+ data.start +'" data-end="'+ data.end +'" data-duration="'+ data.duration +'">' + data.sched + '</li>' +
 							'		<li class="sched"><em class="edit_scheduleIt" alt="Edit comment" title="Edit comment"></em></li>' +
 							'	</ul>' +
 							'</div>'
@@ -825,7 +826,19 @@ Search.addDialogJs = function() {
 		modal:    true,
 		width:    400,
 		position: { my: "center center", at: "center top+200"},
-		open:     function() { Search.getServerLocalTimeDialog(); $('body').css("overflow", "hidden"); $('#dialog .select-comment').hide(); },
+		open:     function() {
+						Search.getServerLocalTimeDialog();
+						$('body').css("overflow", "hidden");
+						$('#dialog .select-comment').hide();
+						$('#sched_comment_extension').val((Search.editComment && Search.editCommentText) ? Search.editCommentText : '');
+						if (Search.editComment) {
+                            $('#sched_interval_extension').closest('tr').hide();
+							$('#sched_finish_date_time').closest('tr').hide();
+                        } else {
+							$('#sched_interval_extension').closest('tr').show();
+							$('#sched_finish_date_time').closest('tr').show();
+						}
+		},
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		create:   function() {
 			$(this).closest('.ui-dialog').on('keydown', function(ev) {
@@ -859,7 +872,11 @@ Search.addDialogJs = function() {
 		width:    400,
 		position: { my: "center center", at: "center top+200"},
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
-		open:	  function() { $('body').css("overflow", "hidden"); $('#ack_comment_extension').focus(); $('#dialogAck .select-comment').hide(); },
+		open:	  function() {
+					$('body').css("overflow", "hidden");
+					$('#ack_comment_extension').val((Search.editComment && Search.editCommentText) ? Search.editCommentText : '').focus();
+					$('#dialogAck .select-comment').hide();
+		},
 		closeOnEscape: true,
 		buttons: [
 			{
@@ -926,17 +943,20 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(item[i]),
 					isHost      = item[i].find('.host a').attr('data-host'),
 					infoService = (item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (item[i].find('.service [data-id]').length) ? parseInt(item[i].find('.service [data-id]').attr('data-id')) : 0;
-		
+					downId      = (item[i].find('.service [data-id]').length) ? parseInt(item[i].find('.service [data-id]').attr('data-id')) : 0,
+					start       = (item[i].find('.comment .sched.text').attr('data-start')) ? item[i].find('.comment .sched.text').attr('data-start') : 0,
+					end         = (item[i].find('.comment .sched.text').attr('data-end')) ? item[i].find('.comment .sched.text').attr('data-end') : 0,
+					duration    = (item[i].find('.comment .sched.text').attr('data-duration')) ? item[i].find('.comment .sched.text').attr('data-duration') : 0;
+
 				if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				}
 			}
@@ -971,26 +991,29 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0;
-					
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
+					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
+					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
+		
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 				}
 			}
 		});
@@ -1019,26 +1042,29 @@ Search.tempHideButtons = function () {
 							check       = Search.getLastCheck(row),
 							isHost      = row.find('.host a').attr('data-host'),
 							infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-							downId      = (row.find('.service [data-id]').length) ? parseInt(row.find('.service [data-id]').attr('data-id')) : 0;
-	
+							downId      = (row.find('.service [data-id]').length) ? parseInt(row.find('.service [data-id]').attr('data-id')) : 0,
+							start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
+							end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
+							duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
+
 						if (whatWeChangeObject.host && whatWeChangeObject.service) {
 							if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else if (whatWeChangeObject.host) {
 							if (host == whatWeChangeObject.host) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else if (whatWeChangeObject.service) {
 							if (service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else {
 							Search.tmpHideIcon(row, whatWeChangeObject.type);
-							returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+							returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 						}
 					}
 				}
@@ -1058,26 +1084,29 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0;
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
+					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
+					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
 
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 				}
 			}
 		});
@@ -1090,12 +1119,15 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0;
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
+					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
+					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
 				
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId });
+						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				}
 			});
@@ -1144,13 +1176,21 @@ Search.prepareSendData = function () {
 			});
 		}
 		else if (whatWeChangeObject.type == 'scheduleIt') {
-			var currentServerDate = $('#lastUpdated').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
-				hours             = parseInt($('#timeShift').html(),10);
+			if (Search.editComment) {
+                var start    = $(this)[0].start,
+					end      = $(this)[0].end,
+					duration = $(this)[0].duration;
+            } else {
+				var currentServerDate = $('#lastUpdated').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
+					duration          = parseInt($('#timeShift').html(),10),
+					start             = new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
+					end               = new Date(currentServerDate).addHours(duration).format('mm-dd-yyyy HH:MM:ss');
+			}
 
 			requestData.push({
-				'hours':       hours,
-				'start_time':  new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
-				'end_time':    new Date(currentServerDate).addHours(hours).format('mm-dd-yyyy HH:MM:ss'),
+				'hours':       duration,
+				'start_time':  start,
+				'end_time':    end,
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
 				'com_data':    $('#downtimeComment').html(),
@@ -1161,7 +1201,7 @@ Search.prepareSendData = function () {
 		}
 	});
 	
-	if (whatWeChangeObject.type == 'scheduleIt') {
+	if (whatWeChangeObject.type == 'scheduleIt' && Search.editComment) {
 		var schedulesRequest = [],
 			scheduledIds     = [];
 			
@@ -1190,7 +1230,7 @@ Search.prepareSendData = function () {
 				$.ajax({
 					url:    'post.php',
 					method: 'POST',
-					data:   { data: requestData, type: whatWeChangeObject.type },
+					data:   { data: requestData, type: 'scheduleItTime' },
 				})
 				.fail(function(jqXHR, textStatus) {
 					console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
@@ -1202,7 +1242,7 @@ Search.prepareSendData = function () {
 			});
 		});	
 	}
-	else if (whatWeChangeObject.type == 'acknowledgeIt') {
+	else if (whatWeChangeObject.type == 'acknowledgeIt' || (whatWeChangeObject.type == 'scheduleIt' && !Search.editComment)) {
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
@@ -1652,6 +1692,7 @@ Search.restoreAllData = function() {
 		whatWeChangeDataObject = null;
 		whatWeChangeObject     = null;
 		Search.editComment     = false;
+		Search.editCommentText = '';
 	});
 }
 Search.tempShowButtons = function() {
@@ -1722,6 +1763,8 @@ Search.tempShowButtons = function() {
 	
 	whatWeChangeDataObject = null;
 	whatWeChangeObject     = null;
+	Search.editComment     = false;
+	Search.editCommentText = '';
 	
 	Search.startReloads();
 	quickAckUnAckGroup();
@@ -1746,14 +1789,16 @@ Search.AcknowledgeServices = function() {
 }
 Search.SheduleServices = function() {
 	var $form = $('form[name=scheduleDowntime]');
-	$form.find('.ui-state-error').each(function(){			
-		$(this).removeClass('ui-state-error');
-	})
+		$form.find('.ui-state-error').each(function(){			
+			$(this).removeClass('ui-state-error');
+		});
 	
-	$interval = $('input[name=sched_interval_extension]');
-	if (!parseInt($interval.val()) || parseInt($interval.val()) < 1) {
-		$interval.addClass('ui-state-error');
-	}
+	if (!Search.editComment) {
+        $interval = $('input[name=sched_interval_extension]');
+		if (!parseInt($interval.val()) || parseInt($interval.val()) < 1) {
+			$interval.addClass('ui-state-error');
+		}
+    }
 	
 	$comment = $('input[name=sched_comment_extension]');
 	if ($comment.val() == '' || typeof($comment.val()) != 'string') {
@@ -1764,19 +1809,26 @@ Search.SheduleServices = function() {
 		return false;
 	}
 	
-	$('#timeShift').html(parseInt($interval.val()));
 	$('#downtimeComment').html($comment.val());
 	
-	$.get($('#nagiosConfigFile').html(), function(data) {
-		var regex       = new RegExp(/Last Updated:\s*([^<]+)/i),
-			results     = regex.exec(data);
+	if (!Search.editComment) {
+		$('#timeShift').html(parseInt($interval.val()));
 		
-		$('#lastUpdated').html(results[1]);
-	})
-	.done(function() {
+		$.get($('#nagiosConfigFile').html(), function(data) {
+			var regex       = new RegExp(/Last Updated:\s*([^<]+)/i),
+				results     = regex.exec(data);
+			
+			$('#lastUpdated').html(results[1]);
+		})
+		.done(function() {
+			$('#scheduleDowntimeButton').attr('disabled', 'disabled');
+			Search.prepareSendData();
+		});
+	} else {
 		$('#scheduleDowntimeButton').attr('disabled', 'disabled');
 		Search.prepareSendData();
-	});
+	}
+	
 }
 Search.getServerLocalTimeDialog = function() {
 	$('#openDialogServerTime').html('');
@@ -1956,6 +2008,13 @@ Search.getNewData = function() {
 		Search.resetAgo();
         showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
+}
+Search.returnCommentText = function(text) {
+	text = text.split(' by ');
+	text.pop();
+	text = text.join(' ').trim().slice(1, -1);
+	
+	return text;
 }
 
 Search.returnComments = function(modal) {
@@ -2446,9 +2505,10 @@ Search.init = function() {
 		};
 		
 		Search.tempHideButtons();
+		Search.editComment = true;
+		Search.editCommentText = Search.returnCommentText($(this).closest('td').find('.ack.text').text());
 		$('#dialogAck').dialog('open');
 		Search.returnComments('#dialogAck');
-		Search.editComment = true;
 	});
 	$(document).on('click', '#'+ Search.ackButtonId, function () {
 		whatWeChangeObject = {
@@ -2510,9 +2570,10 @@ Search.init = function() {
 		};
 		
 		Search.tempHideButtons();
+		Search.editComment = true;
+		Search.editCommentText = Search.returnCommentText($(this).closest('td').find('.sched.text').text());
 		$('#dialog').dialog('open');
 		Search.returnComments('#dialog');
-		Search.editComment = true;
 		
 		return false;
 	});
@@ -2537,9 +2598,10 @@ Search.init = function() {
 		};
 		
 		Search.tempHideButtons();
+		Search.editComment = true;
+		Search.editCommentText = Search.returnCommentText($(this).closest('td').find('.sched.text').text());
 		$('#dialog').dialog('open');
 		Search.returnComments('#dialog');
-		Search.editComment = true;
 	});
 	$(document).on('click', '#'+ Search.sdButtonId, function () {
 		whatWeChangeObject = {
@@ -2561,8 +2623,8 @@ Search.init = function() {
 		};
 		
 		Search.tempHideButtons();
-		$('#dialog').dialog('open');
 		Search.editComment = true;
+		$('#dialog').dialog('open');
 	});
 	$(document).on('change', '#sched_finish_date_time', function () {
 		var currentServerDate = $('#openDialogServerTime').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),

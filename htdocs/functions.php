@@ -70,6 +70,9 @@ if ($icinga) {
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?downtime_id=(?P<downtime_id>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?start_time=(?P<start_time>.*?)\n'.
+							'.*?end_time=(?P<end_time>.*?)\n'.
+							'.*?duration=(?P<duration>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
 							'.*?comment=(?P<comment>.*?)\n'.
 						  '.*?}/is';
@@ -99,6 +102,9 @@ if ($icinga) {
 							'.*?service_description=(?P<service>.*?)\n'.
 							'.*?downtime_id=(?P<downtime_id>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?start_time=(?P<start_time>.*?)\n'.
+							'.*?end_time=(?P<end_time>.*?)\n'.
+							'.*?duration=(?P<duration>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
 							'.*?comment=(?P<comment>.*?)\n'.
 						  '.*?}/is';
@@ -114,6 +120,9 @@ if ($icinga) {
 							'.*?host_name=(?P<host>.*?)\n'.
 							'.*?entry_type=(?P<entry_type>.*?)\n'.
 							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?start_time=(?P<start_time>.*?)\n'.
+							'.*?end_time=(?P<end_time>.*?)\n'.
+							'.*?duration=(?P<duration>.*?)\n'.
 							'.*?author=(?P<author>.*?)\n'.
 							'.*?comment_data=(?P<comment>.*?)\n'.
 						  '.*?}/is';
@@ -226,6 +235,9 @@ if ($icinga) {
 				$downtime_id   = '';
 				$ackLastTemp   = '';
 				$ackLastAuthor = '';
+				$schedStart    = '';
+				$schedEnd      = '';
+				$schedDuration = '';
 				
 				if (isset($ackAndSchedMatches[$host][$service])) {
 					$tmpAckComments   = array();
@@ -259,6 +271,18 @@ if ($icinga) {
 							$tmpSchedComments[] = $tmpValue;
 							$tmpSchedAuthor[]   = $tmpComments['schedAuthor'];
 							$tmpSchedTemp[]     = $tmpComments['schedComment'];
+							
+							if ($tmpComments['start_time']) {
+								$schedStart = $tmpComments['start_time'];
+							}
+							
+							if ($tmpComments['end_time']) {
+								$schedEnd = $tmpComments['end_time'];
+							}
+							
+							if ($tmpComments['duration']) {
+								$schedDuration = $tmpComments['duration'];
+							}
 						}
 						if ($tmpComments['downtime_id']) {
 							$tmpDowntimeId[] = $tmpComments['downtime_id'];
@@ -310,6 +334,9 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. parseToXML($origState
 		<attempt>'.            parseToXML($attempt) .'</attempt>
 		<status_information>'. parseToXML($pluginOutput) .'</status_information>
 		<host_or_service>'.    parseToXML($host_or_service) .'</host_or_service>
+		<sched_start>'.        parseToXML($schedStart) .'</sched_start>
+		<sched_end>'.          parseToXML($schedEnd) .'</sched_end>
+		<sched_duration>'.     parseToXML($schedDuration) .'</sched_duration>
 	</alert>
 ';
 		
@@ -334,7 +361,7 @@ $xmlContent .= '
 	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
-	if (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI__{$memcacheName}_data") || $memcache->get("nagiosUI_{$memcacheName}_verify") != md5($verificateCheck)) {
+	if (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data") || $memcache->get("nagiosUI_{$memcacheName}_verify") != md5($verificateCheck)) {
 		$memcache->set("nagiosUI_{$memcacheName}_verify", md5($verificateCheck), 0, 120);
 		$memcache->set("nagiosUI_{$memcacheName}_data", serialize($xmlContent), 0, 120);
 	}
@@ -396,6 +423,9 @@ function returnComments($comments, $statusFile, $isHost) {
 				'schedComment'     => ($type == 'sched') ? $matches['comment'][$k]    : '',
 				'schedCommentDate' => ($type == 'sched') ? $matches['entry_time'][$k] : '',
 				'downtime_id'      => ($type != 'other') ? $id : '',
+				'start_time'       => ($type == 'sched') ? $matches['start_time'][$k] : '',
+				'end_time'         => ($type == 'sched') ? $matches['end_time'][$k] : '',
+				'duration'         => ($type == 'sched') ? $matches['duration'][$k] : '',
 			);
 		}
 	}
