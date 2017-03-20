@@ -2,8 +2,10 @@
 
 include_once 'config/config.php';
 
-$memcache = new Memcache;
-$memcache->connect($memcacheHost, $memcachePort);
+if ($memcacheEnabled) {
+	$memcache = new Memcache;
+	$memcache->connect($memcacheHost, $memcachePort);
+}
 
 date_default_timezone_set("America/New_York");
 
@@ -21,14 +23,17 @@ function returnDataList($isHash, $xmlFile) {
 	global $groupByService;
 	global $groupByHost;
 	global $refreshArray;
+	global $icinga;
 	global $memcacheHost;
 	global $memcachePort;
 	global $memcache;
 	global $memcacheName;
-	global $icinga;
+	global $memcacheEnabled;
 	
-	$memcache->set("nagiosUI_{$memcacheName}_check", "started", 0, 10);
-
+	if ($memcacheEnabled) {
+		$memcache->set("nagiosUI_{$memcacheName}_check", "started", 0, 10);
+	}
+	
 $xmlContent = '<alerts sort="1">
 ';
 
@@ -132,7 +137,9 @@ if ($icinga) {
 		$files = glob($xmlArchive.$_GET['file']."*.log");
 		
 		if (count($files) == 1 and preg_match('/'.preg_quote($xmlArchive, '/').'\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
-			$memcache->delete("nagiosUI_{$memcacheName}_check");
+			if ($memcacheEnabled) {
+				$memcache->delete("nagiosUI_{$memcacheName}_check");
+			}
 			return file_get_contents($files[0]);
 		}
 	}
@@ -361,29 +368,38 @@ $xmlContent .= '
 	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
-	if (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data") || $memcache->get("nagiosUI_{$memcacheName}_verify") != md5($verificateCheck)) {
-		$memcache->set("nagiosUI_{$memcacheName}_verify", md5($verificateCheck), 0, 120);
-		$memcache->set("nagiosUI_{$memcacheName}_data", serialize($xmlContent), 0, 120);
+	if ($memcacheEnabled) {
+		if (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data") || $memcache->get("nagiosUI_{$memcacheName}_verify") != md5($verificateCheck)) {
+			$memcache->set("nagiosUI_{$memcacheName}_verify", md5($verificateCheck), 0, 120);
+			$memcache->set("nagiosUI_{$memcacheName}_data", serialize($xmlContent), 0, 120);
+		}
+		
+		$memcache->delete("nagiosUI_{$memcacheName}_check");
+		
+		return true;
 	}
 	
-	$memcache->delete("nagiosUI_{$memcacheName}_check");
-
-	return true;
+	return ($isHash) ? md5($verificateCheck) : $xmlContent;
 }
 
 function returnMemcacheData($xmlFile) {
 	global $memcache;
 	global $memcacheName;
+	global $memcacheEnabled;
 	
 	if ($xmlFile) {
 		return returnDataList(false, $xmlFile);
 	}
 	
-	if (!$memcache->get("nagiosUI_{$memcacheName}_check") && (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data"))) {
-		returnDataList(false, $xmlFile);
+	if ($memcacheEnabled) {
+		if (!$memcache->get("nagiosUI_{$memcacheName}_check") && (!$memcache->get("nagiosUI_{$memcacheName}_verify") || !$memcache->get("nagiosUI_{$memcacheName}_data"))) {
+			returnDataList(false, $xmlFile);
+		}
+		
+		return unserialize($memcache->get("nagiosUI_{$memcacheName}_data"));
 	}
-
-	return unserialize($memcache->get("nagiosUI_{$memcacheName}_data"));
+	
+	return returnDataList(false, $xmlFile);
 }
 function mergeComments($arrays) {
 	$return = [];
