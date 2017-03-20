@@ -45,6 +45,7 @@ Search = {}
 	Search.commentsDate       = '';
 	Search.lastUpdateAgo      = 0;
 	Search.editComment        = false;
+	Search.startedGetData     = false;
 	Search.editCommentText    = '';
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
@@ -181,6 +182,8 @@ Search = {}
 		"drawCallback": function( settings ) {
 			Search.filterDataTable($('#mainTable_filter input').val());
 			Search.countRecords();
+			$('#infoHolder').show();
+			$('#noData, #loading').hide();
 		},
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
@@ -616,6 +619,7 @@ Search.stopReloads = function(stop) {
 	clearTimeout(reloadTimer);
 	Search.backgroundReload = false;
 	Search.autoRefresh      = false;
+	Search.startedGetData   = false;
 }
 Search.startReloads = function() {
 	if (localStorage.getItem('canceledReloads') == '0') {
@@ -629,7 +633,8 @@ Search.startReloads = function() {
     }
 }
 Search.getContent = function() {
-	if (Search.backgroundReload) {
+	if (Search.backgroundReload && !Search.startedGetData) {
+		Search.startedGetData = true;
 		$.ajax({
 			type:    'GET',
 			url:     'update.php',
@@ -645,7 +650,9 @@ Search.getContent = function() {
 				if (!Search.updateHash) {
 					location.reload();
 				} else {
-					Search.startReloads();
+					setTimeout(function () {
+						Search.startReloads();
+					 }, 2000);
 				}
 			},
 		});
@@ -2044,6 +2051,12 @@ Search.returnComments = function(modal) {
 Search.addToAgo = function() {
 	Search.lastUpdateAgo++;
 	$('#updatedAgo').text(Search.lastUpdateAgo);
+	
+	if (Search.lastUpdateAgo > 300) {
+        Search.stopReloads();
+		Search.lastUpdateAgo = 0;
+		Search.startReloads();
+    }
 }
 Search.resetAgo = function() {
 	window.clearInterval(Search.agoInterval);
@@ -3025,6 +3038,7 @@ $.fn.dataTable.ext.errMode = 'none';
 
 $('#mainTable').on('error.dt', function(e, settings, techNote, message) {
 	if (techNote == 7) {
+		Search.startReloads();
 		$('#loading, #infoHolder').hide();
 		$('#noData').show();
     }
