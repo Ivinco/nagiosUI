@@ -519,15 +519,18 @@ function removePlannedMaintenance($delete) {
 		$tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
 		$host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
 		$service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
-		$downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(' ', $item['downtime_id']);
+		$downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
+		$downtimeId      = explode(',', $downtimeId);
 		$text            = returnPlannedText($host, $service);
 		
-		if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
-			foreach ($commands as $command) {
-				$command = returnPlannedCommand($command, $pattern);
-				
-				if (preg_match("/$command/iu", $text)) {
-					removeSchedulePlanned($downtimeId);
+		foreach ($downtimeId as $downtime) {
+			if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
+				foreach ($commands as $command) {
+					$command = returnPlannedCommand($command, $pattern);
+					
+					if (preg_match("/$command/iu", $text)) {
+						removeSchedulePlanned($downtime);
+					}
 				}
 			}
 		}

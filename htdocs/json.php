@@ -69,25 +69,25 @@ foreach ($array['alert'] as $item) {
 	
 	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
 	
-	if (!$infoRecord && $acked == 1 && $tempCommen == 'temp' && findPlanned($host, $service, $_SESSION["currentUser"], false)) {
+	if (!$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $_SESSION["currentUser"], false)) {
 		unAckForPlanned($host, $service, $hostOrService);
 		$acked = 0;
 		$tempCommen = '';
 	}
 	
-	if (!$infoRecord && $acked == 0 && $sched == 0 && findPlanned($host, $service, $_SESSION["currentUser"])) {
+	if (!$infoRecord && !$acked && !$sched && findPlanned($host, $service, $_SESSION["currentUser"])) {
 		$sched = 1;
 		$plannedAuthor = md5(strtolower(trim($usersArray[$_SESSION["currentUser"]])));
 		$tempSchedCommen = 'planned';
 	}
 	
-	if ($sched == 1 && $tempSchedCommen == 'planned' && $state == 'OK') {
+	if ($sched && $tempSchedCommen == 'planned' && $state == 'OK') {
 		$tempSchedCommen = $tempSchedCommen . '_';
 	}
 	
 	$returnType = '';
-	$returnType.= (($acked == 0 && $sched == 0) || ($acked == 1 && $tempCommen == 'temp') || ($sched == 1 && $tempSchedCommen == 'planned') || $infoRecord) ? '__normal__' : '';
-	$returnType.= ($acked == 1 && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
+	$returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($sched && $tempSchedCommen == 'planned') || $infoRecord) ? '__normal__' : '';
+	$returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
 	$returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
 	
 	if ($infoRecord) {
@@ -104,11 +104,11 @@ foreach ($array['alert'] as $item) {
 		'service'   => array(
 			'name'  => $service,
 			'url'   => $serviceUrl,
-			'unAck' => ($acked == 1 && $tempCommen != 'temp') ? true : false,
-			'down'  => ($sched == 1 && $tempSchedCommen != 'planned') ? true : false,
+			'unAck' => ($acked && $tempCommen != 'temp') ? true : false,
+			'down'  => ($sched && $tempSchedCommen != 'planned') ? true : false,
 			'notes' => $notesUrl,
-			'sched' => ($sched == 1 && $tempSchedCommen == 'planned') ? true : false,
-			'pAuth' => ($sched == 1 && $tempSchedCommen == 'planned') ? $plannedAuthor : false,
+			'sched' => ($sched && $tempSchedCommen == 'planned') ? true : false,
+			'pAuth' => ($sched && $tempSchedCommen == 'planned') ? $plannedAuthor : false,
 			'qAck'  => ($tempCommen != 'temp') ? true : false,
 			'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
 			'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
