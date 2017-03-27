@@ -233,17 +233,13 @@ table.dataTable thead .no-border-th {
 #mainTable td.more.CRITICAL.brown-text { background-color: #d8a961; }
 #mainTable td.status.CRITICAL.brown-text { background-color: #ad7e36; }
 
-.select-comment { display: none; padding-bottom: 8px; }
-.select-comment select { width: 191px; }
-.select-comment span, .write-comment span {
-  width: 50px;
-  text-align: right;
-  display: inline-block;
-  font-size: 12px;
-  padding-right: 5px;
-}
-#dialog label { font-size: 14px; }
-#dialog input, #dialog select { width: 161px; }
+.sched_label_col { width: 130px; white-space: nowrap; }
+.sched_label_col label { font-size: 14px; width: 130px; }
+.ack_label_col { width: 90px; white-space: nowrap; }
+.ack_label_col label { font-size: 14px; width: 90px; }
+.sched_sublabel_col, .ack_sublabel_col { font-size: 12px; width: 50px; padding: 0 10px; }
+.sched_input_col, .ack_input_col { width: 100%; }
+.sched_input_col input, .sched_input_col select, .ack_input_col input, .ack_input_col select { width: 100%; font-size: 14px; }
 
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }

@@ -298,7 +298,7 @@ if ($icinga) {
 
 					$ackComment      = implode('<br /><br />', $tmpAckComments);
 					$schedComment    = implode('<br /><br />', $tmpSchedComments);
-					$downtime_id     = (!empty($tmpDowntimeId))  ? end($tmpDowntimeId)  : '';
+					$downtime_id     = (!empty($tmpDowntimeId))  ? implode(',', $tmpDowntimeId)  : '';
 					$ackLastTemp     = (!empty($tmpAckTemp))     ? end($tmpAckTemp)     : '';
 					$ackLastAuthor   = (!empty($tmpAckAuthor))   ? end($tmpAckAuthor)   : '';
 					$schedLastTemp   = (!empty($tmpSchedTemp))   ? end($tmpSchedTemp)   : '';

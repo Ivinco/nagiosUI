@@ -793,20 +793,27 @@ Search.addDialog = function() {
 	dialog += '  <p class="validateTips">All form fields are required.</p>';
 	dialog += '  <form name="scheduleDowntime">';
 	dialog += '    <fieldset>';
-	dialog += '      <table><tr><td>';
-	dialog += '        <label for="sched_interval_extension">Interval, hours</label>';
-	dialog += '      </td><td style="text-align: right;">';
-	dialog += '        <input type="text" name="sched_interval_extension" id="sched_interval_extension" class="text ui-widget-content">';
-	dialog += '      </td></tr><tr><td>';
-	dialog += '        <label for="sched_comment_extension">Comment</label>';
-	dialog += '      </td><td>';
-	dialog += '        <div class="select-comment"><span>Select</span><select name="comment_select"></select></div>';
-	dialog += '        <div class="write-comment"><span>Write</span><input type="text" name="sched_comment_extension" id="sched_comment_extension" class="text ui-widget-content"></div>';
-	dialog += '      </td></tr><tr><td>';
-	dialog += '        <label for="sched_finish_date_time">Finish date/time</label>';
-	dialog += '      </td><td style="text-align: right;">';
-	dialog += '        <input type="text" name="sched_finish_date_time" id="sched_finish_date_time" class="text ui-widget-content">';
-	dialog += '      </td></tr></table>';
+	dialog += '      <table style="width: 100%">';
+	dialog += '			<tr>';
+	dialog += '				<td class="sched_label_col"><label for="sched_interval_extension">Interval, hours</label></td>';
+	dialog += '				<td class="sched_sublabel_col">&nbsp;</td>';
+	dialog += '        		<td class="sched_input_col"><input type="text" name="sched_interval_extension" id="sched_interval_extension" class="text ui-widget-content"></td>';
+	dialog += '      	</tr>';
+	dialog += '      	<tr>';
+	dialog += '      		<td class="sched_label_col" rowspan="2"><label for="sched_comment_extension">Comment</label></td>';
+	dialog += '        		<td class="sched_sublabel_col">Select</td>';
+	dialog += '        		<td class="sched_input_col select-comment"><select name="comment_select"></select></td>';
+	dialog += '      	</tr>';
+	dialog += '      	<tr>';
+	dialog += '        		<td class="sched_sublabel_col">Write</td>';
+	dialog += '        		<td class="sched_input_col"><input type="text" name="sched_comment_extension" id="sched_comment_extension" class="text ui-widget-content"></td>';
+	dialog += '      	</tr>';
+	dialog += '			<tr>';
+	dialog += '				<td class="sched_label_col"><label for="sched_finish_date_time">Finish date/time</label></td>';
+	dialog += '				<td class="sched_sublabel_col">&nbsp;</td>';
+	dialog += '        		<td class="sched_input_col"><input type="text" name="sched_finish_date_time" id="sched_finish_date_time" class="text ui-widget-content"></td>';
+	dialog += '      	</tr>';
+	dialog += '      </table>';
 	dialog += '    </fieldset>';
 	dialog += '  </form>';
 	dialog += '</div>';
@@ -814,12 +821,17 @@ Search.addDialog = function() {
 	dialog += '  <p class="validateTips"></p>';
 	dialog += '  <form name="acknowledge">';
 	dialog += '    <fieldset>';
-	dialog += '      <table><tr><td>';
-	dialog += '        <label for="ack_comment_extension">Comment</label>';
-	dialog += '      </td><td>';
-	dialog += '        <div class="select-comment"><span>Select</span><select name="comment_select"></select></div>';
-	dialog += '        <div class="write-comment"><span>Write</span><input type="text" name="ack_comment_extension" id="ack_comment_extension" class="text ui-widget-content"></div>';
-	dialog += '      </td></tr></table>';
+	dialog += '      <table style="width: 100%">';
+	dialog += '			<tr>';
+	dialog += '				<td class="ack_label_col" rowspan="2"><label for="ack_comment_extension">Comment</label></td>';
+	dialog += '				<td class="ack_sublabel_col">Select</td>';
+	dialog += '        		<td class="ack_input_col select-comment"><select name="comment_select"></select></td>';
+	dialog += '      	</tr>';
+	dialog += '			<tr>';
+	dialog += '				<td class="ack_sublabel_col">Write</td>';
+	dialog += '        		<td class="ack_input_col"><input type="text" name="ack_comment_extension" id="ack_comment_extension" class="text ui-widget-content"></td>';
+	dialog += '      	</tr>';	
+	dialog += '      </table>';
 	dialog += '    </fieldset>';
 	dialog += '  </form>';
 	dialog += '</div>';
@@ -828,10 +840,12 @@ Search.addDialog = function() {
 	Search.addDialogJs();
 }
 Search.addDialogJs = function() {
+	var windowWidth = ($(window).width() < 600) ? $(window).width() : 600;
+	
 	$('#dialog').dialog({
 		autoOpen: false,
 		modal:    true,
-		width:    400,
+		width:    windowWidth,
 		position: { my: "center center", at: "center top+200"},
 		open:     function() {
 						Search.getServerLocalTimeDialog();
@@ -876,7 +890,7 @@ Search.addDialogJs = function() {
 	$('#dialogAck').dialog({
 		autoOpen: false,
 		modal:    true,
-		width:    400,
+		width:    windowWidth,
 		position: { my: "center center", at: "center top+200"},
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		open:	  function() {
@@ -950,7 +964,7 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(item[i]),
 					isHost      = item[i].find('.host a').attr('data-host'),
 					infoService = (item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (item[i].find('.service [data-id]').length) ? parseInt(item[i].find('.service [data-id]').attr('data-id')) : 0,
+					downId      = (item[i].find('.service [data-id]').length) ? item[i].find('.service [data-id]').attr('data-id') : '',
 					start       = (item[i].find('.comment .sched.text').attr('data-start')) ? item[i].find('.comment .sched.text').attr('data-start') : 0,
 					end         = (item[i].find('.comment .sched.text').attr('data-end')) ? item[i].find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (item[i].find('.comment .sched.text').attr('data-duration')) ? item[i].find('.comment .sched.text').attr('data-duration') : 0;
@@ -998,7 +1012,7 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
@@ -1049,7 +1063,7 @@ Search.tempHideButtons = function () {
 							check       = Search.getLastCheck(row),
 							isHost      = row.find('.host a').attr('data-host'),
 							infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-							downId      = (row.find('.service [data-id]').length) ? parseInt(row.find('.service [data-id]').attr('data-id')) : 0,
+							downId      = (row.find('.service [data-id]').length) ? row.find('.service [data-id]').attr('data-id') : 0,
 							start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 							end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 							duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
@@ -1091,7 +1105,7 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
@@ -1126,7 +1140,7 @@ Search.tempHideButtons = function () {
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
 					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
-					downId      = (row.find('.unScheduleIt[data-id]').length) ? parseInt(row.find('.unScheduleIt[data-id]').attr('data-id')) : 0,
+					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
@@ -1216,9 +1230,15 @@ Search.prepareSendData = function () {
             var downId = requestData[i].downId,
 				isHost = requestData[i].isHost;
 			
-			if (downId && scheduledIds.indexOf(downId) === -1) {
-                schedulesRequest.push({ 'down_id': downId, 'isHost': isHost });
-				scheduledIds.push(downId);
+			if (downId) {
+                downId = downId.split(',');
+				
+				for (var i = 0; i < downId.length; i++) {
+					if (scheduledIds.indexOf(downId[i]) === -1) {
+						schedulesRequest.push({ 'down_id': downId[i], 'isHost': isHost });
+						scheduledIds.push(downId[i]);
+					}
+				}
             }
         }
 		
@@ -2757,9 +2777,15 @@ Search.init = function() {
 				var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
 					isHost  = $(this).find('.host a').attr('data-host');
 					
-				if (down_id && ids.indexOf(down_id) === -1) {
-                    request.push({ 'down_id': down_id, 'isHost': isHost });
-					ids.push(down_id);
+				if (down_id) {
+					down_id = down_id.split(',');
+					
+                    for (var a = 0; a < down_id.length; a++) {
+						if (ids.indexOf(down_id[a]) === -1) {
+							request.push({ 'down_id': down_id[a], 'isHost': isHost });
+							ids.push(down_id[a]);
+						}
+					}
                 }
 			});
 			
@@ -2779,11 +2805,16 @@ Search.init = function() {
 						var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
 							isHost  = headerRows[i].find('.host a').attr('data-host');
 							
+						if (down_id) {
+                            down_id = down_id.split(',');
 							
-						if (down_id && ids.indexOf(down_id) === -1) {
-							request.push({ 'down_id': down_id, 'isHost': isHost });
-							ids.push(down_id);
-						}
+							for (var b = 0; b < down_id.length; b++) {
+								if (ids.indexOf(down_id[b]) === -1) {
+									request.push({ 'down_id': down_id[b], 'isHost': isHost });
+									ids.push(down_id[b]);
+								}
+							}
+                        }
 					}
 				}
             }
@@ -2801,11 +2832,16 @@ Search.init = function() {
 					var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
 						isHost  = headerRows[i].find('.host a').attr('data-host');
 							
-							
-					if (down_id && ids.indexOf(down_id) === -1) {
-						request.push({ 'down_id': down_id, 'isHost': isHost });
-						ids.push(down_id);
-					}
+					if (down_id) {
+                        down_id = down_id.split(',');
+						
+						for (var a = 0; a < down_id.length; a++) {
+							if (ids.indexOf(down_id[a]) === -1) {
+								request.push({ 'down_id': down_id[a], 'isHost': isHost });
+								ids.push(down_id[a]);
+							}
+						}
+                    }
 				}
 			}
 			
@@ -2820,9 +2856,15 @@ Search.init = function() {
 				isHost   = rows.find('.host a').attr('data-host'),
 				hasGroup = rows.attr('data-group');
 					
-			if (down_id && ids.indexOf(down_id) === -1) {
-                request.push({ 'down_id': down_id, 'isHost': isHost });
-				ids.push(down_id);
+			if (down_id) {
+                down_id = down_id.split(',');
+				
+				for (var i = 0; i < down_id.length; i++) {
+					if (ids.indexOf(down_id[i]) === -1) {
+						request.push({ 'down_id': down_id[i], 'isHost': isHost });
+						ids.push(down_id[i]);
+					}
+				}
             }
 			
 			if (hasGroup) {
@@ -2913,7 +2955,7 @@ Search.init = function() {
 			}
 			else {
 				if (!group) {
-                    var row = $('#mainTable tbody tr [data-id="' + ids[0] + '"]').closest('tr');
+                    var row = $('#mainTable tbody tr [data-id="' + ids.join(',') + '"]').closest('tr');
 					
 					$('#radio label[for="sched"] em').text(parseInt($('#radio label[for="sched"] em').text()) - 1);
 					
@@ -2923,7 +2965,7 @@ Search.init = function() {
 					
 					row.remove();
                 } else {
-					var row    = $('#mainTable thead tr [data-id="' + ids[0] + '"]').closest('tr'),
+					var row    = $('#mainTable thead tr [data-id="' + ids.join(',') + '"]').closest('tr'),
 						count  = parseInt($('#mainTable thead tr[data-group="' + group + '"]:first td.host span:first').text());
 						
 					$('#mainTable thead tr[data-group="' + group + '"]:first td.host span:first').text(count - 1);
@@ -2941,7 +2983,7 @@ Search.init = function() {
 						for (var i = 0; i < headerRows.length; i++) {
 							var rowId = parseInt(headerRows[i].find('[data-id]').attr('data-id'));
 							
-							if (rowId == ids[0]) {
+							if (rowId == ids.join(',')) {
                                 Search.allHeaderRows[Search.currentTab + '_' + group + '_rows'].splice(i, 1);
                             }
 						}
