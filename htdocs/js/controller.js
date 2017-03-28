@@ -47,6 +47,8 @@ Search = {}
 	Search.editComment        = false;
 	Search.startedGetData     = false;
 	Search.editCommentText    = '';
+	Search.plannedData        = {};
+	Search.plannedTimer       = null;
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
 		'normal'        : [[2,'desc'],[4,'desc']],
@@ -2033,7 +2035,7 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
 	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 		Search.resetAgo();
-        showHidePlanned();
+        Search.showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
 }
 Search.returnCommentText = function(text) {
@@ -2044,6 +2046,107 @@ Search.returnCommentText = function(text) {
 	return text;
 }
 
+Search.savePlanned = function() {
+	var error = 0;
+	
+	if ($('#planned_host').length) {
+		$('#planned_host').css('border-color', '#aaa');
+		
+		if (!$('#planned_host').val()) {
+            error++;
+			$('#planned_host').css('border-color', 'red');
+        }
+    }
+	if ($('#planned_service').length) {
+        $('#planned_service').css('border-color', '#aaa');
+		
+		if (!$('#planned_service').val()) {
+            error++;
+			$('#planned_service').css('border-color', 'red');
+        }
+    }
+	if ($('#planned_time').length) {
+        $('#planned_time').css('border-color', '#aaa');
+		
+		if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
+            error++;
+			$('#planned_time').css('border-color', 'red');
+        }
+    }
+	
+	if (!error) {
+        if ($('#planned_host').length) {
+			Search.plannedData.command = Search.plannedData.command.replace('${host}', $('#planned_host').val());
+		}
+		
+		if ($('#planned_service').length) {
+			Search.plannedData.command = Search.plannedData.command.replace('${service}', $('#planned_service').val());
+		}
+		
+		if ($('#planned_time').length) {
+			Search.plannedData.time = parseInt($('#planned_time').val());
+		}
+		
+		clearTimeout(Search.plannedTimer);
+		
+		$.ajax({
+			url:    'planned.php',
+			method: 'POST',
+			data:   { text: Search.plannedData.command, time: Search.plannedData.time, line: 'new', user: $('#userName').text() },
+		})
+		.always(function(data) {
+			if ($('#plannedDialog').html()) {
+                $('#plannedDialog').dialog('close');
+            }
+			Search.drawPlanned(data);
+			Search.stopReloads();
+			Search.startReloads();
+		});
+    }
+}
+Search.showHidePlanned = function() {
+	if (Search.currentTab == 'planned') {
+		$('#planned-maintenance').show();
+		$('#mainTable_wrapper').hide();
+	} else {
+		$('#planned-maintenance').hide();
+		$('#mainTable_wrapper').show();
+	}
+}
+Search.getPlanned = function() {
+	Search.showHidePlanned();
+		
+	$.ajax({
+		url:    'planned.php',
+		method: 'GET',
+	})
+	.always(function(data) {
+		Search.drawPlanned(data);
+		Search.plannedTimer = setTimeout(function(){ Search.getPlanned() }, 30000);
+	});
+}
+Search.drawPlanned = function(data) {
+	$('#planned-list, #planned-templates-list').html('');
+	$('#planned-list').closest('div').toggle(data.file.length > 0);
+	$('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
+		
+	if (data.file.length > 0) {
+		$.each(data.file, function( index, value ) {
+			$('#planned-list').append('<li><small><strong>' + value['command'] + '</strong> (till: '+ value['date'] +')</small> <button data-id="'+ (index + 1) +'" class="save-planned">Delete</button></li>');
+		});
+	}
+		
+	if (data.templates.length > 0) {
+		$.each(data.templates, function( index, value ) {
+			var time    = (value[2]) ? value[2] : '',
+				text    = (time) ? (' |'+ time +'|') : '',
+				command = value[1];
+					
+			$('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text +'</small> <button data-time="'+ time +'" data-command="'+ command +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
+		});
+	}
+}
+	
 Search.returnComments = function(modal) {
 	if (Search.ajaxData.commentsSelect) {
         $.ajax({
@@ -2103,7 +2206,7 @@ function checkSelectedText() {
 
 Search.init = function() {
 	Search.startAgo();
-	getPlanned();
+	Search.getPlanned();
 	
 	$(document).mousedown(function() {
 		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
@@ -2125,37 +2228,65 @@ Search.init = function() {
 		$(this).closest('td').find('.write-comment input').val($(this).val()).focus();
 	});
 	
-	function showHidePlanned() {
-		if (Search.currentTab == 'planned') {
-			$('#planned-maintenance').show();
-			$('#mainTable_wrapper').hide();
-		} else {
-			$('#planned-maintenance').hide();
-			$('#mainTable_wrapper').show();
-		}
-	}
-	function getPlanned() {
-		showHidePlanned();
+	
+	$(document).on('click', '.add-from-planned-template', function() {
+		Search.plannedData = {
+			command: $(this).attr('data-command'),
+			time:    ($(this).attr('data-time')) ? parseInt($(this).attr('data-time')) : 0,
+			host:    ($(this).attr('data-command').indexOf('${host}') > -1) ? true : false,
+			service: ($(this).attr('data-command').indexOf('${service}') > -1) ? true : false,
+		};
 		
-		$.ajax({
-			url:    'planned.php',
-			method: 'GET',
-		})
-		.always(function(data) {
-			drawPlanned(data);
-			setTimeout(function(){ getPlanned() }, 60000);
-		});
-	}
-	function drawPlanned(data) {
-		$('#planned-list').html('');
-		$('#planned-list').closest('div').toggle(data.length > 0);
-		
-		if (data.length > 0) {
-			$.each(data, function( index, value ) {
-				$('#planned-list').append('<li><small><strong>' + value['command'] + '</strong> (till: '+ value['date'] +')</small> <button data-id="'+ (index + 1) +'" class="save-planned">Delete</button></li>');
-			});
+		if (Search.plannedData.time && !Search.plannedData.host && !Search.plannedData.service) {
+            Search.savePlanned();
+        }
+		else {
+			var html = '<p style="font-size: 12px;"><strong>'+ Search.plannedData.command +'</strong></p>'
+				html+= '<table style="width: 100%">';
+				
+			if (Search.plannedData.host) {
+                html+= '<tr>';
+				html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
+				html+= '<td><input type="text" name="planned_host" id="planned_host" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+				html+= '</tr>';
+            }
+			
+			if (Search.plannedData.service) {
+                html+= '<tr>';
+				html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
+				html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+				html+= '</tr>';
+            }
+				
+			if (!Search.plannedData.time) {
+                html+= '<tr>';
+				html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
+				html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+				html+= '</tr>';
+            }
+				
+				html+= '</table>';
+				
+			$('#plannedDialog').html(html);
+			$('#plannedDialog').dialog({
+				modal:    true,
+				width:    400,
+				position: { my: "center top", at: "center top+200"},
+				close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+				buttons: [
+					{
+						text:  'Save',
+						id:    'save-planned-template',
+						click: function() { Search.savePlanned() },
+					},
+					{
+						text:  'Cancel',			
+						click: function() { $('#plannedDialog').dialog('close'); },
+					}
+				],
+			});	
 		}
-	}
+	});
 	$(document).on('click', '.save-planned', function() {
 		var li = $(this).closest('li');
 
@@ -2168,7 +2299,7 @@ Search.init = function() {
 				data:   { text: 'delete', time: 1, line: li.find('button').attr('data-id') },
 			})
 			.always(function(data) {
-				drawPlanned(data);
+				Search.drawPlanned(data);
 				Search.stopReloads();
 				Search.startReloads();
 			});
@@ -2189,7 +2320,7 @@ Search.init = function() {
 			})
 			.always(function(data) {
 				$('#host-service, #maintenance-time').val('');
-				drawPlanned(data);
+				Search.drawPlanned(data);
 				Search.stopReloads();
 				Search.startReloads();
 			});
@@ -2205,6 +2336,21 @@ Search.init = function() {
 	$('#host-service, #maintenance-time').on('keypress', function(e) {
 		if (e.keyCode && e.keyCode == 13) {
 			$('#planned-save').trigger('click');
+		}
+	});
+	$(document).on('keypress', '#planned_host', function(e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$(document).find('#save-planned-template').trigger('click');
+		}
+	});
+	$(document).on('keypress', '#planned_service', function(e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$(document).find('#save-planned-template').trigger('click');
+		}
+	});
+	$(document).on('keypress', '#planned_time', function(e) {
+		if (e.keyCode && e.keyCode == 13) {
+			$(document).find('#save-planned-template').trigger('click');
 		}
 	});
 	
@@ -2225,10 +2371,10 @@ Search.init = function() {
 		if (Search.currentTab != 'planned') {
             Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 				Search.resetAgo();
-				showHidePlanned();
+				Search.showHidePlanned();
 			}).order(Search.orderBy[Search.currentTab]);
         } else {
-			showHidePlanned();
+			Search.showHidePlanned();
 		}
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
@@ -2239,10 +2385,10 @@ Search.init = function() {
 			
 			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
 				Search.resetAgo();
-				showHidePlanned();
+				Search.showHidePlanned();
 					
 				setTimeout(function(){
-					showHidePlanned();
+					Search.showHidePlanned();
 				}, 400);
 			});
         }
@@ -2265,7 +2411,7 @@ Search.init = function() {
             } else {
 				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 					Search.resetAgo();
-					showHidePlanned();
+					Search.showHidePlanned();
 				}).order(Search.orderBy[Search.currentTab]);
 			}
 		}

@@ -82,5 +82,7 @@ function recheckData($file) {
 	
 	writePlanned($results);
 	
-	return $results;
+	global $plannedTemplates;
+	
+	return ['file' => $results, 'templates' => $plannedTemplates];
 }

@@ -135,6 +135,11 @@
 		<div class="holder">
 			<strong>Planned mainetance list:</strong>
 			<ul id="planned-list"></ul>
+			<br /><br />
+		</div>
+		<div class="holder">
+			<strong>Planned mainetance templates list:</strong>
+			<ul id="planned-templates-list"></ul>
 		</div>
 	</div>
 	<div id="lastUpdated"></div>
@@ -152,6 +157,7 @@
 	<div id="refreshArray"></div>
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
+	<div id="plannedDialog" title="Planned Templates"></div>
 </div>
 
     <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>

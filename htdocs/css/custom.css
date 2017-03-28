@@ -201,7 +201,7 @@ table.dataTable thead .no-border-th {
 #planned-maintenance label { font-weight: bold; line-height: 32px; }
 #planned-maintenance button { font-size: 15px; line-height: 20px; margin-top: 12px; }
 #planned-maintenance input { font-size: 15px; border: 1px solid #ccc; outline: none; }
-#planned-maintenance .holder { display: inline-block; width: 45%; vertical-align: top; }
+#planned-maintenance .holder { display: inline-block; width: 45%; vertical-align: top; float: left; }
 #planned-maintenance .holder > strong { line-height: 32px; }
 #planned-maintenance .holder ul { list-style: none; margin: 0; padding: 0; }
 #planned-maintenance .holder ul li { margin-bottom: 8px; }

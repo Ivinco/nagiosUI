@@ -65,6 +65,21 @@ $refreshArray   = [
 /* Planned Maintenance file */
 $plannedUrl = 'planned.json';
 
+/*
+   Planned Maintenance template:
+	  - first array element: template name (visible in planned tab)
+	  - second array element: maintenance command:
+		 - ${host} will be prompt before activation to add host
+		 - ${service} will be prompt before activation to add service
+		 - if you don't want to add host/service you can use it: log*_*error*
+	  - third array element is optional: Maintenance Time (minutes):
+		 - if element isn't in array then will be prompt before activation to add Maintenance Time (minutes)
+*/
+$plannedTemplates = [
+	['Server reboot', '${host}_*', 60],
+	['Log errors', 'log*_*error*'],
+];
+
 /* Memcache Host */
 $memcacheHost = 'localhost';
 
