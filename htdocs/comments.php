@@ -5,8 +5,8 @@ header('Content-Type: application/json');
 
 include_once 'config/config.php';
 
-$host    = $_REQUEST['host'];
-$service = $_REQUEST['service'];
+$host    = (isset($_REQUEST['host']) && $_REQUEST['host']) ? $_REQUEST['host'] : '';
+$service = (isset($_REQUEST['service']) && $_REQUEST['service']) ? $_REQUEST['service'] : '';
 $return  = [];
 
 if ((!$host && !$service) || !$commentsSelect) {

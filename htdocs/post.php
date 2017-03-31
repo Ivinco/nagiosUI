@@ -2,8 +2,16 @@
 
 include_once 'config/config.php';
 
-$return     = array();
-$type       = $_REQUEST['type'];
+$return = array();
+
+if (!isset($_REQUEST['type']) || !$_REQUEST['type']) {
+	echo 'type is empty';
+	http_response_code(404);
+	
+	die;
+}
+
+$type = $_REQUEST['type'];
 
 if (!in_array($type, array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime', 'scheduleItTime')) || !file_exists($nagiosPipe)) {
 	echo 'type not in array OR file ('. $nagiosPipe .') not exists, please check in config.php $nagiosPipe value';

@@ -29,6 +29,7 @@ global $commentsSelect;
 $xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData($xmlFile))),TRUE);
 $returnJson  = array();
+$user        = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
 if (!$array) {
 	http_response_code(404);
@@ -69,15 +70,15 @@ foreach ($array['alert'] as $item) {
 	
 	$infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
 	
-	if (!$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $_SESSION["currentUser"], false)) {
+	if (!$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
 		unAckForPlanned($host, $service, $hostOrService);
 		$acked = 0;
 		$tempCommen = '';
 	}
 	
-	if (!$infoRecord && !$acked && !$sched && findPlanned($host, $service, $_SESSION["currentUser"])) {
+	if (!$infoRecord && !$acked && !$sched && findPlanned($host, $service, $user)) {
 		$sched = 1;
-		$plannedAuthor = md5(strtolower(trim($usersArray[$_SESSION["currentUser"]])));
+		$plannedAuthor = md5(strtolower(trim($usersArray[$user])));
 		$tempSchedCommen = 'planned';
 	}
 	
@@ -205,7 +206,7 @@ if ($filter) {
     $returnJson = $return;
 }
 
-if ($_GET['search'] && $_GET['search']['value']) {
+if (isset($_GET['search']) && isset($_GET['search']['value']) && $_GET['search']['value']) {
 	$return = [];
 	
 	$keywords = explode(' ', trim($_GET['search']['value']));

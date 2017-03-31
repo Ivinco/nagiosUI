@@ -62,8 +62,8 @@ $refreshArray   = [
 	[ 'value' => '600', 'name' => '10 min' ],
 ];
 
-/* Planned Maintenance file */
-$plannedUrl = 'planned.json';
+/* Planned Maintenance file (full path to file) */
+$plannedUrl = '/full_path/planned.json';
 
 /*
    Planned Maintenance template:
