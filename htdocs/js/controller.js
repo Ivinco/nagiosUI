@@ -48,6 +48,7 @@ Search = {}
 	Search.startedGetData     = false;
 	Search.editCommentText    = '';
 	Search.plannedData        = {};
+	Search.submitDialogButton = true;
 	Search.plannedTimer       = null;
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
 	Search.orderBy = {
@@ -1722,6 +1723,7 @@ Search.restoreAllData = function() {
 		whatWeChangeObject     = null;
 		Search.editComment     = false;
 		Search.editCommentText = '';
+		Search.submitDialogButton = true;
 	});
 }
 Search.tempShowButtons = function() {
@@ -1799,8 +1801,10 @@ Search.tempShowButtons = function() {
 	quickAckUnAckGroup();
 }
 Search.AcknowledgeServices = function() {
+	Search.submitDialogButton = false;
+	
 	var $form = $('form[name="acknowledge"]');
-	$form.find('.ui-state-error').each(function(){			
+	$form.find('.ui-state-error').each(function(){
 		$(this).removeClass('ui-state-error');
 	})
 	
@@ -1817,6 +1821,8 @@ Search.AcknowledgeServices = function() {
 	Search.prepareSendData();
 }
 Search.SheduleServices = function() {
+	Search.submitDialogButton = false;
+	
 	var $form = $('form[name=scheduleDowntime]');
 		$form.find('.ui-state-error').each(function(){			
 			$(this).removeClass('ui-state-error');
@@ -2715,7 +2721,7 @@ Search.init = function() {
 	
 	
 	$(document).on('keypress', '#ack_comment_extension', function (e) {
-		if (e.keyCode && e.keyCode == 13) {
+		if (e.keyCode && e.keyCode == 13 && Search.submitDialogButton) {
 			$('#acknowledgeDialogButton').trigger('click');
 		}
 	});
@@ -2833,7 +2839,7 @@ Search.init = function() {
 		}
 	});
 	$(document).on('keypress', '#sched_comment_extension, #sched_interval_extension', function (e) {
-		if (e.keyCode && e.keyCode == 13) {
+		if (e.keyCode && e.keyCode == 13 && Search.submitDialogButton) {
 			$('#scheduleDowntimeButton').trigger('click');
 		}
 	});
