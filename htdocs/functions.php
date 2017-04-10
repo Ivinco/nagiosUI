@@ -391,7 +391,7 @@ function returnMemcacheData($xmlFile) {
 	global $memcache;
 	global $memcacheName;
 	global $memcacheEnabled;
-	
+
 	if ($xmlFile) {
 		return returnDataList(false, $xmlFile);
 	}
@@ -481,9 +481,9 @@ function getNotesUrls() {
     }
 
     foreach ($hosts as $k=>$el) {
-        if (preg_match('/host_name\s+(.*?)$/', $el, $match)) {
-            if (preg_match('/notes_url\s+(.*?)$/', $hosts[$k+1], $match2)) {
-                $out[$match[1]] = $match2[1];
+        if (preg_match('/notes_url\s+(.*?)$/', $el, $match)) {
+            if (preg_match('/host_name\s+(.*?)$/', $hosts[$k+1], $match2)) {
+                $out[$match2[1]] = $match[1];
             }
         }
     }
