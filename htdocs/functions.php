@@ -219,7 +219,12 @@ if ($icinga) {
 				$origState      = '';
 				$serviceEncoded = urlencode($service);
 				$pluginOutput   = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
-				$notesUrl       = (isset($notesUrls[$service])) ? $notesUrls[$service] : '';
+
+                if ($service == 'SERVER IS UP') {
+                    $notesUrl   = (isset($notesUrls[$host])) ? $notesUrls[$host] : '';
+                } else {
+                    $notesUrl   = (isset($notesUrls[$service])) ? $notesUrls[$service] : '';
+                }
 				
 				if (preg_match("/zabbix_redirect/", $notesUrl)) {
 					$notesUrl = strstr($notesUrl, 'host=', true) . "host={$host}&" . strstr($notesUrl, 'item=', false);
@@ -460,20 +465,31 @@ function duration($seconds, $withSeconds = true) {
 }
 
 function getNotesUrls() {
-	global $getNotesUrls_cacheFile;
+    global $getNotesUrls_cacheFile;
+    if (file_exists($getNotesUrls_cacheFile) && (time() - filemtime($getNotesUrls_cacheFile)) < 3600) return unserialize(file_get_contents($getNotesUrls_cacheFile));
 
-	if (file_exists($getNotesUrls_cacheFile) && (time() - filemtime($getNotesUrls_cacheFile)) < 3600) return unserialize(file_get_contents($getNotesUrls_cacheFile));
-	exec('egrep "description|notes_url" -r /etc/nagios/services/', $o);
-	$out = array();
-	foreach ($o as $k=>$el) {
-	    if (preg_match('/service_description\s+(.*?)$/', $el, $match)) {
-	        if (preg_match('/notes_url\s+(.*?)$/', $o[$k+1], $match2)) {
-				$out[$match[1]] = $match2[1];
-    	    }
-	    }
-	}
-	file_put_contents($getNotesUrls_cacheFile, serialize($out));
-	return $out;
+    $out = array();
+    exec('egrep "description|notes_url" -r /etc/nagios/services/', $services);
+    exec('egrep "host_name|notes_url" -r /etc/nagios/hosts', $hosts);
+
+    foreach ($services as $k=>$el) {
+        if (preg_match('/service_description\s+(.*?)$/', $el, $match)) {
+            if (preg_match('/notes_url\s+(.*?)$/', $services[$k+1], $match2)) {
+                $out[$match[1]] = $match2[1];
+            }
+        }
+    }
+
+    foreach ($hosts as $k=>$el) {
+        if (preg_match('/host_name\s+(.*?)$/', $el, $match)) {
+            if (preg_match('/notes_url\s+(.*?)$/', $hosts[$k+1], $match2)) {
+                $out[$match[1]] = $match2[1];
+            }
+        }
+    }
+    
+    file_put_contents($getNotesUrls_cacheFile, serialize($out));
+    return $out;
 }
 
 function getDepends() {
