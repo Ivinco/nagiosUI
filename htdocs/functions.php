@@ -487,7 +487,7 @@ function getNotesUrls() {
             }
         }
     }
-    
+
     file_put_contents($getNotesUrls_cacheFile, serialize($out));
     return $out;
 }

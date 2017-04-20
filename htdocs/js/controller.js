@@ -1256,19 +1256,23 @@ Search.prepareSendData = function () {
 				method: 'POST',
 				data:   { data: requestData, type: 'unAck' },
 			})
-			.always(function() {
+			.done(function() {
 				$.ajax({
 					url:    'post.php',
 					method: 'POST',
 					data:   { data: requestData, type: 'scheduleItTime' },
 				})
 				.fail(function(jqXHR, textStatus) {
-					console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+					alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
 					Search.tempShowButtons();
 				})
 				.done(function() {
 					Search.restoreAllData();
 				});
+			})
+			.fail(function(jqXHR, textStatus) {
+				alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+				Search.tempShowButtons();
 			});
 		});	
 	}
@@ -1278,19 +1282,23 @@ Search.prepareSendData = function () {
 			method: 'POST',
 			data:   { data: requestData, type: 'unAck' },
 		})
-		.always(function() {
+		.done(function() {
 			$.ajax({
 				url:    'post.php',
 				method: 'POST',
 				data:   { data: requestData, type: whatWeChangeObject.type },
 			})
 			.fail(function(jqXHR, textStatus) {
-				console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+				alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
 				Search.tempShowButtons();
 			})
 			.done(function() {
 				Search.restoreAllData();
 			});
+		})
+		.fail(function(jqXHR, textStatus) {
+			alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+			Search.tempShowButtons();
 		});
 	}
 	else {
@@ -1300,7 +1308,7 @@ Search.prepareSendData = function () {
 			data:   { data: requestData, type: whatWeChangeObject.type },
 		})
 		.fail(function(jqXHR, textStatus) {
-			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
+			alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
 			Search.tempShowButtons();
 		})
 		.done(function() {
@@ -1791,6 +1799,8 @@ Search.tempShowButtons = function() {
 	$('#downtimeComment').html('');
 	$('#lastUpdated').html('');
 	$('#scheduleDowntimeButton').removeAttr('disabled');
+	$("#dialogAck").dialog("close");
+	$("#dialog").dialog("close");
 	
 	whatWeChangeDataObject = null;
 	whatWeChangeObject     = null;
