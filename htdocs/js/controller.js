@@ -89,7 +89,17 @@ Search = {}
 							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
 							ack   = (!data.info) ? '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' : '',
 							sched = (!data.info) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
-							
+
+						if (data.pending) {
+                            return '' +
+                                '<div class="likeTable">' +
+                                '	<ul>' +
+                                '		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+                                notes  +
+                                '	</ul>' +
+                                '</div>';
+						}
+
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
@@ -140,6 +150,13 @@ Search = {}
 			{
 				data:      'info',
 				className: 'status_information main',
+				render: function ( data, type, full, meta ) {
+					if (data.pending) {
+						return 'Scheduled: ' + moment.unix(data.next).format('YYYY-MM-DD hh:mm:ss');
+					}
+
+					return data.name;
+				},
 			},
 			{
 				data:      'comment',

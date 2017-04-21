@@ -21,7 +21,8 @@ html { font-family: arial, serif; font-size: 10.66px; }
 #mainTable td.status_information.OK,
 #mainTable td.comment.OK,
 #mainTable td.last_check.OK,
-#mainTable td.more.OK { background-color: rgb(219, 219, 219); }
+#mainTable td.more.OK,
+#mainTable td.PENDING { background-color: rgb(219, 219, 219); }
 #mainTable td.service.CRITICAL,
 #mainTable td.duration.CRITICAL,
 #mainTable td.status_information.CRITICAL,

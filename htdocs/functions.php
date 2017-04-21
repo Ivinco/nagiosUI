@@ -59,6 +59,8 @@ if ($icinga) {
 							'.*?current_attempt=(?P<attempts>.*?)\n'.
 							'.*?max_attempts=(?P<max_attempts>.*?)\n'.
 							'.*?last_state_change=(?P<last_status_change>.*?)\n'.
+							'.*?next_check=(?P<next_check>.*?)\n'.
+							'.*?active_checks_enabled=(?P<active_checks_enabled>.*?)\n'.
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
@@ -91,6 +93,8 @@ if ($icinga) {
 							'.*?last_state_change=(?P<last_status_change>.*?)\n'.
 							'.*?plugin_output=(?P<plugin_output>.*?)\n'.
 							'.*?last_check=(?P<last_check>.*?)\n'.
+							'.*?next_check=(?P<next_check>.*?)\n'.
+							'.*?active_checks_enabled=(?P<active_checks_enabled>.*?)\n'.
 							'.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
 							'.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
 						 '.*?}/is';
@@ -164,36 +168,40 @@ if ($icinga) {
 	$durationsFromFile  = @unserialize(file_get_contents($durationsFromFile_global));
 	$notesUrls          = getNotesUrls();
 	$depends            = getDepends();
-	
-	$hosts = array();
-	foreach ($matches['host'] as $k=>$host) {
-		$hosts[$host][$matches['service'][$k]] = array(
-			'acked'              => $matches['acked'][$k],
-			'scheduled'          => $matches['scheduled'][$k],
-			'state'              => $matches['state'][$k],
-			'last_status_change' => $matches['last_status_change'][$k],
-			'plugin_output'      => $matches['plugin_output'][$k],
-			'attempts'           => $matches['attempts'][$k],
-			'max_attempts'       => $matches['max_attempts'][$k],
-			'last_check'         => $matches['last_check'][$k]
-		);
-	}
-	unset($matches);
-	
-	foreach ($downHostsMatches['host'] as $k=>$host) { // copying down host alerts to normal service alerts
-		unset($hosts[$host]);
-		
-		$hosts[$host]['SERVER IS UP'] = array(
-			'state'              => 2, // down host is always shown as CRITICAL alert
-			'acked'              => $downHostsMatches['acked'][$k],
-			'scheduled'          => $downHostsMatches['scheduled'][$k],
-			'last_status_change' => $downHostsMatches['last_status_change'][$k],
-			'plugin_output'      => $downHostsMatches['plugin_output'][$k],
-			'attempts'           => $downHostsMatches['attempts'][$k],
-			'max_attempts'       => $downHostsMatches['max_attempts'][$k],
-			'last_check'         => $downHostsMatches['last_check'][$k]
-		);
-	}
+
+    $hosts = array();
+    foreach ($matches['host'] as $k=>$host) {
+        $hosts[$host][$matches['service'][$k]] = array(
+            'acked'              => $matches['acked'][$k],
+            'scheduled'          => $matches['scheduled'][$k],
+            'state'              => $matches['state'][$k],
+            'last_status_change' => $matches['last_status_change'][$k],
+            'plugin_output'      => $matches['plugin_output'][$k],
+            'attempts'           => $matches['attempts'][$k],
+            'max_attempts'       => $matches['max_attempts'][$k],
+            'last_check'         => $matches['last_check'][$k],
+            'active_enabled'     => $matches['active_checks_enabled'][$k],
+            'next_check'         => $matches['next_check'][$k],
+        );
+    }
+    unset($matches);
+
+    foreach ($downHostsMatches['host'] as $k=>$host) { // copying down host alerts to normal service alerts
+        unset($hosts[$host]);
+
+        $hosts[$host]['SERVER IS UP'] = array(
+            'state'              => 2, // down host is always shown as CRITICAL alert
+            'acked'              => $downHostsMatches['acked'][$k],
+            'scheduled'          => $downHostsMatches['scheduled'][$k],
+            'last_status_change' => $downHostsMatches['last_status_change'][$k],
+            'plugin_output'      => $downHostsMatches['plugin_output'][$k],
+            'attempts'           => $downHostsMatches['attempts'][$k],
+            'max_attempts'       => $downHostsMatches['max_attempts'][$k],
+            'last_check'         => $downHostsMatches['last_check'][$k],
+            'active_enabled'     => 0,
+            'next_check'         => 0,
+        );
+    }
 
 	foreach ($hosts as $host=>$services) {
 		foreach ($services as $service=>$attrs) {
@@ -211,14 +219,19 @@ if ($icinga) {
 			}
 			
 			$criticalPercentileDuration = isset($alertsPercentile[$host.'_'.$service]) ? $alertsPercentile[$host.'_'.$service] : 0;
-			
-			
-			if ($attrs['state'] > 0 || (!$attrs['state'] && isset($attrs['scheduled']) && $attrs['scheduled']) || ($criticalPercentileDuration && $criticalPercentileDuration > 4*3600)) {
-				$statesAr       = array(0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN');
-				$state          = $statesAr[$attrs['state']];
-				$origState      = '';
-				$serviceEncoded = urlencode($service);
-				$pluginOutput   = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
+
+            if (
+                   $attrs['state'] > 0
+                || (!$attrs['state'] && isset($attrs['scheduled']) && $attrs['scheduled'])
+                || ($criticalPercentileDuration && $criticalPercentileDuration > 4*3600)
+                || (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled'])
+            ) {
+                $statesAr       = array(0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN');
+                $state          = $statesAr[$attrs['state']];
+                $origState      = '';
+                $serviceEncoded = urlencode($service);
+                $pluginOutput   = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
+                $pending        = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
 
                 if ($service == 'SERVER IS UP') {
                     $notesUrl   = (isset($notesUrls[$host])) ? $notesUrls[$host] : '';
@@ -349,6 +362,8 @@ $xmlContent .= '	<alert state="'. $state .'" origState="'. parseToXML($origState
 		<sched_start>'.        parseToXML($schedStart) .'</sched_start>
 		<sched_end>'.          parseToXML($schedEnd) .'</sched_end>
 		<sched_duration>'.     parseToXML($schedDuration) .'</sched_duration>
+		<pending>'.            parseToXML($pending) .'</pending>
+		<next_check>'.         parseToXML($attrs['next_check']) .'</next_check>
 	</alert>
 ';
 		
