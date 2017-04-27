@@ -95,6 +95,7 @@ Search = {}
                                 '<div class="likeTable">' +
                                 '	<ul>' +
                                 '		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+                                '		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
                                 notes  +
                                 '	</ul>' +
                                 '</div>';
