@@ -39,8 +39,8 @@ $nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
 
 /* user name/email array for gravatar.com icons. leave default value */
 $usersArray = array(
-	'authUser' => 'email@domain.com',
-	'userName' => 'email@domain.com',
+	'dev'      => 'dev@domain.com',
+	'admin'    => 'admin@domain.com',
 	'default'  => 'djshdsjkhd@dkjshjsh.com',
 );
 
@@ -103,6 +103,18 @@ function serviceUrl($host, $service) {
 	
 	return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
 }
+
+/* Access control - if enabled: only users who are in /etc/nagios/contacts/contactgroups.cfg or in /etc/nagios/services (contact_groups|contacts) can see alerts */
+$accessControl           = true;
+
+/* Super users can see all alerts */
+$accessControlSuperUsers = ['admin'];
+
+/* Contact group URL */
+$accessControlGroupUrl   = '/etc/nagios/contacts/contactgroups.cfg';
+
+/* Services URL */
+$accessControlServiceUrl = '/etc/nagios/services';
 
 
 /* enable/disable last comments for acknowledge and schedule downtime */

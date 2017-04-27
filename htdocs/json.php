@@ -1,6 +1,7 @@
 <?php
 
 include_once 'functions.php';
+include_once __DIR__ . '/../scripts/accessControl.php';
 
 if (!isset($_SESSION)) {
     session_start();
@@ -30,6 +31,7 @@ $xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
 $array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData($xmlFile))),TRUE);
 $returnJson  = array();
 $user        = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
+$ac          = new accessControl;
 
 if (!$array) {
     http_response_code(404);
@@ -71,6 +73,10 @@ foreach ($array['alert'] as $item) {
     $nextCheck       = (!is_array($item['next_check']))           ? $item['next_check']           : implode(' ', $item['next_check']);
     $nextCheck       = intval($nextCheck);
     $hostOrService   = $item['host_or_service'];
+
+    if (!$ac->verifyUser($service, $user)) {
+        continue;
+    }
 
     $infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
 
