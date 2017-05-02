@@ -629,24 +629,54 @@ function removeSchedulePlanned($downtimeId) {
 	fclose($f);
 }
 function findPlanned($host, $service, $user, $schedulePlanned = true) {
-	global $nagiosPipe;
-	global $planned;
-	
-	foreach ($planned as $plan) {
-		$pattern  = returnPlannedPattern($plan['command']);
-		$commands = explode(',', $pattern[0]);
-		
-		foreach ($commands as $command) {
-			$command = returnPlannedCommand($command, $pattern);
-			$text    = returnPlannedText($host, $service);
+    $planned = returnPlanned();
 
-			if (preg_match("/$command/iu", $text) && $plan['end'] > time() && $user == $plan['user']) {
-				return (($schedulePlanned) ? schedulePlanned($host, $service, $plan['end'], $user) : true);
-			}
-		}
-	}
-	
-	return false;
+    foreach ($planned as $key => $plan) {
+        $pattern  = returnPlannedPattern($plan['command']);
+        $commands = explode(',', $pattern[0]);
+
+        foreach ($commands as $command) {
+            $command = returnPlannedCommand($command, $pattern);
+            $text    = returnPlannedText($host, $service);
+
+            if (preg_match("/$command/iu", $text) && $plan['end'] > time()) {
+                if (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && $plan['list'][$host][$service] > time()) {
+                    return false;
+                } else {
+                    if ($schedulePlanned) {
+                        $results = [];
+
+                        foreach ($planned as $plannedKey => $plannedValue) {
+                            $results[$plannedKey] = $plannedValue;
+
+                            if ($key == $plannedKey) {
+                                if (!isset($plan['list'])) {
+                                    $results[$plannedKey]['list'] = [];
+                                }
+
+                                if (!isset($plan['list'][$host])) {
+                                    $results[$plannedKey]['list'][$host] = [];
+                                }
+
+                                if (!isset($plan['list'][$host][$service])) {
+                                    $results[$plannedKey]['list'][$host][$service] = '';
+                                }
+
+                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
+                            }
+                        }
+
+                        writePlanned($results);
+                        schedulePlanned($host, $service, $plan['end'], $plan['user']);
+                    }
+
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 function implode_r($g, $p) {
     return is_array($p) ?
