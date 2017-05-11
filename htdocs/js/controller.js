@@ -141,12 +141,20 @@ Search = {}
 				className: 'last_check',
 			},
 			{
-				data: {
-					_:     'duration.name',
-					sort:  'duration.order',
-					type:  'string',
-				},
-				className: 'duration',
+                data:      'duration',
+                className: 'duration',
+                render: {
+                    _:     'name',
+                    sort:  'order',
+                    type:  'num',
+                    display: function ( data, type, full, meta ) {
+                        if (Search.currentTab == 'sched') {
+                            return '<span title="Check triggered" style="cursor: pointer;">' + data.lastCheck + '</span><br /><span title="Remaining downtime" style="cursor: pointer;">' + data.end + '</span>';
+                        }
+
+                        return data.name;
+                    },
+                },
 			},
 			{
 				data:      'info',
@@ -694,6 +702,8 @@ Search.filterDataTable = function(val, startReload) {
         return;
     }
 
+    $("span[title]").tooltip({ track: true });
+
 	var value = (val) ? val : '';
 	
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
@@ -815,6 +825,11 @@ Search.addDialog = function() {
 	dialog += '  <form name="scheduleDowntime">';
 	dialog += '    <fieldset>';
 	dialog += '      <table style="width: 100%">';
+    dialog += '			<tr>';
+    dialog += '				<td class="sched_label_col"><label for="sched_permanent">Permanent</label></td>';
+    dialog += '				<td class="sched_sublabel_col">&nbsp;</td>';
+    dialog += '        		<td class="sched_input_col"><input type="checkbox" name="sched_permanent" id="sched_permanent" value="enabled"></td>';
+    dialog += '      	</tr>';
 	dialog += '			<tr>';
 	dialog += '				<td class="sched_label_col"><label for="sched_interval_extension">Interval, hours</label></td>';
 	dialog += '				<td class="sched_sublabel_col">&nbsp;</td>';
@@ -876,10 +891,17 @@ Search.addDialogJs = function() {
 						if (Search.editComment) {
                             $('#sched_interval_extension').closest('tr').hide();
 							$('#sched_finish_date_time').closest('tr').hide();
+                            $('#sched_permanent').closest('tr').hide();
                         } else {
 							$('#sched_interval_extension').closest('tr').show();
 							$('#sched_finish_date_time').closest('tr').show();
+                            $('#sched_permanent').closest('tr').show();
+                            Search.permanentValues = {
+                                'old': 0,
+                                'new': 0,
+							};
 						}
+						$('#sched_permanent').prop("checked", false);
 		},
 		close:    function() { Search.tempShowButtons(); $('body').css("overflow", "auto"); },
 		create:   function() {
@@ -2194,13 +2216,13 @@ Search.returnComments = function(modal) {
 					html += '<option value=""></option>';
 				
 				for (var i = 0; i < data.length; i++) {
-					html += '<option value="'+ data[i].name +'">'+ data[i].name +' - '+ moment(data[i].date, 'YYYY-MM-DD HH:mm:ss').fromNow() +'</option>';
+					html += '<option value="'+ encodeURIComponent(data[i].name) +'">'+ data[i].name +' - '+ moment(data[i].date, 'YYYY-MM-DD HH:mm:ss').fromNow() +'</option>';
 				}
 	
 				html += '</select>';
 				
 				$(modal + ' .select-comment').show();
-				$(modal + ' .select-comment select').html(html);
+				$(modal + ' .select-comment').html(html);
 			}
 		});
     }
@@ -2261,7 +2283,26 @@ Search.init = function() {
 	$(document).on('change', '.select-comment select', function() {
 		$(this).closest('td').find('.write-comment input').val($(this).val()).focus();
 	});
-	
+
+    $(document).on('change', '#sched_permanent', function() {
+        var checked = $('#sched_permanent').prop("checked");
+
+        $('#sched_interval_extension, #sched_finish_date_time').prop('disabled', checked).toggleClass('ui-state-disabled', checked);
+
+        if (checked) {
+            Search.permanentValues.old = (parseInt($('#sched_interval_extension').val())) ? parseInt($('#sched_interval_extension').val()) : 0;
+            Search.permanentValues.new = 20000;
+        } else {
+            Search.permanentValues.new = Search.permanentValues.old;
+            Search.permanentValues.old = 0;
+        }
+
+        $('#sched_interval_extension').val(Search.permanentValues.new).trigger('change');
+    });
+
+    $(document).on('change', '[name="select-comment-list"]', function() {
+        $('#sched_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
+    });
 	
 	$(document).on('click', '.add-from-planned-template', function() {
 		Search.plannedData = {

@@ -101,6 +101,16 @@ foreach ($array['alert'] as $item) {
     $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
     $returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
 
+    $statusName = $state;
+
+    if ($pending) {
+        $statusName = 'PENDING';
+    }
+
+    if (($schedEnd - time()) > 7200000) {
+        $statusName = 'PERMANENT';
+    }
+
     if ($infoRecord) {
         $returnType .= '__info__';
         $service = substr($service, 1);
@@ -128,7 +138,7 @@ foreach ($array['alert'] as $item) {
             'pending' => $pending
         ),
         'status'    => array(
-            'name'  => ($pending) ? 'PENDING' : $state,
+            'name'  => $statusName,
             'order' => ($state == 'CRITICAL') ? 4 : (($state == 'UNKNOWN') ? 3 : (($state == 'WARNING') ? 2 : (($state == 'OK') ? 1 : 0))),
             ),
         'last'      => array(
@@ -138,6 +148,8 @@ foreach ($array['alert'] as $item) {
         'duration'  => array(
             'name'  => ($pending) ? '' : $duration,
             'order' => $durationS,
+            'lastCheck' => duration(time() - $lastCheckS, false),
+            'end'   => duration($schedEnd - time(), false),
             ),
         'comment'   => array(
             'ack'   => $ackComment,

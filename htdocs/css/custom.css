@@ -69,7 +69,7 @@ copy
 
 #mainTable .host,               #mainTable .host-th               { width:  87px !important; word-break: break-all; }
 #mainTable .service,            #mainTable .service-th            { width: 327px !important; word-break: break-all; }
-#mainTable .status,             #mainTable .status-th             { width:  63px !important; white-space: nowrap; }
+#mainTable .status,             #mainTable .status-th             { width:  66px !important; white-space: nowrap; }
 #mainTable .last_check,         #mainTable .last_check-th         { width: 100px !important; white-space: nowrap; }
 #mainTable .duration-sec,       #mainTable .duration-sec-th       { width:   0px !important; display: none; } 
 #mainTable .duration,           #mainTable .duration-th           { width:  87px !important; white-space: nowrap; } 
