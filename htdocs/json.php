@@ -77,8 +77,8 @@ foreach ($array['alert'] as $item) {
     if (!$ac->verifyUser($service, $user)) {
         continue;
     }
-
-    $infoRecord = (mb_substr($service, 0, 1) == '_') ? true : false;
+    
+    $infoRecord = (mb_substr($service, 0, 6) == '_info_' || mb_substr($service, 0, 1) == '_') ? true : false;
 
     if (!$xmlFile && !$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
         unAckForPlanned($host, $service, $hostOrService);
@@ -113,7 +113,7 @@ foreach ($array['alert'] as $item) {
 
     if ($infoRecord) {
         $returnType .= '__info__';
-        $service = substr($service, 1);
+        $service     = (mb_substr($service, 0, 6) == '_info_') ? substr($service, 6) : substr($service, 1);
     }
 
     $returnJson[] = array(
