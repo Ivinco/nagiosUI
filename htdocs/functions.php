@@ -243,7 +243,7 @@ if ($icinga) {
 					$notesUrl = strstr($notesUrl, 'host=', true) . "host={$host}&" . strstr($notesUrl, 'item=', false);
 				}
 				
-				if ($criticalPercentileDuration /*&& $criticalPercentileDuration > 60*4*/ && (!isset($attrs['acked']) || !$attrs['acked']) && (!isset($attrs['scheduled']) || !$attrs['scheduled']) && $criticalPercentileDuration * 60 - (time() - $attrs['last_status_change']) > 300) {
+				if ($criticalPercentileDuration /*&& $criticalPercentileDuration > 60*4*/ && (!isset($attrs['scheduled']) || !$attrs['scheduled']) && $criticalPercentileDuration * 60 - (time() - $attrs['last_status_change']) > 300) {
 					$durationSec = $criticalPercentileDuration * 60;
 					$duration    = duration($durationSec, false)." (50%)";
 					$origState   = $state;

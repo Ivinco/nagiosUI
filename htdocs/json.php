@@ -93,7 +93,7 @@ foreach ($array['alert'] as $item) {
         $tempSchedCommen = 'planned';
         $plannedComment = returnPlannedComment($host, $service);
     }
-    
+
     if ($sched && $tempSchedCommen == 'planned' && $state == 'OK') {
         $tempSchedCommen = $tempSchedCommen . '_';
     }
