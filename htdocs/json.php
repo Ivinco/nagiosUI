@@ -79,7 +79,8 @@ foreach ($array['alert'] as $item) {
         continue;
     }
 
-    $infoRecord = (mb_substr($service, 0, 6) == '_info_' || mb_substr($service, 0, 1) == '_') ? true : false;
+    preg_match('/\b_info_\b/', $service . ' ' . $statusInfo, $matches);
+    $infoRecord = (count($matches) || mb_substr($service, 0, 1) == '_') ? true : false;
 
     if (!$xmlFile && !$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
         unAckForPlanned($host, $service, $hostOrService);
@@ -115,7 +116,9 @@ foreach ($array['alert'] as $item) {
 
     if ($infoRecord) {
         $returnType .= '__info__';
-        $service     = (mb_substr($service, 0, 6) == '_info_') ? substr($service, 6) : substr($service, 1);
+        $service = str_replace('_info_', '', $service);
+        $statusInfo = str_replace('_info_', '', $statusInfo);
+        $service = (mb_substr($service, 0, 1) == '_') ? substr($service, 1) : $service;
     }
 
     $returnJson[] = array(
