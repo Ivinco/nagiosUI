@@ -385,6 +385,7 @@ $xmlContent .= '
 	<nagios-full-list-url>'. parseToXML($nagiosFullHostUrl) .'</nagios-full-list-url>
 	<group-by-service>'.     parseToXML($groupByService) .'</group-by-service>
 	<group-by-host>'.        parseToXML($groupByHost) .'</group-by-host>
+	<nagios-comment-url>'.   parseToXML($nagiosCommentUrl) .'</nagios-comment-url>
 	<refresh-array>'.        parseToXML(implode(';', $refreshArrayData)) .'</refresh-array>
 </alerts>';
 
@@ -677,6 +678,25 @@ function findPlanned($host, $service, $user, $schedulePlanned = true) {
     }
 
     return false;
+}
+function returnPlannedComment($host, $service) {
+    $planned = returnPlanned();
+
+    foreach ($planned as $key => $plan) {
+        $pattern = returnPlannedPattern($plan['command']);
+        $commands = explode(',', $pattern[0]);
+
+        foreach ($commands as $command) {
+            $command = returnPlannedCommand($command, $pattern);
+            $text = returnPlannedText($host, $service);
+
+            if (preg_match("/$command/iu", $text) && $plan['end'] > time() && isset($plan['comment'])) {
+                return [$plan['command'], $plan['comment']];
+            }
+        }
+    }
+
+    return '';
 }
 function implode_r($g, $p) {
     return is_array($p) ?

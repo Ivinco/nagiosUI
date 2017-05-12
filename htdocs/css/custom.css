@@ -120,6 +120,7 @@ copy
 #mainTable .likeTable .list-ack-icon,
 #mainTable .likeTable .list-sched-icon,
 #mainTable .likeTable .list-recheck-icon,
+#mainTable .edit_planned_comment,
 #mainTable .edit_acknowledgeIt,
 #mainTable .edit_acknowledgeGroup,
 #mainTable .edit_scheduleIt,
@@ -129,6 +130,7 @@ copy
 #mainTable .likeTable .list-notes-icon    { background: url('../images/all_icons.png') no-repeat  -38px 0; }
 #mainTable .likeTable .list-qack-icon     { background: url('../images/all_icons.png') no-repeat  -57px 0; }
 #mainTable .likeTable .list-ack-icon      { background: url('../images/all_icons.png') no-repeat  -76px 0; }
+#mainTable .edit_planned_comment,
 #mainTable .edit_acknowledgeIt,
 #mainTable .edit_acknowledgeGroup,
 #mainTable .edit_scheduleIt,
@@ -145,6 +147,8 @@ copy
 
 #mainTable .comment .likeTable ul li:nth-child(even) { width: 23px; }
 #mainTable .comment .likeTable ul li:nth-child(odd) { width: 100%; }
+#mainTable .status_information .likeTable ul li:nth-child(even) { width: 23px; }
+#mainTable .status_information .likeTable ul li:nth-child(odd) { width: 100%; }
 
 #info-show-button { width: 96px !important; }
 #info-show-menu { width: 96px !important; }
@@ -241,6 +245,8 @@ table.dataTable thead .no-border-th {
 .sched_sublabel_col, .ack_sublabel_col { font-size: 12px; width: 50px; padding: 0 10px; }
 .sched_input_col, .ack_input_col { width: 100%; }
 .sched_input_col input, .sched_input_col select, .ack_input_col input, .ack_input_col select { width: 100%; font-size: 14px; }
+
+#nagiosCommentUrl { display: none; }
 
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }

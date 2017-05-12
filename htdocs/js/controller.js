@@ -59,6 +59,15 @@ Search = {}
 		'planned'       : [[2,'desc'],[4,'desc']],
 	};
 	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
+    Search.changeNagiosComment = function(url, comment) {
+        var matches = comment.match(/#\d+/);
+
+        if (matches && url) {
+            var link = url.replace('$2', matches[0]).replace('$1', matches[0]);
+            comment = comment.replace(matches[0], link);
+        }
+        return comment;
+    }
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
@@ -156,17 +165,31 @@ Search = {}
                     },
                 },
 			},
-			{
-				data:      'info',
-				className: 'status_information main',
-				render: function ( data, type, full, meta ) {
-					if (data.pending) {
-						return 'Scheduled: ' + moment.unix(data.next).format('YYYY-MM-DD hh:mm:ss');
-					}
+            {
+                data:      'info',
+                className: 'status_information main',
+                render: function ( data, type, full, meta ) {
+                    if (data.pending) {
+                        return 'Scheduled: ' + moment.unix(data.next).format('YYYY-MM-DD hh:mm:ss');
+                    }
 
-					return data.name;
-				},
-			},
+                    if (data.planned) {
+                        var hide = (data.comment) ? '' : 'display:none;',
+                            comment = '<p style="margin:0;'+ hide +'">Comment: <span>' + data.comment + '</span></p>';
+
+                        return '' +
+                            '<div class="likeTable">' +
+                            '	<ul>' +
+                            '		<li class="planned text">' + comment + data.name + '</li>' +
+                            '		<li class="planned"><em class="edit_planned_comment" data-command="'+ encodeURIComponent(data.command) +'" alt="Edit comment" title="Edit comment"></em></li>' +
+                            '	</ul>' +
+                            '</div>'
+                            ;
+                    }
+
+                    return data.name;
+                },
+            },
 			{
 				data:      'comment',
 				className: 'comment',
@@ -219,13 +242,14 @@ Search = {}
 			$('#infoHolder').show();
 			
 			if (Search.firstLoad) {
-				$('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
+                $('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
 				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);
 				$('#groupByService').text(json.additional.groupByService);
 				$('#groupByHost').text(json.additional.groupByHost);
 				$('#refreshArray').text(json.additional.refreshArray);
-				
+                $('#nagiosCommentUrl').html(json.additional.nagiosCommentUrl);
+
 				var refreshData = $('#refreshArray').text().split(';');
 				var refreshList = '';
 					refreshList += '<option value="auto">Refresh: Auto</option>';
@@ -698,9 +722,13 @@ Search.autoReloadData = function() {
 
 
 Search.filterDataTable = function(val, startReload) {
-	if (!Search.allDataTable.ajax.json()) {
+    if (!Search.allDataTable.ajax.json()) {
         return;
     }
+
+    $('#mainTable tbody td.status_information .likeTable .planned.text span').each(function() {
+        $(this).html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), $(this).text()));
+    });
 
     $("span[title]").tooltip({ track: true });
 
@@ -2160,6 +2188,37 @@ Search.savePlanned = function() {
 		});
     }
 }
+Search.savePlannedEdit = function(command, refresh) {
+    clearTimeout(Search.plannedTimer);
+
+    var comment = $('#edit_planned_comment').val();
+
+    $.ajax({
+        url:    'planned.php',
+        method: 'POST',
+        data:   { text: 'edit', time: 1, line: 'edit', user: '', old: command, new: $('#edit_planned_command').val(), comment: comment },
+    })
+    .always(function(data) {
+        if ($('#plannedDialog').html()) {
+            $('#plannedDialog').dialog('close');
+        }
+        Search.drawPlanned(data);
+        Search.stopReloads();
+        Search.startReloads();
+
+        if (refresh) {
+            if (comment) {
+                $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
+                    $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
+                });
+            } else {
+                $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
+                    $(this).closest('ul').find('.planned.text p').hide().find('span').text('');
+                });
+            }
+        }
+    });
+}
 Search.showHidePlanned = function() {
 	if (Search.currentTab == 'planned') {
 		$('#planned-maintenance').show();
@@ -2182,27 +2241,33 @@ Search.getPlanned = function() {
 	});
 }
 Search.drawPlanned = function(data) {
-	$('#planned-list, #planned-templates-list').html('');
-	$('#planned-list').closest('div').toggle(data.file.length > 0);
-	$('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
-		
-	if (data.file.length > 0) {
-		$.each(data.file, function( index, value ) {
-			$('#planned-list').append('<li><small><strong>' + value['command'] + '</strong> (till: '+ value['date'] +')</small> <button data-id="'+ (index + 1) +'" class="save-planned">Delete</button></li>');
-		});
-	}
-		
-	if (data.templates.length > 0) {
-		$.each(data.templates, function( index, value ) {
-			var time    = (value[2]) ? value[2] : '',
-				text    = (time) ? (' |'+ time +'|') : '',
-				command = value[1];
-					
-			$('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text +'</small> <button data-time="'+ time +'" data-command="'+ command +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
-		});
-	}
+    $('#planned-list, #planned-templates-list').html('');
+    $('#planned-list').closest('div').toggle(data.file.length > 0);
+    $('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
+
+    if (data.file.length > 0) {
+        $.each(data.file, function( index, value ) {
+            var command = '<strong>' + value['command'] + '</strong>',
+                date    = 'till: '+ value['date'],
+                editBtn = ' <button data-id="'+ encodeURIComponent(value['command']) +'" data-comment="'+ encodeURIComponent(value['comment']) +'" class="edit-planned">Edit</button>',
+                button  = ' <button data-id="'+ encodeURIComponent(value['command']) +'" class="save-planned">Delete</button>',
+                comment = (value['comment']) ? ('; comment: ' + value['comment']) : '';
+
+            $('#planned-list').append('<li><small>'+ command +' ('+ date + comment +')</small>'+ editBtn + button +'</li>');
+        });
+    }
+
+    if (data.templates.length > 0) {
+        $.each(data.templates, function( index, value ) {
+            var time    = (value[2]) ? value[2] : '',
+                text    = (time) ? (' |'+ time +'|') : '',
+                command = value[1];
+
+            $('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text +'</small> <button data-time="'+ time +'" data-command="'+ encodeURIComponent(command) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
+        });
+    }
 }
-	
+
 Search.returnComments = function(modal) {
 	if (Search.ajaxData.commentsSelect) {
         $.ajax({
@@ -2303,13 +2368,82 @@ Search.init = function() {
     $(document).on('change', '[name="select-comment-list"]', function() {
         $('#sched_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
     });
-	
+
+    $(document).on('click', '.edit_planned_comment', function() {
+        var element = $(this),
+            command = decodeURIComponent(element.attr('data-command')),
+            comment = element.closest('ul').find('.planned.text span').text(),
+            html    = '<p style="font-size: 12px;"><strong>Edit comment for: '+ command +'</strong></p>';
+
+        html+= '<table style="width: 100%">';
+        html+= '<tr>';
+        html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+        html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+        html+= '</tr>';
+        html+= '</table>';
+
+        $('#plannedDialog').html(html);
+        $('#plannedDialog').dialog({
+            modal:    true,
+            width:    400,
+            position: { my: "center top", at: "center top+200"},
+            close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+            buttons: [
+                {
+                    text:  'Save',
+                    id:    'save-planned-template',
+                    click: function() { Search.savePlannedEdit(command, true) },
+                },
+                {
+                    text:  'Cancel',
+                    click: function() { $('#plannedDialog').dialog('close'); },
+                }
+            ],
+        });
+    });
+    $(document).on('click', '.edit-planned', function() {
+        var values = $(this),
+            command = decodeURIComponent(values.attr('data-id')),
+            comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
+            html    = '<p style="font-size: 12px;"><strong>'+ command +'</strong></p>';
+
+        html+= '<table style="width: 100%">';
+        html+= '<tr>';
+        html+= '<td style="font-size: 13px; white-space: nowrap;">Command</td>';
+        html+= '<td><input type="text" name="edit_planned_command" id="edit_planned_command" class="text ui-widget-content" value="'+ command +'" style="width: 100%; font-size: 14px;"></td>';
+        html+= '</tr>';
+        html+= '<tr>';
+        html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+        html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+        html+= '</tr>';
+        html+= '</table>';
+
+        $('#plannedDialog').html(html);
+        $('#plannedDialog').dialog({
+            modal:    true,
+            width:    400,
+            position: { my: "center top", at: "center top+200"},
+            close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+            buttons: [
+                {
+                    text:  'Save',
+                    id:    'save-planned-template',
+                    click: function() { Search.savePlannedEdit(command) },
+                },
+                {
+                    text:  'Cancel',
+                    click: function() { $('#plannedDialog').dialog('close'); },
+                }
+            ],
+        });
+    });
 	$(document).on('click', '.add-from-planned-template', function() {
+		var command = decodeURIComponent($(this).attr('data-command'));
 		Search.plannedData = {
-			command: $(this).attr('data-command'),
+			command: command,
 			time:    ($(this).attr('data-time')) ? parseInt($(this).attr('data-time')) : 0,
-			host:    ($(this).attr('data-command').indexOf('${host}') > -1) ? true : false,
-			service: ($(this).attr('data-command').indexOf('${service}') > -1) ? true : false,
+			host:    (command.indexOf('${host}') > -1) ? true : false,
+			service: (command.indexOf('${service}') > -1) ? true : false,
 		};
 		
 		if (Search.plannedData.time && !Search.plannedData.host && !Search.plannedData.service) {
@@ -2362,53 +2496,54 @@ Search.init = function() {
 			});	
 		}
 	});
-	$(document).on('click', '.save-planned', function() {
-		var li = $(this).closest('li');
+    $(document).on('click', '.save-planned', function() {
+        var li = $(this).closest('li');
 
-		if (confirm('Are you sure?')) {
-			$(this).attr('disabled', 'disabled');
-			
-			$.ajax({
-				url:    'planned.php',
-				method: 'POST',
-				data:   { text: 'delete', time: 1, line: li.find('button').attr('data-id') },
-			})
-			.always(function(data) {
-				Search.drawPlanned(data);
-				Search.stopReloads();
-				Search.startReloads();
-			});
-		}
-	});
-	$(document).on('click', '#planned-save', function() {
-		$('#host-service, #maintenance-time').removeAttr('style');
-		
-		var text = $('#host-service').val(),
-			time = parseInt($('#maintenance-time').val()),
-			user = $('#userName').text();
-			
-		if (text && time > 0) {
-			$.ajax({
-				url:    'planned.php',
-				method: 'POST',
-				data:   { text: text, time: time, line: 'new', user: user },
-			})
-			.always(function(data) {
-				$('#host-service, #maintenance-time').val('');
-				Search.drawPlanned(data);
-				Search.stopReloads();
-				Search.startReloads();
-			});
-		} else {
-			if (!text) {
-				$('#host-service').css('border-color', 'red');
-			}
-			if (!time || time < 1) {
-				$('#maintenance-time').css('border-color', 'red');
-			}
-		}
-	});
-	$('#host-service, #maintenance-time').on('keypress', function(e) {
+        if (confirm('Are you sure?')) {
+            $(this).attr('disabled', 'disabled');
+
+            $.ajax({
+                url:    'planned.php',
+                method: 'POST',
+                data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')) },
+            })
+            .always(function(data) {
+                Search.drawPlanned(data);
+                Search.stopReloads();
+                Search.startReloads();
+            });
+        }
+    });
+    $(document).on('click', '#planned-save', function() {
+        $('#host-service, #maintenance-time').removeAttr('style');
+
+        var text    = $('#host-service').val(),
+            time    = parseInt($('#maintenance-time').val()),
+            user    = $('#userName').text(),
+            comment = $('#maintenance-comment').val();
+
+        if (text && time > 0) {
+            $.ajax({
+                url:    'planned.php',
+                method: 'POST',
+                data:   { text: text, time: time, line: 'new', user: user, comment: comment },
+            })
+            .always(function(data) {
+                $('#host-service, #maintenance-time, #maintenance-comment').val('');
+                Search.drawPlanned(data);
+                Search.stopReloads();
+                Search.startReloads();
+            });
+        } else {
+            if (!text) {
+                $('#host-service').css('border-color', 'red');
+            }
+            if (!time || time < 1) {
+                $('#maintenance-time').css('border-color', 'red');
+            }
+        }
+    });
+	$('#host-service, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
 		if (e.keyCode && e.keyCode == 13) {
 			$('#planned-save').trigger('click');
 		}
@@ -2428,7 +2563,11 @@ Search.init = function() {
 			$(document).find('#save-planned-template').trigger('click');
 		}
 	});
-	
+    $(document).on('keypress', '#edit_planned_comment', function(e) {
+        if (e.keyCode && e.keyCode == 13) {
+            $(document).find('#save-planned-template').trigger('click');
+        }
+    });
 	
 	$('#normal, #acked, #sched, #EMERGENCY, #planned').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {

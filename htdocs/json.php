@@ -73,11 +73,12 @@ foreach ($array['alert'] as $item) {
     $nextCheck       = (!is_array($item['next_check']))           ? $item['next_check']           : implode(' ', $item['next_check']);
     $nextCheck       = intval($nextCheck);
     $hostOrService   = $item['host_or_service'];
+    $plannedComment  = ['', ''];
 
     if (!$ac->verifyUser($service, $user)) {
         continue;
     }
-    
+
     $infoRecord = (mb_substr($service, 0, 6) == '_info_' || mb_substr($service, 0, 1) == '_') ? true : false;
 
     if (!$xmlFile && !$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
@@ -90,8 +91,9 @@ foreach ($array['alert'] as $item) {
         $sched = 1;
         $plannedAuthor = md5(strtolower(trim($usersArray[$user])));
         $tempSchedCommen = 'planned';
+        $plannedComment = returnPlannedComment($host, $service);
     }
-
+    
     if ($sched && $tempSchedCommen == 'planned' && $state == 'OK') {
         $tempSchedCommen = $tempSchedCommen . '_';
     }
@@ -162,6 +164,9 @@ foreach ($array['alert'] as $item) {
             'name'  => $statusInfo,
             'next'  => $nextCheck,
             'pending' => $pending,
+            'planned' => ($sched && $tempSchedCommen == 'planned') ? true : false,
+            'comment' => $plannedComment[1],
+            'command' => $plannedComment[0],
         ),
         'type'      => $returnType,
         'state'     => ($pending) ? 'PENDING' : $state,
@@ -185,6 +190,7 @@ $additional = array(
     'unknown'           => 0,
     'total'             => count($returnJson),
     'commentsSelect'    => $commentsSelect,
+    'nagiosCommentUrl'  => $array['nagios-comment-url'],
 );
 
 $filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';

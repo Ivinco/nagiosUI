@@ -116,6 +116,8 @@
 			<input type="text" name="host-service" id="host-service" /><br />
 			<label for="maintenance-time">Maintenance Time <small>(minutes)</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
+            <label for="maintenance-comment">Comment <small>(optional)</small></label><br />
+            <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
 			<button id="planned-save">Save</button>
 			
 			<p>
@@ -151,6 +153,7 @@
 	<div id="nagiosConfigFile"></div>
 	<div id="nagiosPostFile"></div>
 	<div id="nagiosFullListUrl"></div>
+    <div id="nagiosCommentUrl"></div>
 	<div id="updateHash"></div>
 	<div id="groupByService"></div>
 	<div id="groupByHost"></div>
