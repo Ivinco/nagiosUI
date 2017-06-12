@@ -117,6 +117,25 @@ $accessControlGroupUrl   = '/etc/nagios/contacts/contactgroups.cfg';
 $accessControlServiceUrl = '/etc/nagios/services';
 
 
+/*
+    begin:      'Service' or 'Status Information' starts with
+    everywhere: 'Service' or 'Status Information' have
+
+    remove:      remove markers
+    leave:       leave markers
+ */
+$infoRecordMark = [
+    'begin' => [
+        'remove' => ['_'],
+        'leave'  => ['INFO:', 'NOTICE:'],
+    ],
+    'everywhere' => [
+        'remove' => ['_info_'],
+        'leave'  => [],
+    ],
+];
+
+
 /* enable/disable last comments for acknowledge and schedule downtime */
 $commentsSelect            = false;
 

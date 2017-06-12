@@ -79,16 +79,15 @@ foreach ($array['alert'] as $item) {
         continue;
     }
 
-    preg_match('/\b_info_\b/', $service . ' ' . $statusInfo, $matches);
-    $infoRecord = (count($matches) || mb_substr($service, 0, 1) == '_') ? true : false;
+    $infoRecord = returnInfoRecord($service, $statusInfo);
 
-    if (!$xmlFile && !$infoRecord && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
+    if (!$xmlFile && !$infoRecord['info'] && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
         unAckForPlanned($host, $service, $hostOrService);
         $acked = 0;
         $tempCommen = '';
     }
 
-    if (!$xmlFile && !$infoRecord && !$acked && !$sched && findPlanned($host, $service, $user)) {
+    if (!$xmlFile && !$infoRecord['info'] && !$acked && !$sched && findPlanned($host, $service, $user)) {
         $sched = 1;
         $plannedAuthor = md5(strtolower(trim($usersArray[$user])));
         $tempSchedCommen = 'planned';
@@ -100,9 +99,9 @@ foreach ($array['alert'] as $item) {
     }
 
     $returnType = '';
-    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($sched && $tempSchedCommen == 'planned') || $infoRecord) ? '__normal__' : '';
-    $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord) ? '__acked__' : '';
-    $returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord) ? '__sched__' : '';
+    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($sched && $tempSchedCommen == 'planned') || $infoRecord['info']) ? '__normal__' : '';
+    $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord['info']) ? '__acked__' : '';
+    $returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord['info']) ? '__sched__' : '';
 
     $statusName = $state;
 
@@ -114,11 +113,10 @@ foreach ($array['alert'] as $item) {
         $statusName = 'PERMANENT';
     }
 
-    if ($infoRecord) {
+    if ($infoRecord['info']) {
         $returnType .= '__info__';
-        $service = str_replace('_info_', '', $service);
-        $statusInfo = str_replace('_info_', '', $statusInfo);
-        $service = (mb_substr($service, 0, 1) == '_') ? substr($service, 1) : $service;
+        $service = $infoRecord['service'];
+        $statusInfo = $infoRecord['status'];
     }
 
     $returnJson[] = array(
@@ -139,7 +137,7 @@ foreach ($array['alert'] as $item) {
             'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
             'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
             'downId' => $downtimeId,
-            'info'   => $infoRecord,
+            'info'   => $infoRecord['info'],
             'pending' => $pending
         ),
         'status'    => array(
@@ -318,3 +316,72 @@ function returnOrder($data, $order) {
     return $return;
 }
 
+function returnInfoRecord($service, $status) {
+    global $infoRecordMark;
+
+    $return = [
+        'service' => $service,
+        'status'  => $status,
+        'info'    => false,
+    ];
+
+    if (count($infoRecordMark['everywhere']['remove'])) {
+        foreach ($infoRecordMark['everywhere']['remove'] as $item) {
+            if ($match = infoPregMatch($item, $return['service'], false, true)) {
+                $return['service'] = $match;
+                $return['info']    = true;
+            }
+            if ($match = infoPregMatch($item, $return['status'], false, true)) {
+                $return['status'] = $match;
+                $return['info']   = true;
+            }
+        }
+    }
+    if (count($infoRecordMark['everywhere']['leave'])) {
+        foreach ($infoRecordMark['everywhere']['leave'] as $item) {
+            if (infoPregMatch($item, $return['service'], false, false) || infoPregMatch($item, $return['status'], false, false)) {
+                $return['info'] = true;
+            }
+        }
+    }
+
+    if (count($infoRecordMark['begin']['remove'])) {
+        foreach ($infoRecordMark['begin']['remove'] as $item) {
+            if ($match = infoPregMatch($item, $return['service'], true, true)) {
+                $return['service'] = $match;
+                $return['info']    = true;
+            }
+            if ($match = infoPregMatch($item, $return['status'], true, true)) {
+                $return['status'] = $match;
+                $return['info']   = true;
+            }
+        }
+    }
+    if (count($infoRecordMark['begin']['leave'])) {
+        foreach ($infoRecordMark['begin']['leave'] as $item) {
+            if (infoPregMatch($item, $return['service'], true, false) || infoPregMatch($item, $return['status'], true, false)) {
+                $return['info'] = true;
+            }
+        }
+    }
+
+    return $return;
+}
+function infoPregMatch($marker, $subject, $start = false, $remove = false) {
+    $return  = '';
+    $pattern = '/'. (($start) ? '^' : '') . $marker .'/';
+
+    if (preg_match($pattern, $subject)) {
+        if ($remove) {
+            if ($start) {
+                $return = substr($subject, mb_strlen($marker));
+            } else {
+                $return = str_replace($marker, '', $subject);
+            }
+        } else {
+            $return = $subject;
+        }
+    }
+
+    return $return;
+}
