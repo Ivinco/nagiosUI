@@ -383,6 +383,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 					'comment':        comment,
 					'groupBy':        groupBy,
 					'isHost':         rowData.host.host,
+					'state':          rowData.state
 				});
 			}
 		});
@@ -457,7 +458,7 @@ function getGroupNormalThead(rowsHeader) {
 	
 	$(rowsHeader).each(function() {
 		var rowData        = $(this)[0],
-			trClass        = rowData.status,
+			trClass        = rowData.state,
 			groupNameSmall = rowData.groupBy,
 			hostValue      = (rowData.type != 'service') ? rowData.host : rowData.count,
 			serviceValue   = (rowData.type == 'service') ? rowData.service : rowData.count,
