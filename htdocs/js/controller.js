@@ -158,7 +158,7 @@ Search = {}
                     type:  'num',
                     display: function ( data, type, full, meta ) {
                         if (Search.currentTab == 'sched') {
-                            return '<span title="Check triggered" style="cursor: pointer;">' + data.lastCheck + '</span><br /><span title="Remaining downtime" style="cursor: pointer;">' + data.end + '</span>';
+                            return '<span title="Check triggered" style="cursor: pointer;">' + data.name + '</span><br /><span title="Remaining downtime" style="cursor: pointer;">' + data.end + '</span>';
                         }
 
                         return data.name;
