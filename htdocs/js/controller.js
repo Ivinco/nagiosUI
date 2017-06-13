@@ -731,7 +731,7 @@ Search.filterDataTable = function(val, startReload) {
         $(this).html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), $(this).text()));
     });
 
-    $(".ui-tooltip, .ui-helper-hidden-accessible").remove();
+    $(".ui-tooltip").remove();
     $("span[title]").tooltip({ track: true });
 
 	var value = (val) ? val : '';
