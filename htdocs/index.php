@@ -116,7 +116,7 @@
 			<input type="text" name="host-service" id="host-service" /><br />
 			<label for="maintenance-time">Maintenance Time <small>(minutes)</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
-            <label for="maintenance-comment">Comment <small>(optional)</small></label><br />
+            <label for="maintenance-comment">Comment</label><br />
             <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
 			<button id="planned-save">Save</button>
 			

@@ -2133,93 +2133,112 @@ Search.returnCommentText = function(text) {
 }
 
 Search.savePlanned = function() {
-	var error = 0;
-	
-	if ($('#planned_host').length) {
-		$('#planned_host').css('border-color', '#aaa');
-		
-		if (!$('#planned_host').val()) {
+    var error = 0;
+
+    if ($('#planned_host').length) {
+        $('#planned_host').css('border-color', '#aaa');
+
+        if (!$('#planned_host').val()) {
             error++;
-			$('#planned_host').css('border-color', 'red');
+            $('#planned_host').css('border-color', 'red');
         }
     }
-	if ($('#planned_service').length) {
+    if ($('#planned_service').length) {
         $('#planned_service').css('border-color', '#aaa');
-		
-		if (!$('#planned_service').val()) {
+
+        if (!$('#planned_service').val()) {
             error++;
-			$('#planned_service').css('border-color', 'red');
+            $('#planned_service').css('border-color', 'red');
         }
     }
-	if ($('#planned_time').length) {
+    if ($('#planned_time').length) {
         $('#planned_time').css('border-color', '#aaa');
-		
-		if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
+
+        if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
             error++;
-			$('#planned_time').css('border-color', 'red');
+            $('#planned_time').css('border-color', 'red');
         }
     }
-	
-	if (!error) {
+    if ($('#planned_comment').length) {
+        $('#planned_comment').css('border-color', '#aaa');
+
+        if (!$('#planned_comment').val()) {
+            error++;
+            $('#planned_comment').css('border-color', 'red');
+        }
+    }
+
+    if (!error) {
         if ($('#planned_host').length) {
-			Search.plannedData.command = Search.plannedData.command.replace('${host}', $('#planned_host').val());
-		}
-		
-		if ($('#planned_service').length) {
-			Search.plannedData.command = Search.plannedData.command.replace('${service}', $('#planned_service').val());
-		}
-		
-		if ($('#planned_time').length) {
-			Search.plannedData.time = parseInt($('#planned_time').val());
-		}
-		
-		clearTimeout(Search.plannedTimer);
-		
-		$.ajax({
-			url:    'planned.php',
-			method: 'POST',
-			data:   { text: Search.plannedData.command, time: Search.plannedData.time, line: 'new', user: $('#userName').text() },
-		})
-		.always(function(data) {
-			if ($('#plannedDialog').html()) {
+            Search.plannedData.command = Search.plannedData.command.replace('${host}', $('#planned_host').val());
+        }
+
+        if ($('#planned_service').length) {
+            Search.plannedData.command = Search.plannedData.command.replace('${service}', $('#planned_service').val());
+        }
+
+        if ($('#planned_time').length) {
+            Search.plannedData.time = parseInt($('#planned_time').val());
+        }
+
+        if ($('#planned_comment').length) {
+            Search.plannedData.comment = $('#planned_comment').val();
+        }
+
+        clearTimeout(Search.plannedTimer);
+
+        $.ajax({
+            url:    'planned.php',
+            method: 'POST',
+            data:   { text: Search.plannedData.command, time: Search.plannedData.time, comment: Search.plannedData.comment, line: 'new', user: $('#userName').text() },
+        })
+        .always(function(data) {
+            if ($('#plannedDialog').html()) {
                 $('#plannedDialog').dialog('close');
             }
-			Search.drawPlanned(data);
-			Search.stopReloads();
-			Search.startReloads();
-		});
+            Search.drawPlanned(data);
+            Search.stopReloads();
+            Search.startReloads();
+        });
     }
 }
 Search.savePlannedEdit = function(command, refresh) {
-    clearTimeout(Search.plannedTimer);
+    if (!$('#edit_planned_command').val() || !$('#edit_planned_comment').val()) {
+        $('#edit_planned_command, #edit_planned_comment').css('border-color', '#aaa');
 
-    var comment = $('#edit_planned_comment').val();
-
-    $.ajax({
-        url:    'planned.php',
-        method: 'POST',
-        data:   { text: 'edit', time: 1, line: 'edit', user: '', old: command, new: $('#edit_planned_command').val(), comment: comment },
-    })
-    .always(function(data) {
-        if ($('#plannedDialog').html()) {
-            $('#plannedDialog').dialog('close');
+        if (!$('#edit_planned_command').val()) {
+            $('#edit_planned_command').css('border-color', 'red');
         }
-        Search.drawPlanned(data);
-        Search.stopReloads();
-        Search.startReloads();
 
-        if (refresh) {
-            if (comment) {
-                $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
-                    $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
-                });
-            } else {
-                $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
-                    $(this).closest('ul').find('.planned.text p').hide().find('span').text('');
-                });
-            }
+        if (!$('#edit_planned_comment').val()) {
+            $('#edit_planned_comment').css('border-color', 'red');
         }
-    });
+    } else {
+        clearTimeout(Search.plannedTimer);
+
+        var commentEdit = $('#edit_planned_comment').val(),
+            commandEdit = $('#edit_planned_command').val();
+
+        $.ajax({
+            url:    'planned.php',
+            method: 'POST',
+            data:   { text: 'edit', time: 1, line: 'edit', user: '', old: command, new: commandEdit, comment: commentEdit },
+        })
+            .always(function(data) {
+                if ($('#plannedDialog').html()) {
+                    $('#plannedDialog').dialog('close');
+                }
+                Search.drawPlanned(data);
+                Search.stopReloads();
+                Search.startReloads();
+
+                if (refresh) {
+                    $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
+                        $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
+                    });
+                }
+            });
+    }
 }
 Search.showHidePlanned = function() {
 	if (Search.currentTab == 'planned') {
@@ -2261,11 +2280,13 @@ Search.drawPlanned = function(data) {
 
     if (data.templates.length > 0) {
         $.each(data.templates, function( index, value ) {
-            var time    = (value[2]) ? value[2] : '',
-                text    = (time) ? (' |'+ time +'|') : '',
-                command = value[1];
+            var time        = (value[2]) ? value[2] : '',
+                text        = (time) ? (' |time: '+ time) : '',
+                command     = value[1],
+                comment     = (value[3]) ? value[3] : '',
+                commentText = (comment) ? (' |comment: '+ comment) : '';
 
-            $('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text +'</small> <button data-time="'+ time +'" data-command="'+ encodeURIComponent(command) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
+            $('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text + commentText +'</small> <button data-time="'+ time +'" data-comment="'+ comment +'" data-command="'+ encodeURIComponent(command) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
         });
     }
 }
@@ -2439,65 +2460,74 @@ Search.init = function() {
             ],
         });
     });
-	$(document).on('click', '.add-from-planned-template', function() {
-		var command = decodeURIComponent($(this).attr('data-command'));
-		Search.plannedData = {
-			command: command,
-			time:    ($(this).attr('data-time')) ? parseInt($(this).attr('data-time')) : 0,
-			host:    (command.indexOf('${host}') > -1) ? true : false,
-			service: (command.indexOf('${service}') > -1) ? true : false,
-		};
-		
-		if (Search.plannedData.time && !Search.plannedData.host && !Search.plannedData.service) {
+    $(document).on('click', '.add-from-planned-template', function() {
+        var command = decodeURIComponent($(this).attr('data-command'));
+
+        Search.plannedData = {
+            command: command,
+            time:    ($(this).attr('data-time'))          ? parseInt($(this).attr('data-time')) : 0,
+            host:    (command.indexOf('${host}') > -1)    ? true : false,
+            service: (command.indexOf('${service}') > -1) ? true : false,
+            comment: ($(this).attr('data-comment'))       ? $(this).attr('data-comment') : 0,
+        };
+
+        if (Search.plannedData.time && Search.plannedData.comment && !Search.plannedData.host && !Search.plannedData.service) {
             Search.savePlanned();
         }
-		else {
-			var html = '<p style="font-size: 12px;"><strong>'+ Search.plannedData.command +'</strong></p>'
-				html+= '<table style="width: 100%">';
-				
-			if (Search.plannedData.host) {
+        else {
+            var html = '<p style="font-size: 12px;"><strong>'+ Search.plannedData.command +'</strong></p>';
+                html+= '<table style="width: 100%">';
+
+            if (Search.plannedData.host) {
                 html+= '<tr>';
-				html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
-				html+= '<td><input type="text" name="planned_host" id="planned_host" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-				html+= '</tr>';
+                html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
+                html+= '<td><input type="text" name="planned_host" id="planned_host" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                html+= '</tr>';
             }
-			
-			if (Search.plannedData.service) {
+
+            if (Search.plannedData.service) {
                 html+= '<tr>';
-				html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
-				html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-				html+= '</tr>';
+                html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
+                html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                html+= '</tr>';
             }
-				
-			if (!Search.plannedData.time) {
+
+            if (!Search.plannedData.time) {
                 html+= '<tr>';
-				html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
-				html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-				html+= '</tr>';
+                html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
+                html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                html+= '</tr>';
             }
-				
-				html+= '</table>';
-				
-			$('#plannedDialog').html(html);
-			$('#plannedDialog').dialog({
-				modal:    true,
-				width:    400,
-				position: { my: "center top", at: "center top+200"},
-				close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
-				buttons: [
-					{
-						text:  'Save',
-						id:    'save-planned-template',
-						click: function() { Search.savePlanned() },
-					},
-					{
-						text:  'Cancel',			
-						click: function() { $('#plannedDialog').dialog('close'); },
-					}
-				],
-			});	
-		}
-	});
+
+            if (!Search.plannedData.comment) {
+                html+= '<tr>';
+                html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+                html+= '<td><input type="text" name="planned_comment" id="planned_comment" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                html+= '</tr>';
+            }
+
+            html+= '</table>';
+
+            $('#plannedDialog').html(html);
+            $('#plannedDialog').dialog({
+                modal:    true,
+                width:    400,
+                position: { my: "center top", at: "center top+200"},
+                close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+                buttons: [
+                    {
+                        text:  'Save',
+                        id:    'save-planned-template',
+                        click: function() { Search.savePlanned() },
+                    },
+                    {
+                        text:  'Cancel',
+                        click: function() { $('#plannedDialog').dialog('close'); },
+                    }
+                ],
+            });
+        }
+    });
     $(document).on('click', '.save-planned', function() {
         var li = $(this).closest('li');
 
@@ -2517,14 +2547,14 @@ Search.init = function() {
         }
     });
     $(document).on('click', '#planned-save', function() {
-        $('#host-service, #maintenance-time').removeAttr('style');
+        $('#host-service, #maintenance-time, #maintenance-comment').removeAttr('style');
 
         var text    = $('#host-service').val(),
             time    = parseInt($('#maintenance-time').val()),
             user    = $('#userName').text(),
             comment = $('#maintenance-comment').val();
 
-        if (text && time > 0) {
+        if (text && comment && time > 0) {
             $.ajax({
                 url:    'planned.php',
                 method: 'POST',
@@ -2539,6 +2569,9 @@ Search.init = function() {
         } else {
             if (!text) {
                 $('#host-service').css('border-color', 'red');
+            }
+            if (!comment) {
+                $('#maintenance-comment').css('border-color', 'red');
             }
             if (!time || time < 1) {
                 $('#maintenance-time').css('border-color', 'red');
@@ -2565,7 +2598,17 @@ Search.init = function() {
 			$(document).find('#save-planned-template').trigger('click');
 		}
 	});
+    $(document).on('keypress', '#planned_comment', function(e) {
+        if (e.keyCode && e.keyCode == 13) {
+            $(document).find('#save-planned-template').trigger('click');
+        }
+    });
     $(document).on('keypress', '#edit_planned_comment', function(e) {
+        if (e.keyCode && e.keyCode == 13) {
+            $(document).find('#save-planned-template').trigger('click');
+        }
+    });
+    $(document).on('keypress', '#edit_planned_command', function(e) {
         if (e.keyCode && e.keyCode == 13) {
             $(document).find('#save-planned-template').trigger('click');
         }

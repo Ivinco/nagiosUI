@@ -72,8 +72,10 @@ $plannedUrl = '/full_path/planned.json';
 		 - ${host} will be prompt before activation to add host
 		 - ${service} will be prompt before activation to add service
 		 - if you don't want to add host/service you can use it: log*_*error*
-	  - third array element is optional: Maintenance Time (minutes):
-		 - if element isn't in array then will be prompt before activation to add Maintenance Time (minutes)
+	  - third array element is Maintenance Time (minutes):
+		 - if element isn't in array or 0 then will be prompt before activation to add Maintenance Time (minutes)
+	  - fourth array element is Comment:
+		 - if element isn't in array or '' then will be prompt before activation to add Comment
 */
 $plannedTemplates = [
 	['Server reboot', '${host}_*', 60],
