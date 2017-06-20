@@ -1,5 +1,5 @@
-html { font-family: arial, serif; font-size: 10.66px; }
-#mainTable { background-color: #fff; font-family: arial, serif; margin: 0; border: 0; padding: 2px; font-size: 10.66px; width: 100% !important; text-align: start; border-spacing: 2; table-layout: fixed; }
+html { font-family: arial, sans-serif; font-size: 10.66px; }
+#mainTable { background-color: #fff; font-family: arial, sans-serif; margin: 0; border: 0; padding: 2px; font-size: 10.66px; width: 100% !important; text-align: start; border-spacing: 2; table-layout: fixed; }
 #mainTable tr { color: #000; }
 #mainTable th { background-color: #f7f7f7; color: #000; text-align: left; vertical-align: middle; font-size: 13px; font-weight: bold; white-space: nowrap; padding: 3px; border: 0 !important; }
 #mainTable th.sorting { cursor: pointer; }
