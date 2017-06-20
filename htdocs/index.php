@@ -112,8 +112,10 @@
     </table>
 	<div id="planned-maintenance">
 		<div class="holder">
-			<label for="host-service">Host & Service</label><br />
-			<input type="text" name="host-service" id="host-service" /><br />
+			<label for="maintenance-host">Host</label><br />
+			<input type="text" name="maintenance-host" id="maintenance-host" /><br />
+            <label for="maintenance-service">Service</label><br />
+            <input type="text" name="maintenance-service" id="maintenance-service" /><br />
 			<label for="maintenance-time">Maintenance Time <small>(minutes)</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
@@ -124,12 +126,11 @@
 				<small>
 					<strong>?</strong> wildcard replaces any 1 character<br />
 					<strong>*</strong> wildcard replaces any # of characters from 0<br />
-					<strong>_</strong> separates host from service<br /><br />
 					<strong>examples:</strong><br />
-						forumdb01-?_*mysql*<br />
-						forum*,log*_*error*<br />
+						forumdb01-?<br />
+						*mysql*<br />
 						forum*,log*<br />
-						_*error*
+						*error*
 				</small>
 			</p>
 		</div>
@@ -168,10 +169,11 @@
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
-	<script>
-		$(document).ready(function() {
-			Search.init();
-		});	
-	</script>
+    <script>
+        $(document).ready(function() {
+            Search.init();
+            Planned.init();
+        });
+    </script>
 </body>
 </html>

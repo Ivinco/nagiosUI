@@ -1,7 +1,6 @@
 <?php
 
 include_once 'functions.php';
-include_once __DIR__ . '/../scripts/accessControl.php';
 
 if (!isset($_SESSION)) {
     session_start();
@@ -32,6 +31,7 @@ $array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData(
 $returnJson  = array();
 $user        = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 $ac          = new accessControl;
+$plannedData = new planned;
 
 if (!$array) {
     http_response_code(404);
@@ -81,17 +81,17 @@ foreach ($array['alert'] as $item) {
 
     $infoRecord = returnInfoRecord($service, $statusInfo);
 
-    if (!$xmlFile && !$infoRecord['info'] && $acked && $tempCommen == 'temp' && findPlanned($host, $service, $user, false)) {
-        unAckForPlanned($host, $service, $hostOrService);
+    if (!$xmlFile && !$infoRecord['info'] && $acked && $tempCommen == 'temp' && $plannedData->findPlanned($host, $service, $user, false)) {
+        $plannedData->unAckForPlanned($host, $service, $hostOrService);
         $acked = 0;
         $tempCommen = '';
     }
 
-    if (!$xmlFile && !$infoRecord['info'] && !$acked && !$sched && findPlanned($host, $service, $user)) {
+    if (!$xmlFile && !$infoRecord['info'] && !$acked && !$sched && $plannedData->findPlanned($host, $service, $user)) {
         $sched = 1;
         $plannedAuthor = md5(strtolower(trim($usersArray[$user])));
         $tempSchedCommen = 'planned';
-        $plannedComment = returnPlannedComment($host, $service);
+        $plannedComment = $plannedData->returnPlannedComment($host, $service);
     }
 
     if ($sched && $tempSchedCommen == 'planned' && $state == 'OK') {

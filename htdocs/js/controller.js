@@ -47,7 +47,6 @@ Search = {}
 	Search.editComment        = false;
 	Search.startedGetData     = false;
 	Search.editCommentText    = '';
-	Search.plannedData        = {};
 	Search.submitDialogButton = true;
 	Search.plannedTimer       = null;
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
@@ -319,7 +318,6 @@ Search = {}
 						Search.startReloads();
 					}
 				});
-				
 				Search.startReloads();
 			}
 			
@@ -670,7 +668,9 @@ Search.reorderData = function() {
 
 Search.stopReloads = function(stop) {
 	$.stopPendingAjax.abortAll(stop);
-	clearTimeout(reloadTimer);
+	if (typeof reloadTimer !== 'undefined') {
+        clearTimeout(reloadTimer);
+	}
 	Search.backgroundReload = false;
 	Search.autoRefresh      = false;
 	Search.startedGetData   = false;
@@ -2121,7 +2121,7 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
 	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 		Search.resetAgo();
-        Search.showHidePlanned();
+        Planned.showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
 }
 Search.returnCommentText = function(text) {
@@ -2130,165 +2130,6 @@ Search.returnCommentText = function(text) {
 	text = text.join(' ').trim().slice(1, -1);
 	
 	return text;
-}
-
-Search.savePlanned = function() {
-    var error = 0;
-
-    if ($('#planned_host').length) {
-        $('#planned_host').css('border-color', '#aaa');
-
-        if (!$('#planned_host').val()) {
-            error++;
-            $('#planned_host').css('border-color', 'red');
-        }
-    }
-    if ($('#planned_service').length) {
-        $('#planned_service').css('border-color', '#aaa');
-
-        if (!$('#planned_service').val()) {
-            error++;
-            $('#planned_service').css('border-color', 'red');
-        }
-    }
-    if ($('#planned_time').length) {
-        $('#planned_time').css('border-color', '#aaa');
-
-        if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
-            error++;
-            $('#planned_time').css('border-color', 'red');
-        }
-    }
-    if ($('#planned_comment').length) {
-        $('#planned_comment').css('border-color', '#aaa');
-
-        if (!$('#planned_comment').val()) {
-            error++;
-            $('#planned_comment').css('border-color', 'red');
-        }
-    }
-
-    if (!error) {
-        if ($('#planned_host').length) {
-            Search.plannedData.command = Search.plannedData.command.replace('${host}', $('#planned_host').val());
-        }
-
-        if ($('#planned_service').length) {
-            Search.plannedData.command = Search.plannedData.command.replace('${service}', $('#planned_service').val());
-        }
-
-        if ($('#planned_time').length) {
-            Search.plannedData.time = parseInt($('#planned_time').val());
-        }
-
-        if ($('#planned_comment').length) {
-            Search.plannedData.comment = $('#planned_comment').val();
-        }
-
-        clearTimeout(Search.plannedTimer);
-
-        $.ajax({
-            url:    'planned.php',
-            method: 'POST',
-            data:   { text: Search.plannedData.command, time: Search.plannedData.time, comment: Search.plannedData.comment, line: 'new', user: $('#userName').text() },
-        })
-        .always(function(data) {
-            if ($('#plannedDialog').html()) {
-                $('#plannedDialog').dialog('close');
-            }
-            Search.drawPlanned(data);
-            Search.stopReloads();
-            Search.startReloads();
-        });
-    }
-}
-Search.savePlannedEdit = function(command, refresh) {
-    if (!$('#edit_planned_command').val() || !$('#edit_planned_comment').val()) {
-        $('#edit_planned_command, #edit_planned_comment').css('border-color', '#aaa');
-
-        if (!$('#edit_planned_command').val()) {
-            $('#edit_planned_command').css('border-color', 'red');
-        }
-
-        if (!$('#edit_planned_comment').val()) {
-            $('#edit_planned_comment').css('border-color', 'red');
-        }
-    } else {
-        clearTimeout(Search.plannedTimer);
-
-        var commentEdit = $('#edit_planned_comment').val(),
-            commandEdit = $('#edit_planned_command').val();
-
-        $.ajax({
-            url:    'planned.php',
-            method: 'POST',
-            data:   { text: 'edit', time: 1, line: 'edit', user: '', old: command, new: commandEdit, comment: commentEdit },
-        })
-            .always(function(data) {
-                if ($('#plannedDialog').html()) {
-                    $('#plannedDialog').dialog('close');
-                }
-                Search.drawPlanned(data);
-                Search.stopReloads();
-                Search.startReloads();
-
-                if (refresh) {
-                    $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
-                        $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
-                    });
-                }
-            });
-    }
-}
-Search.showHidePlanned = function() {
-	if (Search.currentTab == 'planned') {
-		$('#planned-maintenance').show();
-		$('#mainTable_wrapper').hide();
-	} else {
-		$('#planned-maintenance').hide();
-		$('#mainTable_wrapper').show();
-	}
-}
-Search.getPlanned = function() {
-	Search.showHidePlanned();
-		
-	$.ajax({
-		url:    'planned.php',
-		method: 'GET',
-	})
-	.always(function(data) {
-		Search.drawPlanned(data);
-		Search.plannedTimer = setTimeout(function(){ Search.getPlanned() }, 30000);
-	});
-}
-Search.drawPlanned = function(data) {
-    $('#planned-list, #planned-templates-list').html('');
-    $('#planned-list').closest('div').toggle(data.file.length > 0);
-    $('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
-
-    if (data.file.length > 0) {
-        $.each(data.file, function( index, value ) {
-            var command = '<strong>' + value['command'] + '</strong>',
-                date    = 'till: '+ value['date'],
-                editBtn = ' <button data-id="'+ encodeURIComponent(value['command']) +'" data-comment="'+ encodeURIComponent(value['comment']) +'" class="edit-planned">Edit</button>',
-                button  = ' <button data-id="'+ encodeURIComponent(value['command']) +'" class="save-planned">Delete</button>',
-                comment = (value['comment']) ? ('; comment: ' + value['comment']) : '';
-
-            $('#planned-list').append('<li><small>'+ command +' ('+ date + comment +')</small>'+ editBtn + button +'</li>');
-        });
-    }
-
-    if (data.templates.length > 0) {
-        $.each(data.templates, function( index, value ) {
-            var time        = (value[2]) ? value[2] : '',
-                text        = (time) ? (' |time: '+ time) : '',
-                command     = value[1],
-                comment     = (value[3]) ? value[3] : '',
-                commentText = (comment) ? (' |comment: '+ comment) : '';
-
-            $('#planned-templates-list').append('<li><small><strong>' + value[0] + '</strong> ('+ command +')'+ text + commentText +'</small> <button data-time="'+ time +'" data-comment="'+ comment +'" data-command="'+ encodeURIComponent(command) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
-        });
-    }
 }
 
 Search.returnComments = function(modal) {
@@ -2350,7 +2191,6 @@ function checkSelectedText() {
 
 Search.init = function() {
 	Search.startAgo();
-	Search.getPlanned();
 	
 	$(document).mousedown(function() {
 		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
@@ -2392,229 +2232,8 @@ Search.init = function() {
         $('#sched_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
     });
 
-    $(document).on('click', '.edit_planned_comment', function() {
-        var element = $(this),
-            command = decodeURIComponent(element.attr('data-command')),
-            comment = element.closest('ul').find('.planned.text span').text(),
-            html    = '<p style="font-size: 12px;"><strong>Edit comment for: '+ command +'</strong></p>';
-
-        html+= '<table style="width: 100%">';
-        html+= '<tr>';
-        html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
-        html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
-        html+= '</tr>';
-        html+= '</table>';
-
-        $('#plannedDialog').html(html);
-        $('#plannedDialog').dialog({
-            modal:    true,
-            width:    400,
-            position: { my: "center top", at: "center top+200"},
-            close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
-            buttons: [
-                {
-                    text:  'Save',
-                    id:    'save-planned-template',
-                    click: function() { Search.savePlannedEdit(command, true) },
-                },
-                {
-                    text:  'Cancel',
-                    click: function() { $('#plannedDialog').dialog('close'); },
-                }
-            ],
-        });
-    });
-    $(document).on('click', '.edit-planned', function() {
-        var values = $(this),
-            command = decodeURIComponent(values.attr('data-id')),
-            comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
-            html    = '<p style="font-size: 12px;"><strong>'+ command +'</strong></p>';
-
-        html+= '<table style="width: 100%">';
-        html+= '<tr>';
-        html+= '<td style="font-size: 13px; white-space: nowrap;">Command</td>';
-        html+= '<td><input type="text" name="edit_planned_command" id="edit_planned_command" class="text ui-widget-content" value="'+ command +'" style="width: 100%; font-size: 14px;"></td>';
-        html+= '</tr>';
-        html+= '<tr>';
-        html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
-        html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
-        html+= '</tr>';
-        html+= '</table>';
-
-        $('#plannedDialog').html(html);
-        $('#plannedDialog').dialog({
-            modal:    true,
-            width:    400,
-            position: { my: "center top", at: "center top+200"},
-            close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
-            buttons: [
-                {
-                    text:  'Save',
-                    id:    'save-planned-template',
-                    click: function() { Search.savePlannedEdit(command) },
-                },
-                {
-                    text:  'Cancel',
-                    click: function() { $('#plannedDialog').dialog('close'); },
-                }
-            ],
-        });
-    });
-    $(document).on('click', '.add-from-planned-template', function() {
-        var command = decodeURIComponent($(this).attr('data-command'));
-
-        Search.plannedData = {
-            command: command,
-            time:    ($(this).attr('data-time'))          ? parseInt($(this).attr('data-time')) : 0,
-            host:    (command.indexOf('${host}') > -1)    ? true : false,
-            service: (command.indexOf('${service}') > -1) ? true : false,
-            comment: ($(this).attr('data-comment'))       ? $(this).attr('data-comment') : 0,
-        };
-
-        if (Search.plannedData.time && Search.plannedData.comment && !Search.plannedData.host && !Search.plannedData.service) {
-            Search.savePlanned();
-        }
-        else {
-            var html = '<p style="font-size: 12px;"><strong>'+ Search.plannedData.command +'</strong></p>';
-                html+= '<table style="width: 100%">';
-
-            if (Search.plannedData.host) {
-                html+= '<tr>';
-                html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
-                html+= '<td><input type="text" name="planned_host" id="planned_host" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-                html+= '</tr>';
-            }
-
-            if (Search.plannedData.service) {
-                html+= '<tr>';
-                html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
-                html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-                html+= '</tr>';
-            }
-
-            if (!Search.plannedData.time) {
-                html+= '<tr>';
-                html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
-                html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-                html+= '</tr>';
-            }
-
-            if (!Search.plannedData.comment) {
-                html+= '<tr>';
-                html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
-                html+= '<td><input type="text" name="planned_comment" id="planned_comment" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
-                html+= '</tr>';
-            }
-
-            html+= '</table>';
-
-            $('#plannedDialog').html(html);
-            $('#plannedDialog').dialog({
-                modal:    true,
-                width:    400,
-                position: { my: "center top", at: "center top+200"},
-                close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
-                buttons: [
-                    {
-                        text:  'Save',
-                        id:    'save-planned-template',
-                        click: function() { Search.savePlanned() },
-                    },
-                    {
-                        text:  'Cancel',
-                        click: function() { $('#plannedDialog').dialog('close'); },
-                    }
-                ],
-            });
-        }
-    });
-    $(document).on('click', '.save-planned', function() {
-        var li = $(this).closest('li');
-
-        if (confirm('Are you sure?')) {
-            $(this).attr('disabled', 'disabled');
-
-            $.ajax({
-                url:    'planned.php',
-                method: 'POST',
-                data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')) },
-            })
-            .always(function(data) {
-                Search.drawPlanned(data);
-                Search.stopReloads();
-                Search.startReloads();
-            });
-        }
-    });
-    $(document).on('click', '#planned-save', function() {
-        $('#host-service, #maintenance-time, #maintenance-comment').removeAttr('style');
-
-        var text    = $('#host-service').val(),
-            time    = parseInt($('#maintenance-time').val()),
-            user    = $('#userName').text(),
-            comment = $('#maintenance-comment').val();
-
-        if (text && comment && time > 0) {
-            $.ajax({
-                url:    'planned.php',
-                method: 'POST',
-                data:   { text: text, time: time, line: 'new', user: user, comment: comment },
-            })
-            .always(function(data) {
-                $('#host-service, #maintenance-time, #maintenance-comment').val('');
-                Search.drawPlanned(data);
-                Search.stopReloads();
-                Search.startReloads();
-            });
-        } else {
-            if (!text) {
-                $('#host-service').css('border-color', 'red');
-            }
-            if (!comment) {
-                $('#maintenance-comment').css('border-color', 'red');
-            }
-            if (!time || time < 1) {
-                $('#maintenance-time').css('border-color', 'red');
-            }
-        }
-    });
-	$('#host-service, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$('#planned-save').trigger('click');
-		}
-	});
-	$(document).on('keypress', '#planned_host', function(e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$(document).find('#save-planned-template').trigger('click');
-		}
-	});
-	$(document).on('keypress', '#planned_service', function(e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$(document).find('#save-planned-template').trigger('click');
-		}
-	});
-	$(document).on('keypress', '#planned_time', function(e) {
-		if (e.keyCode && e.keyCode == 13) {
-			$(document).find('#save-planned-template').trigger('click');
-		}
-	});
-    $(document).on('keypress', '#planned_comment', function(e) {
-        if (e.keyCode && e.keyCode == 13) {
-            $(document).find('#save-planned-template').trigger('click');
-        }
-    });
-    $(document).on('keypress', '#edit_planned_comment', function(e) {
-        if (e.keyCode && e.keyCode == 13) {
-            $(document).find('#save-planned-template').trigger('click');
-        }
-    });
-    $(document).on('keypress', '#edit_planned_command', function(e) {
-        if (e.keyCode && e.keyCode == 13) {
-            $(document).find('#save-planned-template').trigger('click');
-        }
-    });
 	
-	$('#normal, #acked, #sched, #EMERGENCY, #planned').on('click', function() {
+	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
 		    return false;
@@ -2627,14 +2246,10 @@ Search.init = function() {
 		
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 		
-		if (Search.currentTab != 'planned') {
-            Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
-				Search.resetAgo();
-				Search.showHidePlanned();
-			}).order(Search.orderBy[Search.currentTab]);
-        } else {
-			Search.showHidePlanned();
-		}
+		Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+			Search.resetAgo();
+			Planned.showHidePlanned();
+		}).order(Search.orderBy[Search.currentTab]);
 	});
 	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
 		var val = $(this).val();
@@ -2644,10 +2259,10 @@ Search.init = function() {
 			
 			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
 				Search.resetAgo();
-				Search.showHidePlanned();
+				Planned.showHidePlanned();
 					
 				setTimeout(function(){
-					Search.showHidePlanned();
+					Planned.showHidePlanned();
 				}, 400);
 			});
         }
@@ -2670,7 +2285,7 @@ Search.init = function() {
             } else {
 				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 					Search.resetAgo();
-					Search.showHidePlanned();
+					Planned.showHidePlanned();
 				}).order(Search.orderBy[Search.currentTab]);
 			}
 		}
@@ -3618,3 +3233,482 @@ dateFormat.i18n = {
 !function(){var a={},b=null,c=null,d=null,e=null,f={},g=window.devicePixelRatio||1,h=16*g,i={width:7,height:9,font:10*g+"px arial",colour:"#ffffff",background:"#F03D25",fallback:!0,crossOrigin:!0,abbreviate:!0},j=function(){var a=navigator.userAgent.toLowerCase();return function(b){return-1!==a.indexOf(b)}}(),k={ie:j("msie"),chrome:j("chrome"),webkit:j("chrome")||j("safari"),safari:j("safari")&&!j("chrome"),mozilla:j("mozilla")&&!j("chrome")&&!j("safari")},l=function(){for(var a=document.getElementsByTagName("link"),b=0,c=a.length;c>b;b++)if((a[b].getAttribute("rel")||"").match(/\bicon\b/))return a[b];return!1},m=function(){for(var a=document.getElementsByTagName("link"),b=document.getElementsByTagName("head")[0],c=0,d=a.length;d>c;c++){var e="undefined"!=typeof a[c];e&&(a[c].getAttribute("rel")||"").match(/\bicon\b/)&&b.removeChild(a[c])}},n=function(){if(!c||!b){var a=l();c=b=a?a.getAttribute("href"):"/favicon.ico"}return b},o=function(){return e||(e=document.createElement("canvas"),e.width=h,e.height=h),e},p=function(a){if(a){m();var b=document.createElement("link");b.type="image/x-icon",b.rel="icon",b.href=a,document.getElementsByTagName("head")[0].appendChild(b)}},q=function(a,b){if(!o().getContext||k.ie||k.safari||"force"===f.fallback)return r(a);var c=o().getContext("2d"),b=b||"#000000",e=n();d=document.createElement("img"),d.onload=function(){c.clearRect(0,0,h,h),c.drawImage(d,0,0,d.width,d.height,0,0,h,h),(a+"").length>0&&s(c,a,b),t()},!e.match(/^data/)&&f.crossOrigin&&(d.crossOrigin="anonymous"),d.src=e},r=function(a){if(f.fallback){var b=document.title;"("===b[0]&&(b=b.slice(b.indexOf(" "))),(a+"").length>0?document.title="("+a+") "+b:document.title=b}},s=function(a,b,c){"number"==typeof b&&b>99&&f.abbreviate&&(b=u(b));var d=(b+"").length-1,e=f.width*g+6*g*d,i=f.height*g,j=h-i,l=h-e-g,m=16*g,n=16*g,o=2*g;a.font=(k.webkit?"bold ":"")+f.font,a.fillStyle=f.background,a.strokeStyle=f.background,a.lineWidth=g,a.beginPath(),a.moveTo(l+o,j),a.quadraticCurveTo(l,j,l,j+o),a.lineTo(l,m-o),a.quadraticCurveTo(l,m,l+o,m),a.lineTo(n-o,m),a.quadraticCurveTo(n,m,n,m-o),a.lineTo(n,j+o),a.quadraticCurveTo(n,j,n-o,j),a.closePath(),a.fill(),a.beginPath(),a.strokeStyle="rgba(0,0,0,0.3)",a.moveTo(l+o/2,m),a.lineTo(n-o/2,m),a.stroke(),a.fillStyle=f.colour,a.textAlign="right",a.textBaseline="top",a.fillText(b,2===g?29:15,k.mozilla?7*g:6*g)},t=function(){o().getContext&&p(o().toDataURL())},u=function(a){for(var b=[["G",1e9],["M",1e6],["k",1e3]],c=0;c<b.length;++c)if(a>=b[c][1]){a=v(a/b[c][1])+b[c][0];break}return a},v=function(a,b){var c=new Number(a);return c.toFixed(b)};a.setOptions=function(a){f={};for(var b in i)f[b]=a.hasOwnProperty(b)?a[b]:i[b];return this},a.setImage=function(a){return b=a,t(),this},a.setBubble=function(a,b){return a=a||"",q(a,b),this},a.reset=function(){p(c)},a.setOptions(i),"function"==typeof define&&define.amd?define(a):"undefined"!=typeof module?module.exports=a:window.Tinycon=a}();
 
 
+Planned = {
+    plannedData: {},
+    plannedTimer: null,
+    showHidePlanned: function() {
+        if (Search.currentTab == 'planned') {
+            $('#planned-maintenance').show();
+            $('#mainTable_wrapper').hide();
+        } else {
+            $('#planned-maintenance').hide();
+            $('#mainTable_wrapper').show();
+        }
+    },
+    getPlanned: function() {
+        Planned.showHidePlanned();
+
+        $.ajax({
+            url:    'planned.php',
+            method: 'GET',
+        })
+        .always(function(data) {
+            Planned.drawPlanned(data);
+            Planned.plannedTimer = setTimeout(function(){ Planned.getPlanned() }, 30000);
+        });
+    },
+    drawPlanned: function(data) {
+        $('#planned-list, #planned-templates-list').html('');
+        $('#planned-list').closest('div').toggle(data.file.length > 0);
+        $('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
+
+        if (data.file.length > 0) {
+            $.each(data.file, function( index, value ) {
+                var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
+                    service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
+                    date    = ' till: '+ value['date'],
+                    comment = ' comment: '+ value['comment'],
+                    editBtn = ' <button ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service']) +'" ' +
+                        '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
+                        '			data-service="'+ encodeURIComponent(value['service']) +'" ' +
+                        '			data-comment="'+ encodeURIComponent(value['comment']) +'" ' +
+                        '			class="edit-planned"' +
+                        '		>Edit</button>',
+                    button  = ' <button ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service']) +'" ' +
+                        '			class="save-planned"' +
+                        '		>Delete</button>';
+
+                $('#planned-list').append('<li><small>'+ host + service +' ('+ date + comment +')</small>'+ editBtn + button +'</li>');
+            });
+        }
+
+        if (data.templates.length > 0) {
+            $.each(data.templates, function( index, value ) {
+                var host    = (value['host'] && value['host'] != '*')                     ? ('<strong>Host: </strong>'     + value['host'])    : '',
+                    service = (value['service'] && value['service'] != '*')               ? ('<strong> Service: </strong>' + value['service']) : '',
+                    time    = (parseInt(value['time']) && parseInt(value['time']) > 0)    ? ('<strong> Time: </strong>'    + value['time'])    : '',
+                    comment = (value['comment'])                                          ? ('<strong> Comment: </strong>' + value['comment']) : '';
+
+                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service +')'+ time + comment +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
+            });
+        }
+    },
+    savePlanned: function() {
+        var error           = 0,
+            host            = $('#planned_host').val(),
+            service         = $('#planned_service').val(),
+            requiredHost    = parseInt($('#planned_host').attr('data-required')),
+            requiredService = parseInt($('#planned_service').attr('data-required'));
+
+        if ($('#planned_host').length) {
+            $('#planned_host').css('border-color', '#aaa');
+
+            if ((requiredHost && !host) || (!host && ($('#planned_service').length && !service))) {
+                error++;
+                $('#planned_host').css('border-color', 'red');
+            }
+        }
+        if ($('#planned_service').length) {
+            $('#planned_service').css('border-color', '#aaa');
+
+            if ((requiredService && !service) || (!service && ($('#planned_host').length && !host))) {
+                error++;
+                $('#planned_service').css('border-color', 'red');
+            }
+        }
+        if ($('#planned_time').length) {
+            $('#planned_time').css('border-color', '#aaa');
+
+            if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
+                error++;
+                $('#planned_time').css('border-color', 'red');
+            }
+        }
+        if ($('#planned_comment').length) {
+            $('#planned_comment').css('border-color', '#aaa');
+
+            if (!$('#planned_comment').val()) {
+                error++;
+                $('#planned_comment').css('border-color', 'red');
+            }
+        }
+
+        if (!error) {
+            if ($('#planned_host').length) {
+                if (requiredHost) {
+                    Planned.plannedData.host = Planned.plannedData.host.replace('${host}', host);
+                } else {
+                    Planned.plannedData.host = host;
+                }
+            }
+
+            if ($('#planned_service').length) {
+                if (requiredService) {
+                    Planned.plannedData.service = Planned.plannedData.service.replace('${service}', service);
+                } else {
+                    Planned.plannedData.service = service;
+                }
+            }
+
+            if ($('#planned_time').length) {
+                Planned.plannedData.time = parseInt($('#planned_time').val());
+            }
+
+            if ($('#planned_comment').length) {
+                Planned.plannedData.comment = $('#planned_comment').val();
+            }
+
+            clearTimeout(Planned.plannedTimer);
+
+            $.ajax({
+                url:    'planned.php',
+                method: 'POST',
+                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text() },
+            })
+                .always(function(data) {
+                    if ($('#plannedDialog').html()) {
+                        $('#plannedDialog').dialog('close');
+                    }
+                    Planned.drawPlanned(data);
+                    Search.stopReloads();
+                    Search.startReloads();
+                });
+        }
+    },
+    savePlannedEdit: function(command, refresh) {
+        var host    = $('#edit_planned_host').val(),
+            service = $('#edit_planned_service').val(),
+            comment = $('#edit_planned_comment').val(),
+            user    = $('#userName').text();
+
+        if (!host || !service || !comment) {
+            $('#edit_planned_host, #edit_planned_service, #edit_planned_comment').css('border-color', '#aaa');
+
+            if (!host) {
+                $('#edit_planned_host').css('border-color', 'red');
+            }
+            if (!service) {
+                $('#edit_planned_service').css('border-color', 'red');
+            }
+            if (!comment) {
+                $('#edit_planned_comment').css('border-color', 'red');
+            }
+        } else {
+            clearTimeout(Planned.plannedTimer);
+            Search.stopReloads();
+
+            $.ajax({
+                url:    'planned.php',
+                method: 'POST',
+                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, comment: comment },
+            })
+                .always(function(data) {
+                    if ($('#plannedDialog').html()) {
+                        $('#plannedDialog').dialog('close');
+                    }
+                    Planned.drawPlanned(data);
+                    Search.startReloads();
+                });
+        }
+    },
+    savePlannedEditComment: function(command) {
+        $('#edit_planned_host, #edit_planned_service, #edit_planned_comment').css('border-color', '#aaa');
+
+        var comment = $('#edit_planned_comment').val();
+
+        if (!comment) {
+            $('#edit_planned_comment').css('border-color', 'red');
+        } else {
+            clearTimeout(Planned.plannedTimer);
+            Search.stopReloads();
+
+            $.ajax({
+                url:    'planned.php',
+                method: 'POST',
+                data:   { text: 'comment', line: command, comment: comment },
+            })
+                .always(function(data) {
+                    if ($('#plannedDialog').html()) {
+                        $('#plannedDialog').dialog('close');
+                    }
+                    Planned.drawPlanned(data);
+                    Search.startReloads();
+
+                    $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
+                        $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
+                    });
+                });
+        }
+    },
+    init: function() {
+        Planned.getPlanned();
+
+        $('#planned').on('click', function() {
+            if (Search.currentTab == $(this).attr('id')) {
+                location.reload();
+                return false;
+            }
+
+            localStorage.setItem('currentTabNew', $(this).attr('id'));
+            Search.currentTab = localStorage.getItem('currentTabNew');
+            Search.stopReloads();
+            Planned.showHidePlanned();
+        });
+        $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $('#planned-save').trigger('click');
+            }
+        });
+        $(document).on('click', '#planned-save', function() {
+            $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').removeAttr('style');
+
+            var host    = $('#maintenance-host').val(),
+                service = $('#maintenance-service').val(),
+                time    = parseInt($('#maintenance-time').val()),
+                comment = $('#maintenance-comment').val(),
+                user    = $('#userName').text();
+
+            if ((host || service) && comment && time > 0) {
+                $.ajax({
+                    url: 'planned.php',
+                    method: 'POST',
+                    data: {host: host, service: service, comment: comment, time: time, line: 'new', user: user},
+                })
+                    .always(function (data) {
+                        $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').val('');
+                        Planned.drawPlanned(data);
+                        Search.stopReloads();
+                        Search.startReloads();
+                    });
+            } else {
+                if (!host) {
+                    $('#maintenance-host').css('border-color', 'red');
+                }
+                if (!service) {
+                    $('#maintenance-service').css('border-color', 'red');
+                }
+                if (!comment) {
+                    $('#maintenance-comment').css('border-color', 'red');
+                }
+                if (!time || time < 1) {
+                    $('#maintenance-time').css('border-color', 'red');
+                }
+            }
+        });
+        $(document).on('click', '.edit-planned', function() {
+            var values  = $(this),
+                host    = decodeURIComponent(values.attr('data-host')),
+                service = decodeURIComponent(values.attr('data-service')),
+                id      = decodeURIComponent(values.attr('data-id')),
+                comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
+                html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Comment:</strong> '+ comment +'</p>';
+
+            html+= '<table style="width: 100%">';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
+            html+= '<td><input type="text" name="edit_planned_host" id="edit_planned_host" class="text ui-widget-content" value="'+ host +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
+            html+= '<td><input type="text" name="edit_planned_service" id="edit_planned_service" class="text ui-widget-content" value="'+ service +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+            html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '</table>';
+
+            $('#plannedDialog').html(html);
+            $('#plannedDialog').dialog({
+                modal:    true,
+                width:    400,
+                position: { my: "center top", at: "center top+200"},
+                close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+                buttons: [
+                    {
+                        text:  'Save',
+                        id:    'save-planned-template',
+                        click: function() { Planned.savePlannedEdit(id) },
+                    },
+                    {
+                        text:  'Cancel',
+                        click: function() { $('#plannedDialog').dialog('close'); },
+                    }
+                ],
+            });
+        });
+        $(document).on('click', '.save-planned', function() {
+            var li = $(this).closest('li');
+
+            if (confirm('Are you sure?')) {
+                $(this).attr('disabled', 'disabled');
+
+                $.ajax({
+                    url:    'planned.php',
+                    method: 'POST',
+                    data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')) },
+                })
+                    .always(function(data) {
+                        Planned.drawPlanned(data);
+                        Search.stopReloads();
+                        Search.startReloads();
+                    });
+            }
+        });
+        $(document).on('click', '.add-from-planned-template', function() {
+            var host          = decodeURIComponent($(this).attr('data-host')),
+                service       = decodeURIComponent($(this).attr('data-service'));
+
+            Planned.plannedData = {
+                host:          host,
+                service:       service,
+                time:          parseInt($(this).attr('data-time')),
+                comment:       decodeURIComponent($(this).attr('data-comment')),
+                changeHost:    (host.indexOf('${host}') > -1)       ? 1 : 0,
+                changeService: (service.indexOf('${service}') > -1) ? 1 : 0,
+            };
+
+            if (   Planned.plannedData.time
+                && Planned.plannedData.comment
+                && !Planned.plannedData.changeHost
+                && !Planned.plannedData.changeService
+                && ((Planned.plannedData.host || Planned.plannedData.service) && !(Planned.plannedData.host == '*' && Planned.plannedData.service == '*'))
+            ) {
+                Planned.savePlanned();
+            }
+            else {
+                var title = '';
+                    title+= (Planned.plannedData.host)    ? ('<strong> Host:</strong> '+    Planned.plannedData.host)    : '';
+                    title+= (Planned.plannedData.service) ? ('<strong> Service:</strong> '+ Planned.plannedData.service) : '';
+                    title+= (Planned.plannedData.comment) ? ('<strong> Comment:</strong> '+ Planned.plannedData.comment) : '';
+                    title+= (Planned.plannedData.time)    ? ('<strong> Time:</strong> '+    Planned.plannedData.time)    : '';
+
+                var html = '<p style="font-size: 12px;">'+ title +'</p>';
+
+                html+= '<table style="width: 100%">';
+
+                if (Planned.plannedData.changeHost || !Planned.plannedData.host) {
+                    html+= '<tr>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Host</td>';
+                    html+= '<td><input type="text" name="planned_host" id="planned_host" class="text ui-widget-content" data-required="'+ Planned.plannedData.changeHost +'" style="width: 100%; font-size: 14px;"></td>';
+                    html+= '</tr>';
+                }
+
+                if (Planned.plannedData.changeService || !Planned.plannedData.service) {
+                    html+= '<tr>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
+                    html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" data-required="'+ Planned.plannedData.changeService +'" style="width: 100%; font-size: 14px;"></td>';
+                    html+= '</tr>';
+                }
+
+                if (!Planned.plannedData.time) {
+                    html+= '<tr>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
+                    html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                    html+= '</tr>';
+                }
+
+                if (!Planned.plannedData.comment) {
+                    html+= '<tr>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+                    html+= '<td><input type="text" name="planned_comment" id="planned_comment" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
+                    html+= '</tr>';
+                }
+
+                html+= '</table>';
+
+                $('#plannedDialog').html(html);
+                $('#plannedDialog').dialog({
+                    modal:    true,
+                    width:    400,
+                    position: { my: "center top", at: "center top+200"},
+                    close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+                    buttons: [
+                        {
+                            text:  'Save',
+                            id:    'save-planned-template',
+                            click: function() { Planned.savePlanned() },
+                        },
+                        {
+                            text:  'Cancel',
+                            click: function() { $('#plannedDialog').dialog('close'); },
+                        }
+                    ],
+                });
+            }
+        });
+        $(document).on('click', '.edit_planned_comment', function() {
+            var element      = $(this),
+                command      = decodeURIComponent(element.attr('data-command')),
+                host         = command.split('___')[0],
+                service      = command.split('___')[1],
+                titleHost    = (host)    ? ('<strong> Host: </strong>'    + host)    : '',
+                titleService = (service) ? ('<strong> Service: </strong>' + service) : '',
+                comment      = element.closest('ul').find('.planned.text span').text(),
+                html         = '<p style="font-size: 12px;"><strong>Edit comment for:</strong> '+ titleHost + titleService +'</p>';
+
+            html+= '<table style="width: 100%">';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
+            html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '</table>';
+
+            $('#plannedDialog').html(html);
+            $('#plannedDialog').dialog({
+                modal:    true,
+                width:    400,
+                position: { my: "center top", at: "center top+200"},
+                close:    function(event, ui) { $('#plannedDialog').dialog('close').dialog('destroy'); $('#plannedDialog').html(''); },
+                buttons: [
+                    {
+                        text:  'Save',
+                        id:    'save-planned-template',
+                        click: function() { Planned.savePlannedEditComment(command) },
+                    },
+                    {
+                        text:  'Cancel',
+                        click: function() { $('#plannedDialog').dialog('close'); },
+                    }
+                ],
+            });
+        });
+        $(document).on('keypress', '#edit_planned_comment', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#edit_planned_host', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#edit_planned_service', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#planned_host', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#planned_service', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#planned_time', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#planned_comment', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+    }
+}

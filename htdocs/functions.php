@@ -1,6 +1,8 @@
 <?php
 
 include_once 'config/config.php';
+include_once __DIR__ . '/../scripts/accessControl.php';
+include_once __DIR__ . '/../scripts/planned.php';
 
 if ($memcacheEnabled) {
 	$memcache = new Memcache;
@@ -537,170 +539,11 @@ function parseToXML($htmlStr) {
     $xmlStr = htmlspecialchars($htmlStr, ENT_QUOTES | ENT_XML1);
     return $xmlStr;
 }
-
-function removePlannedMaintenance($delete) {
-	$pattern  = returnPlannedPattern($delete);
-	$commands = explode(',', $pattern[0]);
-	$array    = json_decode(json_encode(simplexml_load_string(returnMemcacheData())),TRUE);
-	
-	if (isset($array['alert']['host'])) {
-		$array['alert'] = [$array['alert']];
-	}
-	
-	foreach ($array['alert'] as $item) {
-		$tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
-		$host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
-		$service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
-		$downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
-		$downtimeId      = explode(',', $downtimeId);
-		$text            = returnPlannedText($host, $service);
-		
-		foreach ($downtimeId as $downtime) {
-			if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
-				foreach ($commands as $command) {
-					$command = returnPlannedCommand($command, $pattern);
-					
-					if (preg_match("/$command/iu", $text)) {
-						removeSchedulePlanned($downtime);
-					}
-				}
-			}
-		}
-	}
-}
-function writePlanned($data) {
-	global $plannedUrl;
-	
-	file_put_contents($plannedUrl, json_encode($data, true));
-}
-function returnPlanned() {
-	global $plannedUrl;
-	
-	return json_decode(file_get_contents($plannedUrl), true);
-}
-function returnPlannedPattern($command) {
-	$pattern = $command;
-	$pattern = str_replace("*", ".+", $pattern);
-	$pattern = str_replace("?", ".", $pattern);
-	$pattern = str_replace("&quot;", "\"", $pattern);
-	$pattern = explode('_', $pattern);
-	
-	return $pattern;
-}
-function returnPlannedCommand($command, $pattern) {
-	$command = trim($command);
-	$command = (isset($pattern[1])) ? ($command . ' ' . $pattern[1]) : $command;
-	$command = str_replace(".+.+", ".+", $command);
-	
-	return $command;
-}
-function returnPlannedText($host, $service) {
-	return " " . $host . " " . $service . " ";
-}
-function unAckForPlanned($host, $service, $hostOrService) {
-	global $nagiosPipe;
-	
-	$f = fopen($nagiosPipe, 'w');
-	
-	if ($hostOrService == 'service') {
-		fwrite($f, "[".time()."] REMOVE_SVC_ACKNOWLEDGEMENT;{$host};{$service}\n");
-	} else if ($hostOrService == 'host') {
-		fwrite($f, "[".time()."] REMOVE_HOST_ACKNOWLEDGEMENT;{$host}\n");
-	}
-	
-	fclose($f);
-	
-	return true;
-}
-
-function schedulePlanned($host, $service, $end, $user) {
-	global $nagiosPipe;
-	
-	$f = fopen($nagiosPipe, 'w');
-	fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};planned\n");
-	fclose($f);
-	
-	return true;
-}
-function removeSchedulePlanned($downtimeId) {
-	global $nagiosPipe;
-	
-	$f = fopen($nagiosPipe, 'w');
-	fwrite($f, "[".time()."] DEL_SVC_DOWNTIME;{$downtimeId}\n");
-	fclose($f);
-}
-function findPlanned($host, $service, $user, $schedulePlanned = true) {
-    $planned = returnPlanned();
-
-    foreach ($planned as $key => $plan) {
-        $pattern  = returnPlannedPattern($plan['command']);
-        $commands = explode(',', $pattern[0]);
-
-        foreach ($commands as $command) {
-            $command = returnPlannedCommand($command, $pattern);
-            $text    = returnPlannedText($host, $service);
-
-            if (preg_match("/$command/iu", $text) && $plan['end'] > time()) {
-                if (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && $plan['list'][$host][$service] > time()) {
-                    return false;
-                } else {
-                    if ($schedulePlanned) {
-                        $results = [];
-
-                        foreach ($planned as $plannedKey => $plannedValue) {
-                            $results[$plannedKey] = $plannedValue;
-
-                            if ($key == $plannedKey) {
-                                if (!isset($plan['list'])) {
-                                    $results[$plannedKey]['list'] = [];
-                                }
-
-                                if (!isset($plan['list'][$host])) {
-                                    $results[$plannedKey]['list'][$host] = [];
-                                }
-
-                                if (!isset($plan['list'][$host][$service])) {
-                                    $results[$plannedKey]['list'][$host][$service] = '';
-                                }
-
-                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
-                            }
-                        }
-
-                        writePlanned($results);
-                        schedulePlanned($host, $service, $plan['end'], $plan['user']);
-                    }
-
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-function returnPlannedComment($host, $service) {
-    $planned = returnPlanned();
-
-    foreach ($planned as $key => $plan) {
-        $pattern = returnPlannedPattern($plan['command']);
-        $commands = explode(',', $pattern[0]);
-
-        foreach ($commands as $command) {
-            $command = returnPlannedCommand($command, $pattern);
-            $text = returnPlannedText($host, $service);
-
-            if (preg_match("/$command/iu", $text) && $plan['end'] > time() && isset($plan['comment'])) {
-                return [$plan['command'], $plan['comment']];
-            }
-        }
-    }
-
-    return '';
-}
 function implode_r($g, $p) {
     return is_array($p) ?
             implode($g, array_map(__FUNCTION__, array_fill(0, count($p), $g), $p)) : 
             $p;
 }
-$planned = returnPlanned();
+
+$plannedData = new planned;
+$planned = $plannedData->returnPlanned();
