@@ -687,30 +687,32 @@ Search.startReloads = function() {
     }
 }
 Search.getContent = function() {
-	if (Search.backgroundReload && !Search.startedGetData) {
-		Search.startedGetData = true;
-		$.ajax({
-			type:    'GET',
-			url:     'update.php',
-			data:    {'hash' : Search.updateHash},
-			success: function(data){
-				Search.resetAgo();
-				Search.stopReloads();
-				Search.updateHash = data;
-				Search.allDataTable.ajax.reload();
-				Search.startReloads();
-			},
-			error: function() {
-				if (!Search.updateHash) {
-					location.reload();
-				} else {
-					setTimeout(function () {
-						Search.startReloads();
-					 }, 2000);
-				}
-			},
-		});
-	}
+    if (Search.backgroundReload && !Search.startedGetData) {
+        Search.startedGetData = true;
+        $.ajax({
+            type:    'GET',
+            url:     'update.php',
+            data:    {'hash' : Search.updateHash},
+            success: function(data){
+                Search.resetAgo();
+                Search.stopReloads();
+                Search.updateHash = data;
+                Search.allDataTable.ajax.reload();
+                setTimeout(function () {
+                    Search.startReloads();
+                }, ((Search.tableLength > 100) ? 10000 : 3000));
+            },
+            error: function() {
+                if (!Search.updateHash) {
+                    location.reload();
+                } else {
+                    setTimeout(function () {
+                        Search.startReloads();
+                    }, 3000);
+                }
+            },
+        });
+    }
 }
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {

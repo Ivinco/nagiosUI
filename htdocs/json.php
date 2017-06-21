@@ -81,16 +81,15 @@ foreach ($array['alert'] as $item) {
 
     $infoRecord = returnInfoRecord($service, $statusInfo);
 
-    if (!$xmlFile && !$infoRecord['info'] && $acked && $tempCommen == 'temp' && $plannedData->findPlanned($host, $service, $user, false)) {
-        $plannedData->unAckForPlanned($host, $service, $hostOrService);
-        $acked = 0;
-        $tempCommen = '';
+    if (!$xmlFile && !$infoRecord['info'] && $plannedRecord = $plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $tempSchedCommen)) {
+        $acked           = $plannedRecord['acked'];
+        $tempCommen      = $plannedRecord['tempCommen'];
+        $sched           = $plannedRecord['sched'];
+        $plannedAuthor   = $plannedRecord['plannedAuthor'];
+        $tempSchedCommen = $plannedRecord['tempSchedCommen'];
     }
 
-    if (!$xmlFile && !$infoRecord['info'] && !$acked && !$sched && $plannedData->findPlanned($host, $service, $user)) {
-        $sched = 1;
-        $plannedAuthor = md5(strtolower(trim($usersArray[$user])));
-        $tempSchedCommen = 'planned';
+    if ($tempSchedCommen == 'planned') {
         $plannedComment = $plannedData->returnPlannedComment($host, $service);
     }
 

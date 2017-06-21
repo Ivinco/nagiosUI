@@ -8,16 +8,19 @@ include_once 'functions.php';
 $planned = new planned;
 
 if (!empty($_POST)) {
-    $planned->host    = str_replace("\"", "&quot;", trim($_POST['host']));
-    $planned->service = str_replace("\"", "&quot;", trim($_POST['service']));
-    $planned->comment = trim($_POST['comment']);
-    $planned->time    = intval($_POST['time']);
-    $planned->line    = trim($_POST['line']);
-    $planned->user    = trim($_POST['user']);
+    $planned->host    = (isset($_POST['host'])) ? str_replace("\"", "&quot;", trim($_POST['host'])) : '';
+    $planned->service = (isset($_POST['service'])) ? str_replace("\"", "&quot;", trim($_POST['service'])) : '';
+    $planned->comment = (isset($_POST['comment'])) ? trim($_POST['comment']) : '';
+    $planned->time    = (isset($_POST['time'])) ? intval($_POST['time']) : 0;
+    $planned->line    = (isset($_POST['line'])) ? trim($_POST['line']) : '';
+    $planned->user    = (isset($_POST['user'])) ? trim($_POST['user']) : '';
 
-    if (trim($_POST['text']) == 'delete') {
+    $action = (isset($_POST['text'])) ? trim($_POST['text']) : '';
+    $old    = (isset($_POST['old'])) ? trim($_POST['old']) : '';
+
+    if ($action == 'delete') {
         $planned->removeData();
-    } else if (trim($_POST['text']) == 'comment') {
+    } else if ($action == 'comment') {
         $planned->changeComment();
     } else {
         if ($planned->verifyPostData()) {
@@ -28,7 +31,7 @@ if (!empty($_POST)) {
         if ($planned->line == 'new') {
             $planned->addData();
         } else if ($planned->line == 'edit') {
-            $planned->editData(trim($_POST['old']));
+            $planned->editData($old);
         }
     }
 }

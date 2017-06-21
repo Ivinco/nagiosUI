@@ -104,7 +104,38 @@ class planned
         $this->removePlannedMaintenance($delete);
         $this->writePlanned($results);
     }
-    public function findPlanned($host, $service, $user, $schedulePlanned = true) {
+    public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $tempSchedCommen) {
+        if ($tempSchedCommen != 'planned') {
+            if ($planned = $this->findPlannedRecord($host, $service)) {
+                $return = [
+                    'acked'           => $acked,
+                    'tempCommen'      => $tempCommen,
+                    'sched'           => 1,
+                    'plannedAuthor'   => '',
+                    'tempSchedCommen' => 'planned',
+                ];
+
+                if ($acked && $tempCommen == 'temp') {
+                    $this->unAckForPlanned($host, $service, $hostOrService);
+                    $return['acked']      = 0;
+                    $return['tempCommen'] = '';
+                }
+
+                if ($planned != 'plan') {
+                    $return['plannedAuthor'] = md5(strtolower(trim($planned)));
+                }
+
+                if ($planned == 'plan' && $author = $this->setPlanned($host, $service)) {
+                    $return['plannedAuthor'] = md5(strtolower(trim($author)));
+                }
+
+                return $return;
+            }
+        }
+
+        return [];
+    }
+    public function findPlannedRecord($host, $service) {
         $planned = $this->returnPlanned();
 
         foreach ($planned as $key => $plan) {
@@ -116,44 +147,62 @@ class planned
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
                     if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time()) {
-                        if (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && $plan['list'][$host][$service] > time()) {
-                            return false;
-                        } else {
-                            if ($schedulePlanned) {
-                                $results = [];
-
-                                foreach ($planned as $plannedKey => $plannedValue) {
-                                    $results[$plannedKey] = $plannedValue;
-
-                                    if ($key == $plannedKey) {
-                                        if (!isset($plan['list'])) {
-                                            $results[$plannedKey]['list'] = [];
-                                        }
-
-                                        if (!isset($plan['list'][$host])) {
-                                            $results[$plannedKey]['list'][$host] = [];
-                                        }
-
-                                        if (!isset($plan['list'][$host][$service])) {
-                                            $results[$plannedKey]['list'][$host][$service] = '';
-                                        }
-
-                                        $results[$plannedKey]['list'][$host][$service] = time() + 10;
-                                    }
-                                }
-
-                                $this->writePlanned($results);
-                                $this->schedulePlanned($host, $service, $plan['end'], $plan['user']);
-                            }
-
-                            return true;
+                        if (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service])) {
+                            return $plan['user'];
                         }
+
+                        return 'plan';
                     }
                 }
             }
         }
 
-        return false;
+        return '';
+    }
+    private function setPlanned($host, $service) {
+        $planned = $this->returnPlanned();
+
+        foreach ($planned as $key => $plan) {
+            $hostCommand     = $this->returnPlannedPattern($plan['host']);
+            $serviceCommand  = $this->returnPlannedPattern($plan['service']);
+            $hostCommands    = explode(',', $hostCommand);
+            $serviceCommands = explode(',', $serviceCommand);
+
+            foreach ($hostCommands as $commandHost) {
+                foreach ($serviceCommands as $commandService) {
+                    if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time()) {
+                        $results = [];
+
+                        foreach ($planned as $plannedKey => $plannedValue) {
+                            $results[$plannedKey] = $plannedValue;
+
+                            if ($key == $plannedKey) {
+                                if (!isset($plan['list'])) {
+                                    $results[$plannedKey]['list'] = [];
+                                }
+
+                                if (!isset($plan['list'][$host])) {
+                                    $results[$plannedKey]['list'][$host] = [];
+                                }
+
+                                if (!isset($plan['list'][$host][$service])) {
+                                    $results[$plannedKey]['list'][$host][$service] = '';
+                                }
+
+                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
+                            }
+                        }
+
+                        $this->writePlanned($results);
+                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user']);
+
+                        return $plan['user'];
+                    }
+                }
+            }
+        }
+
+        return '';
     }
     private function returnPlannedPattern($pattern) {
         $pattern = trim($pattern);
@@ -220,11 +269,12 @@ class planned
         $this->writePlanned($results);
     }
     public function removePlannedMaintenance($delete) {
-        $hostCommand     = $this->returnPlannedPattern($delete['host']);
-        $serviceCommand  = $this->returnPlannedPattern($delete['service']);
+        $delete          = explode('___', $delete);
+        $hostCommand     = $this->returnPlannedPattern($delete[0]);
+        $serviceCommand  = $this->returnPlannedPattern($delete[1]);
         $hostCommands    = explode(',', $hostCommand);
         $serviceCommands = explode(',', $serviceCommand);
-        $array           = json_decode(json_encode(simplexml_load_string(returnMemcacheData())),TRUE);
+        $array           = json_decode(json_encode(simplexml_load_string(returnMemcacheData(false))),TRUE);
 
         if (isset($array['alert']['host'])) {
             $array['alert'] = [$array['alert']];
