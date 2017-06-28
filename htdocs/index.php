@@ -138,12 +138,12 @@
 		</div>
 		
 		<div class="holder">
-			<strong>Planned mainetance list:</strong>
+			<strong>Scheduled downtime list:</strong>
 			<ul id="planned-list"></ul>
 			<br /><br />
 		</div>
 		<div class="holder">
-			<strong>Planned mainetance templates list:</strong>
+			<strong>Use a template:</strong>
 			<ul id="planned-templates-list"></ul>
 		</div>
 	</div>
