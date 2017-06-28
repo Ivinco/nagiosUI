@@ -90,7 +90,7 @@
 			<input type="radio" id="planned" name="radio"/>
 			<label for="planned" id="planned-label">
 				<span class="top-planned-icon"></span>
-				<span class="small-hide">&#160;Planned maintenance</span>
+				<span class="small-hide">&#160;Schedule a downtime</span>
 			</label>
         </div>
     </form>
@@ -116,16 +116,18 @@
 			<input type="text" name="maintenance-host" id="maintenance-host" /><br />
             <label for="maintenance-service">Service</label><br />
             <input type="text" name="maintenance-service" id="maintenance-service" /><br />
-			<label for="maintenance-time">Maintenance Time <small>(minutes)</small></label><br />
+			<label for="maintenance-time">Downtime <small>(minutes)</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
             <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
+            <input type="checkbox" name="maintenance-normal" id="maintenance-normal" />
+            <label for="maintenance-normal">Visible in Normal</label><br />
 			<button id="planned-save">Save</button>
 			
 			<p>
 				<small>
 					<strong>?</strong> wildcard replaces any 1 character<br />
-					<strong>*</strong> wildcard replaces any # of characters from 0<br />
+					<strong>*</strong> wildcard replaces any # of characters<br />
 					<strong>examples:</strong><br />
 						forumdb01-?<br />
 						*mysql*<br />

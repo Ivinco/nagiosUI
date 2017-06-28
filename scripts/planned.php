@@ -9,18 +9,25 @@ class planned
     public $line;
     public $user;
     public $file;
+    public $normal;
     public $templates;
     public $nagiosPipe;
+    public $usersArray;
+    public $nagiosCommentUrl;
 
     function __construct()
     {
         global $plannedUrl;
         global $plannedTemplates;
         global $nagiosPipe;
+        global $usersArray;
+        global $nagiosCommentUrl;
 
-        $this->file       = $plannedUrl;
-        $this->templates  = $plannedTemplates;
-        $this->nagiosPipe = $nagiosPipe;
+        $this->file             = $plannedUrl;
+        $this->templates        = $plannedTemplates;
+        $this->nagiosPipe       = $nagiosPipe;
+        $this->usersArray       = $usersArray;
+        $this->nagiosCommentUrl = $nagiosCommentUrl;
     }
 
     public function verifyPostData() {
@@ -44,6 +51,7 @@ class planned
                 'end'     => $end,
                 'date'    => date('Y-m-d H:i:s', $end),
                 'user'    => $this->user,
+                'normal'  => $this->normal,
             ];
         }
 
@@ -79,6 +87,7 @@ class planned
                 $record['host']    = $this->host;
                 $record['service'] = $this->service;
                 $record['comment'] = $this->comment;
+                $record['normal']  = $this->normal;
             }
 
             $results[] = $record;
@@ -104,36 +113,44 @@ class planned
         $this->removePlannedMaintenance($delete);
         $this->writePlanned($results);
     }
-    public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $tempSchedCommen) {
-        if ($tempSchedCommen != 'planned') {
-            if ($planned = $this->findPlannedRecord($host, $service)) {
-                $return = [
-                    'acked'           => $acked,
-                    'tempCommen'      => $tempCommen,
-                    'sched'           => 1,
-                    'plannedAuthor'   => '',
-                    'tempSchedCommen' => 'planned',
-                ];
+    public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment) {
+        $return = [];
 
-                if ($acked && $tempCommen == 'temp') {
-                    $this->unAckForPlanned($host, $service, $hostOrService);
-                    $return['acked']      = 0;
-                    $return['tempCommen'] = '';
-                }
+        if ($planned = $this->findPlannedRecord($host, $service)) {
+            if ($planned['type'] == 'new' && !$sched) {
+                $this->setPlanned($host, $service);
+            }
 
-                if ($planned != 'plan') {
-                    $return['plannedAuthor'] = md5(strtolower(trim($planned)));
-                }
+            $return = [
+                'acked'      => $acked,
+                'tempCommen' => $tempCommen,
+                'author'     => $planned['author'],
+                'avatar'     => md5(strtolower(trim($planned['email']))),
+                'commentRaw' => ($sched) ? strip_tags(explode("'", $schComment)[1]) : $planned['comment'],
+                'comment'    => ($sched) ? $schComment : $this->formatScheduledComment($planned['comment'], $planned['author'], $planned['date']),
+                'date'       => $planned['date'],
+                'normal'     => $planned['normal'],
+                'command'    => $planned['command'],
+                'end'        => $planned['end'],
+                'scheduled'  => ($sched) ? true : false,
+                'sched'      => (!$sched) ? 1 : $sched,
+            ];
 
-                if ($planned == 'plan' && $author = $this->setPlanned($host, $service)) {
-                    $return['plannedAuthor'] = md5(strtolower(trim($author)));
-                }
-
-                return $return;
+            if ($acked && $tempCommen == 'temp') {
+                $this->unAckForPlanned($host, $service, $hostOrService);
+                $return['acked']      = 0;
+                $return['tempCommen'] = '';
             }
         }
 
-        return [];
+        return $return;
+    }
+    public function formatScheduledComment($comment, $author, $time) {
+        $return  = preg_replace('/(#(\d+))/', $this->nagiosCommentUrl, $comment);
+        $return  = "'{$return}' by {$author}";
+        $return .= ($time) ? '<br />added: '. date('M j H:i', intval($time)) : '';
+
+        return $return;
     }
     public function findPlannedRecord($host, $service) {
         $planned = $this->returnPlanned();
@@ -147,11 +164,18 @@ class planned
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
                     if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time()) {
-                        if (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service])) {
-                            return $plan['user'];
-                        }
+                        $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service])) ? 'old' : 'new';
 
-                        return 'plan';
+                        return [
+                            'type'    => $type,
+                            'author'  => $plan['user'],
+                            'email'   => $this->usersArray[$plan['user']],
+                            'comment' => $plan['comment'],
+                            'date'    => ($type == 'old') ? $plan['list'][$host][$service] : time(),
+                            'normal'  => $plan['normal'],
+                            'command' => $plan['host'] . '___' . $plan['service'],
+                            'end'     => $plan['end'],
+                        ];
                     }
                 }
             }
@@ -194,7 +218,7 @@ class planned
                         }
 
                         $this->writePlanned($results);
-                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user']);
+                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user'], $plan['comment']);
 
                         return $plan['user'];
                     }
@@ -214,9 +238,9 @@ class planned
 
         return $pattern;
     }
-    private function schedulePlanned($host, $service, $end, $user) {
+    private function schedulePlanned($host, $service, $end, $user, $comment) {
         $f = fopen($this->nagiosPipe, 'w');
-        fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};planned\n");
+        fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};{$comment}\n");
         fclose($f);
 
         return true;

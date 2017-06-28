@@ -14,6 +14,7 @@ if (!empty($_POST)) {
     $planned->time    = (isset($_POST['time'])) ? intval($_POST['time']) : 0;
     $planned->line    = (isset($_POST['line'])) ? trim($_POST['line']) : '';
     $planned->user    = (isset($_POST['user'])) ? trim($_POST['user']) : '';
+    $planned->normal  = (isset($_POST['normal']) && $_POST['normal']) ? 1 : 0;
 
     $action = (isset($_POST['text'])) ? trim($_POST['text']) : '';
     $old    = (isset($_POST['old'])) ? trim($_POST['old']) : '';

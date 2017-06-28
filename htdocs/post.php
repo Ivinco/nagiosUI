@@ -84,6 +84,9 @@ foreach ($_REQUEST['data'] as $post) {
 		}
 	}
 	else if ($type == 'recheckIt') {
+	    if (!isset($post['start_time']) || !$post['start_time']) {
+            $post['start_time'] = date('m-d-Y H:i:s');
+        }
 		$dateTime = explode(' ', $post['start_time']);
 		$date     = explode('-', $dateTime[0]);
 		$start    = strtotime($date[2] .'-'. $date[0] .'-'. $date[1] .' '. $dateTime[1]);

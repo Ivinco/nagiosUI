@@ -96,7 +96,7 @@ Search = {}
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
 							ack   = (!data.info) ? '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' : '',
-							sched = (!data.info) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
+							sched = (!data.info && data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
 						if (data.pending) {
                             return '' +
@@ -172,15 +172,16 @@ Search = {}
                         return 'Scheduled: ' + moment.unix(data.next).format('YYYY-MM-DD hh:mm:ss');
                     }
 
-                    if (data.planned) {
+                    if (data.planned && Search.currentTab == 'normal') {
                         var hide = (data.comment) ? '' : 'display:none;',
-                            comment = '<p style="margin:0;'+ hide +'">Comment: <span>' + data.comment + '</span></p>';
+                            comment = '<p style="margin:0;'+ hide +'">Comment: <span>' + data.comment + '</span></p>',
+                            commentEdit = (data.schedPlanned) ? ('<li class="planned"><em class="edit_planned_comment" data-command="'+ encodeURIComponent(data.command) +'" alt="Edit comment" title="Edit comment"></em></li>') : '';
 
                         return '' +
                             '<div class="likeTable">' +
                             '	<ul>' +
                             '		<li class="planned text">' + comment + data.name + '</li>' +
-                            '		<li class="planned"><em class="edit_planned_comment" data-command="'+ encodeURIComponent(data.command) +'" alt="Edit comment" title="Edit comment"></em></li>' +
+                            '		' + commentEdit +
                             '	</ul>' +
                             '</div>'
                             ;
@@ -193,13 +194,14 @@ Search = {}
 				data:      'comment',
 				className: 'comment',
 				render: function ( data, type, full, meta ) {
+					var showEdit = (data.schedPlanned) ? '<li class="sched"><em class="edit_scheduleIt" alt="Edit comment" title="Edit comment"></em></li>' : '';
 					return  '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
 							'		<li class="ack text">' + data.ack + '</li>' +
 							'		<li class="ack"><em class="edit_acknowledgeIt" alt="Edit comment" title="Edit comment"></em></li>' +
 							'		<li class="sched text" data-start="'+ data.start +'" data-end="'+ data.end +'" data-duration="'+ data.duration +'">' + data.sched + '</li>' +
-							'		<li class="sched"><em class="edit_scheduleIt" alt="Edit comment" title="Edit comment"></em></li>' +
+									showEdit +
 							'	</ul>' +
 							'</div>'
 					;
@@ -3268,13 +3270,15 @@ Planned = {
             $.each(data.file, function( index, value ) {
                 var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
                     service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
-                    date    = ' till: '+ value['date'],
-                    comment = ' comment: '+ value['comment'],
+                    date    = ' <strong>till:</strong> '+ value['date'],
+                    comment = ' <strong>comment:</strong> '+ value['comment'],
+                    normal  = (parseInt(value['normal'])) ? ' <strong>show in Normal</strong>' : '',
                     editBtn = ' <button ' +
                         '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service']) +'" ' +
                         '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
                         '			data-service="'+ encodeURIComponent(value['service']) +'" ' +
                         '			data-comment="'+ encodeURIComponent(value['comment']) +'" ' +
+                        '			data-normal="'+ encodeURIComponent(parseInt(value['normal'])) +'" ' +
                         '			class="edit-planned"' +
                         '		>Edit</button>',
                     button  = ' <button ' +
@@ -3282,7 +3286,7 @@ Planned = {
                         '			class="save-planned"' +
                         '		>Delete</button>';
 
-                $('#planned-list').append('<li><small>'+ host + service +' ('+ date + comment +')</small>'+ editBtn + button +'</li>');
+                $('#planned-list').append('<li><small>'+ host + service +' ('+ date + comment + normal +')</small>'+ editBtn + button +'</li>');
             });
         }
 
@@ -3291,9 +3295,10 @@ Planned = {
                 var host    = (value['host'] && value['host'] != '*')                     ? ('<strong>Host: </strong>'     + value['host'])    : '',
                     service = (value['service'] && value['service'] != '*')               ? ('<strong> Service: </strong>' + value['service']) : '',
                     time    = (parseInt(value['time']) && parseInt(value['time']) > 0)    ? ('<strong> Time: </strong>'    + value['time'])    : '',
-                    comment = (value['comment'])                                          ? ('<strong> Comment: </strong>' + value['comment']) : '';
+                    comment = (value['comment'])                                          ? ('<strong> Comment: </strong>' + value['comment']) : '',
+                    normal  = (parseInt(value['normal']))                                 ? ('<strong> Show in Normal</strong>')               : '';
 
-                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service +')'+ time + comment +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" class="add-from-planned-template" style="margin-top: 0;">Add</button></li>');
+                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service +')'+ time + comment + normal +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" data-normal="'+ encodeURIComponent(value['normal']) +'" class="add-from-planned-template" style="margin-top: 0;">Use</button></li>');
             });
         }
     },
@@ -3367,7 +3372,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php',
                 method: 'POST',
-                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text() },
+                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3383,9 +3388,10 @@ Planned = {
         var host    = $('#edit_planned_host').val(),
             service = $('#edit_planned_service').val(),
             comment = $('#edit_planned_comment').val(),
+            normal  = +$('#edit_planned_normal').prop('checked'),
             user    = $('#userName').text();
 
-        if (!host || !service || !comment) {
+        if ((!host && !service) || !comment) {
             $('#edit_planned_host, #edit_planned_service, #edit_planned_comment').css('border-color', '#aaa');
 
             if (!host) {
@@ -3404,7 +3410,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php',
                 method: 'POST',
-                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, comment: comment },
+                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, comment: comment, normal: normal },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3453,6 +3459,7 @@ Planned = {
                 return false;
             }
 
+            Planned.getPlanned();
             localStorage.setItem('currentTabNew', $(this).attr('id'));
             Search.currentTab = localStorage.getItem('currentTabNew');
             Search.stopReloads();
@@ -3470,16 +3477,18 @@ Planned = {
                 service = $('#maintenance-service').val(),
                 time    = parseInt($('#maintenance-time').val()),
                 comment = $('#maintenance-comment').val(),
-                user    = $('#userName').text();
+                user    = $('#userName').text(),
+                normal  = +$('#maintenance-normal').prop('checked');
 
             if ((host || service) && comment && time > 0) {
                 $.ajax({
                     url: 'planned.php',
                     method: 'POST',
-                    data: {host: host, service: service, comment: comment, time: time, line: 'new', user: user},
+                    data: {host: host, service: service, comment: comment, time: time, line: 'new', user: user, normal: normal },
                 })
                     .always(function (data) {
                         $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').val('');
+                        $('#maintenance-normal').prop('checked', false)
                         Planned.drawPlanned(data);
                         Search.stopReloads();
                         Search.startReloads();
@@ -3505,6 +3514,8 @@ Planned = {
                 service = decodeURIComponent(values.attr('data-service')),
                 id      = decodeURIComponent(values.attr('data-id')),
                 comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
+                normal  = parseInt(decodeURIComponent(values.attr('data-normal'))),
+                checked = (normal) ? ' checked="checked"' : '',
                 html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Comment:</strong> '+ comment +'</p>';
 
             html+= '<table style="width: 100%">';
@@ -3519,6 +3530,10 @@ Planned = {
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
             html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Visible in Normal</td>';
+            html+= '<td><input type="checkbox" name="edit_planned_normal" id="edit_planned_normal" class="text ui-widget-content" '+ checked +'></td>';
             html+= '</tr>';
             html+= '</table>';
 
@@ -3570,6 +3585,7 @@ Planned = {
                 comment:       decodeURIComponent($(this).attr('data-comment')),
                 changeHost:    (host.indexOf('${host}') > -1)       ? 1 : 0,
                 changeService: (service.indexOf('${service}') > -1) ? 1 : 0,
+                normal:        parseInt($(this).attr('data-normal')),
             };
 
             if (   Planned.plannedData.time

@@ -74,6 +74,9 @@ foreach ($array['alert'] as $item) {
     $nextCheck       = intval($nextCheck);
     $hostOrService   = $item['host_or_service'];
     $plannedComment  = ['', ''];
+    $isPlanned       = false;
+    $showInNormal    = false;
+    $schedPlanned    = true;
 
     if (!$ac->verifyUser($service, $user)) {
         continue;
@@ -81,26 +84,23 @@ foreach ($array['alert'] as $item) {
 
     $infoRecord = returnInfoRecord($service, $statusInfo);
 
-    if (!$xmlFile && !$infoRecord['info'] && $plannedRecord = $plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $tempSchedCommen)) {
-        $acked           = $plannedRecord['acked'];
-        $tempCommen      = $plannedRecord['tempCommen'];
-        $sched           = $plannedRecord['sched'];
-        $plannedAuthor   = $plannedRecord['plannedAuthor'];
-        $tempSchedCommen = $plannedRecord['tempSchedCommen'];
-    }
-
-    if ($tempSchedCommen == 'planned') {
-        $plannedComment = $plannedData->returnPlannedComment($host, $service);
-    }
-
-    if ($sched && $tempSchedCommen == 'planned' && $state == 'OK') {
-        $tempSchedCommen = $tempSchedCommen . '_';
+    if (!$xmlFile && !$infoRecord['info'] && $plannedRecord = $plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment)) {
+        $sched          = $plannedRecord['sched'];
+        $schComment     = $plannedRecord['comment'];
+        $acked          = $plannedRecord['acked'];
+        $tempCommen     = $plannedRecord['tempCommen'];
+        $plannedAuthor  = $plannedRecord['avatar'];
+        $isPlanned      = true;
+        $schedPlanned   = $plannedRecord['scheduled'];
+        $showInNormal   = $plannedRecord['normal'];
+        $plannedComment = [$plannedRecord['command'], $plannedRecord['commentRaw']];
+        $schedEnd       = $plannedRecord['end'];
     }
 
     $returnType = '';
-    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($sched && $tempSchedCommen == 'planned') || $infoRecord['info']) ? '__normal__' : '';
+    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || $infoRecord['info'] || $showInNormal) ? '__normal__' : '';
     $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord['info']) ? '__acked__' : '';
-    $returnType.= ($sched && $tempSchedCommen != 'planned' && !$infoRecord['info']) ? '__sched__' : '';
+    $returnType.= ($sched && !$infoRecord['info']) ? '__sched__' : '';
 
     $statusName = $state;
 
@@ -128,16 +128,17 @@ foreach ($array['alert'] as $item) {
             'name'  => $service,
             'url'   => $serviceUrl,
             'unAck' => ($acked && $tempCommen != 'temp') ? true : false,
-            'down'  => ($sched && $tempSchedCommen != 'planned') ? true : false,
+            'down'  => ($sched && $schedPlanned) ? true : false,
             'notes' => $notesUrl,
-            'sched' => ($sched && $tempSchedCommen == 'planned') ? true : false,
-            'pAuth' => ($sched && $tempSchedCommen == 'planned') ? $plannedAuthor : false,
+            'sched' => ($isPlanned) ? true : false,
+            'pAuth' => ($isPlanned) ? $plannedAuthor : false,
             'qAck'  => ($tempCommen != 'temp') ? true : false,
             'qUAck' => ($tempCommen == 'temp') ? $quickAckAu : false,
             'qAuth' => ($tempCommen == 'temp') ? $tempAuthor : false,
             'downId' => $downtimeId,
             'info'   => $infoRecord['info'],
-            'pending' => $pending
+            'pending' => $pending,
+            'schedPlanned' => $schedPlanned,
         ),
         'status'    => array(
             'name'  => $statusName,
@@ -159,14 +160,16 @@ foreach ($array['alert'] as $item) {
             'start' => $schedStart,
             'end'   => $schedEnd,
             'duration' => $schedDuration,
+            'schedPlanned' => $schedPlanned,
             ),
         'info'      => array(
             'name'  => $statusInfo,
             'next'  => $nextCheck,
             'pending' => $pending,
-            'planned' => ($sched && $tempSchedCommen == 'planned') ? true : false,
+            'planned' => ($isPlanned) ? true : false,
             'comment' => $plannedComment[1],
             'command' => $plannedComment[0],
+            'schedPlanned' => $schedPlanned,
         ),
         'type'      => $returnType,
         'state'     => ($pending) ? 'PENDING' : $state,

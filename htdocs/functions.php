@@ -287,13 +287,9 @@ if ($icinga) {
 							$tmpAckTemp[]     = $tmpComments['ackComment'];
 						}
 						if ($tmpComments['schedComment']) {
-							if ($tmpComments['schedComment'] == 'planned') {
-								$tmpValue = 'planned';
-							} else {
-								$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
-								$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
-								$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
-							}
+							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
+							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
+							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
 							
 							$tmpSchedComments[] = $tmpValue;
 							$tmpSchedAuthor[]   = $tmpComments['schedAuthor'];

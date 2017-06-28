@@ -78,6 +78,7 @@ $plannedUrl = '/full_path/planned.json';
           - if value 0 then will be prompt before activation to add Maintenance Time (minutes)
       - 'comment': is Comment:
           - if value '' then will be prompt before activation to add Comment
+      - 'normal': show planned in Normal tab
 */
 
 $plannedTemplates = [
@@ -86,14 +87,16 @@ $plannedTemplates = [
         'host'    => '${host}',
         'service' => '',
         'time'    => 60,
-        'comment' => ''
+        'comment' => '',
+        'normal'  => 0,
     ],
     [
         'name'    => 'Log errors',
         'host'    => 'log*',
         'service' => '*error*',
         'time'    => 0,
-        'comment' => ''
+        'comment' => '',
+        'normal'  => 1,
     ],
 ];
 
