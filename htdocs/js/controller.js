@@ -680,7 +680,7 @@ Search.stopReloads = function(stop) {
 Search.startReloads = function() {
 	if (localStorage.getItem('canceledReloads') == '0') {
         if (Search.currentReload == 'auto') {
-			reloadTimer             = setTimeout(function () { Search.getContent(); }, 0);
+			reloadTimer             = setTimeout(function () { Search.getContent(); }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
 			Search.backgroundReload = true;
 		} else {
 			reloadTimer        = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
@@ -702,7 +702,7 @@ Search.getContent = function() {
                 Search.allDataTable.ajax.reload();
                 setTimeout(function () {
                     Search.startReloads();
-                }, ((Search.tableLength > 100) ? 10000 : 3000));
+                }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
             },
             error: function() {
                 if (!Search.updateHash) {
