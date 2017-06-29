@@ -2,13 +2,13 @@
 
 class accessControl
 {
-    private static $accessControl;
-    private static $accessControlSuperUsers;
-    private static $accessControlGroupUrl;
-    private static $accessControlGroup;
-    private static $accessControlServiceUrl;
-    private static $accessControlService;
-    private static $memcache;
+    private $accessControl;
+    private $accessControlSuperUsers;
+    private $accessControlGroupUrl;
+    private $accessControlGroup;
+    private $accessControlServiceUrl;
+    private $accessControlService;
+    private $memcache;
 
     function __construct()
     {
