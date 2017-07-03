@@ -387,7 +387,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 				});
 			}
 		});
-	
+
 		var firstCount = 0;
 		$(returnData).each(function() {
 			var rowData = $(this)[0];
@@ -399,6 +399,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 			if (returnOrdered[rowData.groupBy].statusOrder < rowData.statusOrder) {
 				returnOrdered[rowData.groupBy].statusOrder = rowData.statusOrder;
 				returnOrdered[rowData.groupBy].status      = rowData.status;
+				returnOrdered[rowData.groupBy].state       = rowData.state;
 			}
 	
 			if (returnOrdered[rowData.groupBy].durationOrder < rowData.durationOrder) {
@@ -423,7 +424,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 			if (firstCount && returnOrdered[rowData.groupBy].comment != rowData.comment) {
 				returnOrdered[rowData.groupBy].comment = '';
 			}
-			
+
 			firstCount++;
 		});
 		
