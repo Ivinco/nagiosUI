@@ -137,7 +137,13 @@ if ($icinga) {
 							'.*?author=(?P<author>.*?)\n'.
 							'.*?comment_data=(?P<comment>.*?)\n'.
 						  '.*?}/is';
-						  
+	$pregHostComment = '/hostcomment {'.
+							'.*?host_name=(?P<host>.*?)\n'.
+							'.*?entry_type=(?P<entry_type>.*?)\n'.
+							'.*?entry_time=(?P<entry_time>.*?)\n'.
+							'.*?author=(?P<author>.*?)\n'.
+							'.*?comment_data=(?P<comment>.*?)\n'.
+						  '.*?}/is';
 
 	if ($xmlFile) {
 		$files = glob($xmlArchive.$_GET['file']."*.log");
@@ -164,7 +170,8 @@ if ($icinga) {
 								returnComments($pregServiceComment, $statusFile, false),
 								returnComments($pregDowntimeComment, $statusFile, false),
 								returnComments($pregHostDownComment, $statusFile, true),
-								returnComments($pregHostSchedComment, $statusFile, true)
+								returnComments($pregHostSchedComment, $statusFile, true),
+								returnComments($pregHostComment, $statusFile, true),
 							]);
 	$alertsPercentile   = @unserialize(file_get_contents($alertsPercentile_global));
 	$durationsFromFile  = @unserialize(file_get_contents($durationsFromFile_global));
@@ -437,7 +444,7 @@ function mergeComments($arrays) {
 }
 function returnComments($comments, $statusFile, $isHost) {
 	$return = [];
-	
+
 	if (preg_match_all($comments, $statusFile, $matches)) {
 		foreach ($matches['host'] as $k=>$host) {
 			if (isset($matches['downtime_id'])) {
