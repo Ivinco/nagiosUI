@@ -163,7 +163,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time()) {
+                    if (preg_match("/$commandHost/iu", " " . $host . " ") && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
                         $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service])) ? 'old' : 'new';
 
                         return [
@@ -194,7 +194,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time()) {
+                    if (preg_match("/$commandHost/iu", " " . $host . " ") && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
                         $results = [];
 
                         foreach ($planned as $plannedKey => $plannedValue) {
@@ -315,7 +315,7 @@ class planned
                 if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
                     foreach ($hostCommands as $commandHost) {
                         foreach ($serviceCommands as $commandService) {
-                            if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", $service)) {
+                            if (preg_match("/$commandHost/iu", " " . $host . " ") && preg_match("/$commandService/iu", " " . $service . " ")) {
                                 $this->removeSchedulePlanned($downtime);
                             }
                         }
