@@ -1307,19 +1307,19 @@ Search.prepareSendData = function () {
 		for (var i = 0; i < requestData.length; i++) {
             var downId = requestData[i].downId,
 				isHost = requestData[i].isHost;
-			
+
 			if (downId) {
                 downId = downId.split(',');
 				
-				for (var i = 0; i < downId.length; i++) {
-					if (scheduledIds.indexOf(downId[i]) === -1) {
-						schedulesRequest.push({ 'down_id': downId[i], 'isHost': isHost });
-						scheduledIds.push(downId[i]);
+				for (var y = 0; y < downId.length; y++) {
+					if (scheduledIds.indexOf(downId[y]) === -1) {
+						schedulesRequest.push({ 'down_id': downId[y], 'isHost': isHost });
+						scheduledIds.push(downId[y]);
 					}
 				}
             }
         }
-		
+
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
@@ -1349,7 +1349,7 @@ Search.prepareSendData = function () {
 				alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
 				Search.tempShowButtons();
 			});
-		});	
+		});
 	}
 	else if (whatWeChangeObject.type == 'acknowledgeIt' || (whatWeChangeObject.type == 'scheduleIt' && !Search.editComment)) {
 		$.ajax({
@@ -1924,8 +1924,8 @@ Search.SheduleServices = function() {
 	if ($comment.val() == '' || typeof($comment.val()) != 'string') {
 		$comment.addClass('ui-state-error');		
 	}
-	
-	if ($form.find('.ui-state-error').length > 0) {			
+
+	if ($form.find('.ui-state-error').length > 0) {
 		return false;
 	}
 	
