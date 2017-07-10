@@ -62,7 +62,7 @@ if (preg_match_all($pregServiceComment, $statusFile, $ackAndSchedMatches)) {
 if (!preg_match_all($pregServiceStatus, $statusFile, $matches)) die("ERROR: no matches found\n");
 
 $percentileAlerts = array();
-$durations        = array();
+$durations        = array();$test = [];
 
 @mkdir($nagiosPercentileUrl);
 foreach ($matches[1] as $k=>$host) {
@@ -78,6 +78,10 @@ foreach ($matches[1] as $k=>$host) {
 		@unlink($rawFilePath);
 		continue;
 	}
+
+    if (file_exists($rawFilePath) && (time() - filemtime($rawFilePath)) > 60 * 10) {
+        @unlink($rawFilePath);
+    }
 	
 	file_put_contents($rawFilePath, $state, FILE_APPEND);
 	
@@ -90,3 +94,4 @@ foreach ($matches[1] as $k=>$host) {
 
 file_put_contents("{$nagiosPercentileUrl}/alerts_critical_50pct", serialize($percentileAlerts));
 file_put_contents("{$nagiosPercentileUrl}/durations", serialize($durations));
+
