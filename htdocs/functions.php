@@ -9,8 +9,6 @@ if ($memcacheEnabled) {
 	$memcache->connect($memcacheHost, $memcachePort);
 }
 
-date_default_timezone_set("America/New_York");
-
 function returnDataList($isHash, $xmlFile) {
 	global $statusFile_global;
 	global $getNotesUrls_cacheFile;

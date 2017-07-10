@@ -3265,7 +3265,7 @@ Planned = {
     drawPlanned: function(data) {
         $('#planned-list, #planned-templates-list').html('');
         $('#planned-list').closest('div').toggle(data.file.length > 0);
-        $('#planned-templates-list').closest('div').toggle(data.templates.length > 0);
+        $('#planned-templates-list').closest('div').toggle(data.templates && data.templates.length > 0);
 
         if (data.file.length > 0) {
             $.each(data.file, function( index, value ) {
@@ -3291,7 +3291,7 @@ Planned = {
             });
         }
 
-        if (data.templates.length > 0) {
+        if (data.templates && data.templates.length > 0) {
             $.each(data.templates, function( index, value ) {
                 var host    = (value['host'] && value['host'] != '*')                     ? ('<strong>Host: </strong>'     + value['host'])    : '',
                     service = (value['service'] && value['service'] != '*')               ? ('<strong> Service: </strong>' + value['service']) : '',
