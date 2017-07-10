@@ -282,8 +282,8 @@ if ($icinga) {
 					
 					foreach ($ackAndSchedMatches[$host][$service] as $tmpComments) {
 						if ($tmpComments['ackComment']) {
-							$tmpValue  = ($tmpComments['ackComment'] == 'temp') ? 'temp' : preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
-							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
+							$tmpValue  = ($tmpComments['ackComment'] == 'temp') ? 'temp' : preg_replace('/(([A-Z]{2,4}-\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
+							$tmpValue  = preg_replace('/(([A-Z]{2,4}-\d+))/', $nagiosCommentUrl, $tmpComments['ackComment']);
 							$tmpValue  = "'{$tmpValue}' by {$tmpComments['ackAuthor']}";
 							$tmpValue .= ($tmpComments['ackCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['ackCommentDate'])) : '';
 							
@@ -292,7 +292,7 @@ if ($icinga) {
 							$tmpAckTemp[]     = $tmpComments['ackComment'];
 						}
 						if ($tmpComments['schedComment']) {
-							$tmpValue  = preg_replace('/(#(\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
+							$tmpValue  = preg_replace('/(([A-Z]{2,4}-\d+))/', $nagiosCommentUrl, $tmpComments['schedComment']);
 							$tmpValue  = "'{$tmpValue}' by {$tmpComments['schedAuthor']}";
 							$tmpValue .= ($tmpComments['schedCommentDate']) ? '<br />added: '. date('M j H:i', intval($tmpComments['schedCommentDate'])) : '';
 							

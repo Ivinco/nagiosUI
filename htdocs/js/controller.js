@@ -59,7 +59,7 @@ Search = {}
 	};
 	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
     Search.changeNagiosComment = function(url, comment) {
-        var matches = comment.match(/#\d+/);
+        var matches = comment.match(/[A-Z]{2,4}-\d+/);
 
         if (matches && url) {
             var link = url.replace('$2', matches[0]).replace('$1', matches[0]);
