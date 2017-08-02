@@ -25,6 +25,20 @@
 	<link rel="stylesheet" href="css/jquery-ui.min.css"/>
 	<link rel="stylesheet" href="css/datatables.min.css" />
 	<link rel="stylesheet" href="css/custom.css?v=<?php echo $rev; ?>" />
+<?php
+    if (isset($_GET['file']) && $_GET['file']) {
+?>
+        <style>
+            #mainTable .service .likeTable ul li:not(:first-child) { display: none !important; }
+            #mainTable .service .likeTable ul li:first-child { height: 19px; }
+            #planned, #planned-label { display: none !important; }
+            .edit_acknowledgeGroup, .edit_scheduleGroup, .edit_acknowledgeIt, .edit_scheduleIt, .edit_planned_comment { display: none !important; }
+            #quickAck_button, #quickUnAck_button, #acknowledgeIt_button, #scheduleIt_button, #recheckIt_button, #edit_acknowledge, #edit_scheduled { display: none !important; }
+            #planned-maintenance { display: none !important; }
+        </style>
+<?php
+    }
+?>
 </head>
 <body>
 <div id="loading" style="display: block; float: left;">
