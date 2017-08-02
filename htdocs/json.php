@@ -99,7 +99,7 @@ foreach ($array['alert'] as $item) {
     }
 
     $returnType = '';
-    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || $infoRecord['info'] || $showInNormal) ? '__normal__' : '';
+    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || $infoRecord['info'] || ($showInNormal && $state != 'OK')) ? '__normal__' : '';
     $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord['info']) ? '__acked__' : '';
     $returnType.= ($sched && !$infoRecord['info']) ? '__sched__' : '';
 

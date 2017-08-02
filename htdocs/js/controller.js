@@ -3465,6 +3465,7 @@ Planned = {
             Search.currentTab = localStorage.getItem('currentTabNew');
             Search.stopReloads();
             Planned.showHidePlanned();
+            $('#maintenance-normal').prop('checked', true);
         });
         $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
             if (e.keyCode && e.keyCode == 13) {
@@ -3489,7 +3490,7 @@ Planned = {
                 })
                     .always(function (data) {
                         $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').val('');
-                        $('#maintenance-normal').prop('checked', false)
+                        $('#maintenance-normal').prop('checked', true)
                         Planned.drawPlanned(data);
                         Search.stopReloads();
                         Search.startReloads();

@@ -120,7 +120,7 @@
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
             <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
-            <input type="checkbox" name="maintenance-normal" id="maintenance-normal" />
+            <input type="checkbox" name="maintenance-normal" id="maintenance-normal" checked="checked" />
             <label for="maintenance-normal">Visible in Normal</label><br />
 			<button id="planned-save">Save</button>
 			
