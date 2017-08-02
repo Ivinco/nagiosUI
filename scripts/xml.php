@@ -90,7 +90,7 @@ class xml
         }
 
         if ($this->memcacheEnabled) {
-            if (!$this->memcache->get("nagiosUI_{$this->memcacheName}_check") && (!$this->memcache->get("nagiosUI_{$this->memcacheName}_verify") || !$this->memcache->get("nagiosUI_{$this->memcacheName}_data"))) {
+            if (!$this->memcache->get("nagiosUI_{$this->memcacheName}_data") || !$this->memcache->get("nagiosUI_{$this->memcacheName}_verify")) {
                 $this->prepareDataToXml();
                 $this->addDataToMemcache();
             }
@@ -125,7 +125,6 @@ class xml
             $this->pregMatches();
             $this->prepareHosts();
             $this->prepareComments();
-            $this->prepareOtherData();
         } else {
             $this->prepareIcingaDBHosts();
             $this->prepareIcingaDBComments();
