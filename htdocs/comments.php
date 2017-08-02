@@ -3,7 +3,7 @@
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
-include_once 'config/config.php';
+include_once __DIR__ . '/../scripts/init.php';
 
 $host    = (isset($_REQUEST['host']) && $_REQUEST['host']) ? $_REQUEST['host'] : '';
 $service = (isset($_REQUEST['service']) && $_REQUEST['service']) ? $_REQUEST['service'] : '';

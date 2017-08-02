@@ -3,7 +3,7 @@
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
-include_once 'functions.php';
+include_once __DIR__ . '/../scripts/init.php';
 
 $planned = new planned;
 

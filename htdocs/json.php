@@ -1,6 +1,6 @@
 <?php
 
-include_once 'functions.php';
+include_once __DIR__ . '/../scripts/init.php';
 
 if (!isset($_SESSION)) {
     session_start();
@@ -26,12 +26,13 @@ header('Content-Type: application/json');
 global $usersArray;
 global $commentsSelect;
 
-$xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
-$array       = json_decode(json_encode(simplexml_load_string(returnMemcacheData($xmlFile))),TRUE);
-$returnJson  = array();
-$user        = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
+$xml         = new xml;
 $ac          = new accessControl;
 $plannedData = new planned;
+$xmlFile     = (isset($_GET['file'])) ? $_GET['file'] : '';
+$array       = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, $xmlFile))),TRUE);
+$returnJson  = array();
+$user        = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
 if (!$array) {
     http_response_code(404);
@@ -386,4 +387,18 @@ function infoPregMatch($marker, $subject, $start = false, $remove = false) {
     }
 
     return $return;
+}
+function implode_r($g, $p) {
+    return is_array($p) ?
+        implode($g, array_map(__FUNCTION__, array_fill(0, count($p), $g), $p)) :
+        $p;
+}
+function duration($seconds, $withSeconds = true) {
+    $d   = floor($seconds / 86400);
+    $h   = floor(($seconds - $d * 86400) / 3600);
+    $m   = floor(($seconds - $d * 86400 - $h * 3600) / 60);
+    $s   = $seconds - $d * 86400 - $h * 3600 - $m * 60;
+    $out = "{$d}d {$h}h {$m}m";
+    $out.= ($withSeconds) ? " {$s}s" : "";
+    return $out;
 }

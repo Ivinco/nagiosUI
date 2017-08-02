@@ -10,7 +10,8 @@ if (!isset($_GET['hash']) || !$_GET['hash']) {
 
 $counter = 0;
 
-include_once 'functions.php';
+include_once __DIR__ . '/../scripts/init.php';
+$xml = new xml;
 
 while (!connection_aborted() and connection_status() == CONNECTION_NORMAL) {
     if ($counter > 120) {
@@ -19,13 +20,8 @@ while (!connection_aborted() and connection_status() == CONNECTION_NORMAL) {
     }
     
     clearstatcache();
-    
-    if ($memcacheEnabled) {
-        returnDataList(true, false);
-        $lastFileHash = $memcache->get("nagiosUI_{$memcacheName}_verify");
-    } else {
-        $lastFileHash = returnDataList(true, false);
-    }
+
+    $lastFileHash = $xml->returnXml(true, false);
 
     if ($lastFileHash != $_GET['hash']) {
         echo $lastFileHash;

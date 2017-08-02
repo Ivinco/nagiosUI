@@ -28,6 +28,7 @@ class planned
         $this->nagiosPipe       = $nagiosPipe;
         $this->usersArray       = $usersArray;
         $this->nagiosCommentUrl = $nagiosCommentUrl;
+        $this->actions          = new actions;
     }
 
     public function verifyPostData() {
@@ -239,22 +240,27 @@ class planned
         return $pattern;
     }
     private function schedulePlanned($host, $service, $end, $user, $comment) {
-        $f = fopen($this->nagiosPipe, 'w');
-        fwrite($f, "[".time()."] SCHEDULE_SVC_DOWNTIME;{$host};{$service};".time().";{$end};1;0;1;{$user};{$comment}\n");
-        fclose($f);
+        $this->actions->setType('scheduleItTime');
+        $this->actions->runActions([[
+            'start_time' => time(),
+            'end_time'   => $end,
+            'hours'      => 1,
+            'isHost'     => 'service',
+            'host'       => $host,
+            'service'    => $service,
+            'author'     => $user,
+            'com_data'   => $comment,
+        ]]);
 
         return true;
     }
     public function unAckForPlanned($host, $service, $hostOrService) {
-        $f = fopen($this->nagiosPipe, 'w');
-
-        if ($hostOrService == 'service') {
-            fwrite($f, "[".time()."] REMOVE_SVC_ACKNOWLEDGEMENT;{$host};{$service}\n");
-        } else if ($hostOrService == 'host') {
-            fwrite($f, "[".time()."] REMOVE_HOST_ACKNOWLEDGEMENT;{$host}\n");
-        }
-
-        fclose($f);
+        $this->actions->setType('unAcknowledgeIt');
+        $this->actions->runActions([[
+            'host'    => $host,
+            'service' => $service,
+            'isHost'  => $hostOrService,
+        ]]);
 
         return true;
     }
@@ -293,12 +299,13 @@ class planned
         $this->writePlanned($results);
     }
     public function removePlannedMaintenance($delete) {
+        $xml             = new xml;
         $delete          = explode('___', $delete);
         $hostCommand     = $this->returnPlannedPattern($delete[0]);
         $serviceCommand  = $this->returnPlannedPattern($delete[1]);
         $hostCommands    = explode(',', $hostCommand);
         $serviceCommands = explode(',', $serviceCommand);
-        $array           = json_decode(json_encode(simplexml_load_string(returnMemcacheData(false))),TRUE);
+        $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, false))),TRUE);
 
         if (isset($array['alert']['host'])) {
             $array['alert'] = [$array['alert']];
@@ -325,8 +332,12 @@ class planned
         }
     }
     private function removeSchedulePlanned($downtimeId) {
-        $f = fopen($this->nagiosPipe, 'w');
-        fwrite($f, "[".time()."] DEL_SVC_DOWNTIME;{$downtimeId}\n");
-        fclose($f);
+        $this->actions->setType('downtime');
+        $this->actions->runActions([[
+            'down_id' => $downtimeId,
+            'isHost'  => 'service',
+        ]]);
+
+        return true;
     }
 }

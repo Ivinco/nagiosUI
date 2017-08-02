@@ -167,3 +167,22 @@ $commentsSelectService     = "mysql -hhost -uuser -ppassword -NB database -e \"s
 
 /* command example only for host & service */
 $commentsSelectHostService = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
+
+
+/* enable/disable icinga API */
+$icingaDB         = true;
+
+/* icinga API user name */
+$icingaApiUser    = 'root';
+
+/* icinga API password */
+$icingaApiPass    = 'password';
+
+/* icinga API url + port */
+$icingaApiHost    = 'https://icinga:5665';
+
+/* icinga host URL */
+$icingaHostUrl    = 'http://icinga.domain.com/monitoring/host/show?host=___host___.domain.com';
+
+/* icinga service URL */
+$icingaServiceUrl = 'http://icinga.domain.com/monitoring/list/services?host=___host___.domain.com&(service_display_name=___service___)';
