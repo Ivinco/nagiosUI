@@ -322,7 +322,7 @@ class planned
                 if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
                     foreach ($hostCommands as $commandHost) {
                         foreach ($serviceCommands as $commandService) {
-                            if (preg_match("/$commandHost/iu", " " . $host . " ") && preg_match("/$commandService/iu", " " . $service . " ")) {
+                            if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ")) {
                                 $this->removeSchedulePlanned($downtime);
                             }
                         }
