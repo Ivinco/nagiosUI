@@ -312,14 +312,13 @@ class planned
         }
 
         foreach ($array['alert'] as $item) {
-            $tempSchedCommen = (!is_array($item['sched_last_temp']))      ? $item['sched_last_temp']      : implode(' ', $item['sched_last_temp']);
-            $host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
-            $service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
-            $downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
-            $downtimeId      = explode(',', $downtimeId);
+            $host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
+            $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+            $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
+            $downtimeId = explode(',', $downtimeId);
 
             foreach ($downtimeId as $downtime) {
-                if ($tempSchedCommen == 'planned' && $downtimeId != 4) {
+                if ($downtimeId != 4) {
                     foreach ($hostCommands as $commandHost) {
                         foreach ($serviceCommands as $commandService) {
                             if (preg_match("/$commandHost/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ")) {
