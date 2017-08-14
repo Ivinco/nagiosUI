@@ -78,6 +78,7 @@ foreach ($array['alert'] as $item) {
     $isPlanned       = false;
     $showInNormal    = false;
     $schedPlanned    = true;
+    $serviceOriginal = $service;
 
     if (!$ac->verifyUser($service, $user)) {
         continue;
@@ -140,6 +141,7 @@ foreach ($array['alert'] as $item) {
             'info'   => $infoRecord['info'],
             'pending' => $pending,
             'schedPlanned' => $schedPlanned,
+            'original' => $serviceOriginal,
         ),
         'status'    => array(
             'name'  => $statusName,

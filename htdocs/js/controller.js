@@ -231,6 +231,8 @@ Search = {}
 			if (data.service.info && data.state == 'CRITICAL') {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('brown-text');
 			}
+
+			$(row).attr('data-service', data.service.original);
         },
 		"drawCallback": function( settings ) {
 			Search.filterDataTable($('#mainTable_filter input').val());
@@ -383,7 +385,7 @@ function getGroupNormalHeaders(rows, countsService, countsHost) {
 					'comment':        comment,
 					'groupBy':        groupBy,
 					'isHost':         rowData.host.host,
-					'state':          rowData.state
+					'state':          rowData.state,
 				});
 			}
 		});
@@ -485,7 +487,7 @@ function getGroupNormalThead(rowsHeader) {
 			} else {
 				var quickAck = '<li class="'+ liClass +'"><span class="icons '+ liImgClass +' '+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></span></li>';
 			}
-		
+
 		$('#mainTable thead').append(
 			'<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '">' +
 			'	<td class="host'+ mainGreyClass + subRowsClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
@@ -607,10 +609,10 @@ function getGroupNormalHosts (rows) {
 }
 function quickAckUnAckGroup() {
 	$('#mainTable thead tr.group-list[data-group]').each(function() {
-		var dataGroup = $(this).attr('data-group'),
-			selected  = Search.allHeaderRows[Search.currentTab + '_' + dataGroup + '_rows'],
-			unAckIcons  = [];
-			
+		var dataGroup  = $(this).attr('data-group'),
+			selected   = Search.allHeaderRows[Search.currentTab + '_' + dataGroup + '_rows'],
+			unAckIcons = [];
+
 		for (var i = 0; i < selected.length; i++) {
 			var item = selected[i].find('.quickUnAck');
 			
@@ -1041,7 +1043,7 @@ Search.tempHideButtons = function () {
 					service     = Search.getService(item[i]),
 					check       = Search.getLastCheck(item[i]),
 					isHost      = item[i].find('.host a').attr('data-host'),
-					infoService = (item[i].find('td.host').hasClass('blue-text') || item[i].find('td.host').hasClass('brown-text')) ? '_' : '',
+                    original    = item[i].attr('data-service'),
 					downId      = (item[i].find('.service [data-id]').length) ? item[i].find('.service [data-id]').attr('data-id') : '',
 					start       = (item[i].find('.comment .sched.text').attr('data-start')) ? item[i].find('.comment .sched.text').attr('data-start') : 0,
 					end         = (item[i].find('.comment .sched.text').attr('data-end')) ? item[i].find('.comment .sched.text').attr('data-end') : 0,
@@ -1050,12 +1052,12 @@ Search.tempHideButtons = function () {
 				if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIconArray(attr, whatWeChangeObject.type, i);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				}
 			}
@@ -1089,7 +1091,7 @@ Search.tempHideButtons = function () {
 					service     = Search.getService(row),
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
-					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
+                    original    = row.attr('data-service'),
 					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
@@ -1098,21 +1100,21 @@ Search.tempHideButtons = function () {
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 				}
 			}
 		});
@@ -1140,7 +1142,7 @@ Search.tempHideButtons = function () {
 							service     = Search.getService(row),
 							check       = Search.getLastCheck(row),
 							isHost      = row.find('.host a').attr('data-host'),
-							infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
+                            original    = row.attr('data-service'),
 							downId      = (row.find('.service [data-id]').length) ? row.find('.service [data-id]').attr('data-id') : 0,
 							start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 							end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
@@ -1149,21 +1151,21 @@ Search.tempHideButtons = function () {
 						if (whatWeChangeObject.host && whatWeChangeObject.service) {
 							if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else if (whatWeChangeObject.host) {
 							if (host == whatWeChangeObject.host) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else if (whatWeChangeObject.service) {
 							if (service == whatWeChangeObject.service) {
 								Search.tmpHideIcon(row, whatWeChangeObject.type);
-								returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 							}
 						} else {
 							Search.tmpHideIcon(row, whatWeChangeObject.type);
-							returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+							returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 						}
 					}
 				}
@@ -1174,7 +1176,7 @@ Search.tempHideButtons = function () {
 		var returnArray = [],
 			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
 			
-		$('#mainTable tr').each(function() {
+		$('#mainTable tbody tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
 			if (checkInfo) {
 				var row         = $(this),
@@ -1182,7 +1184,7 @@ Search.tempHideButtons = function () {
 					service     = Search.getService(row),
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
-					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
+					original    = row.attr('data-service'),
 					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
@@ -1191,21 +1193,21 @@ Search.tempHideButtons = function () {
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.host) {
 					if (host == whatWeChangeObject.host) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else if (whatWeChangeObject.service) {
 					if (service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				} else {
 					Search.tmpHideIcon(row, whatWeChangeObject.type);
-					returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 				}
 			}
 		});
@@ -1217,16 +1219,16 @@ Search.tempHideButtons = function () {
 					service     = Search.getService(row),
 					check       = Search.getLastCheck(row),
 					isHost      = row.find('.host a').attr('data-host'),
-					infoService = (row.find('td.host').hasClass('blue-text') || row.find('td.host').hasClass('brown-text')) ? '_' : '',
+                    original    = row.attr('data-service'),
 					downId      = (row.find('.unScheduleIt[data-id]').length) ? row.find('.unScheduleIt[data-id]').attr('data-id') : '',
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
-				
+
 				if (whatWeChangeObject.host && whatWeChangeObject.service) {
 					if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 						Search.tmpHideIcon(row, whatWeChangeObject.type);
-						returnArray.push({ 'host': host, 'service': infoService + service, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
 					}
 				}
 			});
@@ -1234,12 +1236,12 @@ Search.tempHideButtons = function () {
 	}
 	
 	whatWeChangeDataObject = returnArray;
-	
+
 	return true;
 }
 Search.prepareSendData = function () {
 	var requestData = [];
-	
+
 	$(whatWeChangeDataObject).each(function() {
 		if (whatWeChangeObject.type == 'recheckIt') {
 			requestData.push({
@@ -1391,6 +1393,31 @@ Search.prepareSendData = function () {
 		});
 	}
 }
+Search.restoreGroupIcons = function(host, service, type) {
+	for (var key in Search.allHeaderRows){
+        for (var item in Search.allHeaderRows[key]){
+            var row        = Search.allHeaderRows[key][item],
+                rowHost    = Search.getHost(row),
+                rowService = Search.getService(row);
+
+            if (rowHost == host && rowService == service) {
+                if (type == 'quickAck') {
+                    Search.allHeaderRows[key][item].find('.icons.quickAck').closest('li').html('<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/' + Search.avatarUrl + '?size=20" width="19" height="19" alt="' + Search.currentUser + ' unack" title="' + Search.currentUser + ' unack">');
+                }
+
+                if (type == 'quickUnAck') {
+                    Search.allHeaderRows[key][item].find('.icons.quickUnAck').closest('li').html('<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span>');
+                }
+
+                if (type == 'recheckIt') {
+                    Search.allHeaderRows[key][item].find('.icons.recheckIt').css('display', 'block');
+
+                    $('#mainTable thead tr[data-group="'+ row.attr('data-group') +'"]:first').find('.icons.recheckItGroup').show();
+                }
+            }
+        }
+    }
+}
 Search.restoreAllData = function() {
 	$.get($('#nagiosConfigFile').html(), function(data) {
 		var regex       = new RegExp(/Last Updated:\s*([^<]+)/i),
@@ -1403,7 +1430,7 @@ Search.restoreAllData = function() {
 			Search.allDataTable.rows({ page:'current', search:'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
 			var d      = this.data(),
 				change = 0;
-			
+
 			if (whatWeChangeObject.what == 'all') {
 				change = 1;
 			}
@@ -1413,18 +1440,19 @@ Search.restoreAllData = function() {
 			else if (whatWeChangeObject.what == 'group' && whatWeChangeObject.service == d.service.name) {
 				change = 1;
 			}
-	 
 			
 			if (change) {
 				if (whatWeChangeObject.type == 'quickAck') {
 					d.service.qUAck = Search.avatarUrl;
 					d.service.qAck  = false;
 					d.service.qAuth = Search.currentUser;
+                    Search.restoreGroupIcons(d.host.name, d.service.name, 'quickAck');
 				}
 				else if (whatWeChangeObject.type == 'quickUnAck') {
 					d.service.qUAck = false;
 					d.service.qAck  = true;
 					d.service.qAuth = false;
+                    Search.restoreGroupIcons(d.host.name, d.service.name, 'quickUnAck');
 				}
 				else if (whatWeChangeObject.type == 'unAck' || whatWeChangeObject.type == 'unAcknowledgeIt') {
 					d.service.unAck = false;
@@ -1771,8 +1799,11 @@ Search.restoreAllData = function() {
 						}
 					}
 				}
+				else if (whatWeChangeObject.type == 'recheckIt') {
+                    Search.restoreGroupIcons(d.host.name, d.service.name, 'recheckIt');
+				}
 				this.invalidate();
-	
+
 				if ($(window).width() > 560) {
 					$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
 					$('.comment .ack').toggle(Search.currentTab == 'acked');
@@ -1784,7 +1815,7 @@ Search.restoreAllData = function() {
 				Search.recheckIcons();
 			}
 		});
-		
+
 		setTimeout(function(){ localStorage.setItem('canceledReloads', '0'); Search.startReloads(); }, 5000);
 		quickAckUnAckGroup();
 					
@@ -1813,13 +1844,13 @@ Search.tempShowButtons = function() {
 	var tableWhere    = (whatWeChangeObject.what == 'group') ? 'thead' : 'tbody',
 		tableNot      = (whatWeChangeObject.what == 'group') ? ':not(.group-list)' : '',
 		returnArray   = [];   
-	
+
 	$('#mainTable '+ tableWhere +' tr' + tableNot).each(function() {
 		var row     = $(this),
 			host    = Search.getHost(row),
 			service = Search.getService(row),
 			check   = Search.getLastCheck(row);
-			
+
 		if (whatWeChangeObject.host && whatWeChangeObject.service) {
 			if (host == whatWeChangeObject.host && service == whatWeChangeObject.service) {
 				Search.tmpShowIcon(row, whatWeChangeObject.type);
@@ -2234,9 +2265,8 @@ Search.init = function() {
     });
 
     $(document).on('change', '[name="select-comment-list"]', function() {
-        $('#sched_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
+        $('#sched_comment_extension, #ack_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
     });
-
 	
 	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
