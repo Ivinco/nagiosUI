@@ -195,7 +195,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/^$commandHost$/iu", " " . $host . " ") && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
+                    if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
                         $results = [];
 
                         foreach ($planned as $plannedKey => $plannedValue) {
