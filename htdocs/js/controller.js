@@ -71,7 +71,7 @@ Search = {}
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
-		'ajax':        'json.php?filter=' + Search.currentTab + Search.additionalFile,
+		'ajax':        'json_new.php?filter=' + Search.currentTab + Search.additionalFile,
 		'deferRender': true,
 		'processing':  false,
         'serverSide':  true,
@@ -2158,7 +2158,7 @@ Search.infoRowCounter = function() {
 }
 
 Search.getNewData = function() {
-	Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+	Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 		Search.resetAgo();
         Planned.showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
@@ -2284,7 +2284,7 @@ Search.init = function() {
 		
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 		
-		Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
@@ -2295,7 +2295,7 @@ Search.init = function() {
 		if (Search.searchValue != $(this).val()) {
 			Search.searchValue = val;
 			
-			Search.allDataTable.search(Search.searchValue).ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
+			Search.allDataTable.search(Search.searchValue).ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
 				Search.resetAgo();
 				Planned.showHidePlanned();
 					
@@ -2321,7 +2321,7 @@ Search.init = function() {
 			if (data.item.value == '1') {
                 Search.filterDataTable();
             } else {
-				Search.allDataTable.ajax.url('json.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+				Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
 					Search.resetAgo();
 					Planned.showHidePlanned();
 				}).order(Search.orderBy[Search.currentTab]);
