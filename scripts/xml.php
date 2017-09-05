@@ -136,7 +136,7 @@ class xml
     {
         $data = [
             'joins'  => ['host.display_name', 'host.name'],
-            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'check_command'],
+            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
             'filter' => '     service.state >  0' .
                         ' || (service.state == 0 && service.downtime_depth != 0.0)' .
                         ' || (service.state == 0 && !service.last_state_change && service.active)'
@@ -187,7 +187,7 @@ class xml
                 'next_check'         => $item->attrs->next_check,
                 'notes_url'          => $item->attrs->notes_url,
                 'full_host_name'     => $item->joins->host->name,
-                'check_command'      => $item->attrs->check_command,
+                'check_command'      => $item->attrs->name,
                 'comments'           => [
                     'ackComment'      => '',
                     'schedComment'    => '',
