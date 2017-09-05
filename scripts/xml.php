@@ -177,6 +177,7 @@ class xml
                 'acked'              => $item->attrs->acknowledgement,
                 'scheduled'          => $item->attrs->downtime_depth,
                 'state'              => $item->attrs->state,
+                'origState'          => '',
                 'last_status_change' => $item->attrs->last_state_change,
                 'plugin_output'      => $item->attrs->last_check_result->output,
                 'attempts'           => $item->attrs->check_attempt,
@@ -268,6 +269,7 @@ class xml
 		<service-url>' .        $this->parseToXML($this->serviceUrl($host, $attrs['serviceEncoded'])) . '</service-url>
 		<notes_url>' .          $this->parseToXML($attrs['notesUrl'])               . '</notes_url>
 		<status>' .             $this->parseToXML($attrs['state'])                  . '</status>
+		<origState>' .          $this->parseToXML($attrs['origState'])              . '</origState>
 		<acked>' .              $this->parseToXML($attrs['acked'])                  . '</acked>
 		<sched>' .              $this->parseToXML($attrs['scheduled'])              . '</sched>
 		<downtime_id>' .        $this->parseToXML($comments['downtime_id'])         . '</downtime_id>
@@ -349,6 +351,7 @@ class xml
                     'acked'              => $servicesMatches['acked'][$k],
                     'scheduled'          => $servicesMatches['scheduled'][$k],
                     'state'              => $servicesMatches['state'][$k],
+                    'origState'          => '',
                     'last_status_change' => $servicesMatches['last_status_change'][$k],
                     'plugin_output'      => $servicesMatches['plugin_output'][$k],
                     'attempts'           => $servicesMatches['attempts'][$k],
@@ -379,6 +382,7 @@ class xml
 
                 $this->hosts[$host]['SERVER IS UP'] = array(
                     'state'              => 2, // down host is always shown as CRITICAL alert
+                    'origState'          => '',
                     'acked'              => $hostsMatches['acked'][$k],
                     'scheduled'          => $hostsMatches['scheduled'][$k],
                     'last_status_change' => $hostsMatches['last_status_change'][$k],
@@ -747,7 +751,7 @@ class xml
         if ($criticalPercentileDuration /*&& $criticalPercentileDuration > 60*4*/ && (!isset($scheduled) || !$scheduled) && $criticalPercentileDuration * 60 - (time() - $last_status_change) > 300) {
             $this->hosts[$host][$service]['durationSec'] = $criticalPercentileDuration * 60;
             $this->hosts[$host][$service]['duration']    = $this->duration($this->hosts[$host][$service]['durationSec'] * 60, false)." (50%)";
-            $this->hosts[$host][$service]['origState']   = $this->hosts[$host][$service]['state'];
+            $this->hosts[$host][$service]['origState']   = 'orig' . $this->hosts[$host][$service]['state'];
             $this->hosts[$host][$service]['state']       = 'CRITICAL';
         }
         else {

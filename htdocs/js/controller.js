@@ -222,6 +222,9 @@ Search = {}
 			if (data.state) {
 				$(row).find('.service, .status, .last_check, .duration, .status_information, .comment, .more').addClass(data.state);
             }
+            if (data.status.origin) {
+                $(row).find('.status').addClass(data.status.origin);
+            }
 			if (!data.service.info && data.service.sched) {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('grey-text');
 			}

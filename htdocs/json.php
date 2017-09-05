@@ -51,6 +51,7 @@ foreach ($array['alert'] as $item) {
     $host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
     $hostUrl         = (!is_array($item['host-url']))             ? $item['host-url']             : implode(' ', $item['host-url']);
     $service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+    $origState       = (!is_array($item['origState']))            ? $item['origState']            : implode(' ', $item['origState']);
     $serviceUrl      = (!is_array($item['service-url']))          ? $item['service-url']          : implode(' ', $item['service-url']);
     $notesUrl        = (!is_array($item['notes_url']))            ? $item['notes_url']            : implode(' ', $item['notes_url']);
     $state           = (!is_array($item['@attributes']['state'])) ? $item['@attributes']['state'] : implode(' ', $item['@attributes']['state']);
@@ -145,6 +146,7 @@ foreach ($array['alert'] as $item) {
         ),
         'status'    => array(
             'name'  => $statusName,
+            'origin'=> $origState,
             'order' => ($state == 'CRITICAL') ? 4 : (($state == 'UNKNOWN') ? 3 : (($state == 'WARNING') ? 2 : (($state == 'OK') ? 1 : 0))),
             ),
         'last'      => array(
