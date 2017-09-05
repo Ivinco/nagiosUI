@@ -135,8 +135,8 @@ class xml
     private function returnIcingaApiHosts()
     {
         $data = [
-            'joins'  => ['host.display_name'],
-            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url'],
+            'joins'  => ['host.display_name', 'host.name'],
+            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'check_command'],
             'filter' => '     service.state >  0' .
                         ' || (service.state == 0 && service.downtime_depth != 0.0)' .
                         ' || (service.state == 0 && !service.last_state_change && service.active)'
@@ -186,6 +186,8 @@ class xml
                 'active_enabled'     => $item->attrs->active,
                 'next_check'         => $item->attrs->next_check,
                 'notes_url'          => $item->attrs->notes_url,
+                'full_host_name'     => $item->joins->host->name,
+                'check_command'      => $item->attrs->check_command,
                 'comments'           => [
                     'ackComment'      => '',
                     'schedComment'    => '',
@@ -264,9 +266,9 @@ class xml
                 $xmlContent .= '
 	<alert state="' .           $this->parseToXML($attrs['state']) . '" origState="' . $this->parseToXML($attrs['origState']) . '">
 		<host>' .               $this->parseToXML($host)                            . '</host>
-		<host-url>' .           $this->parseToXML($this->hostUrl($host))            . '</host-url>
+		<host-url>' .           $this->parseToXML($this->hostUrl($attrs['full_host_name'])) . '</host-url>
 		<service>' .            $this->parseToXML($service)                         . '</service>
-		<service-url>' .        $this->parseToXML($this->serviceUrl($host, $attrs['serviceEncoded'])) . '</service-url>
+		<service-url>' .        $this->parseToXML($this->serviceUrl($attrs['full_host_name'], $attrs['serviceEncoded'])) . '</service-url>
 		<notes_url>' .          $this->parseToXML($attrs['notesUrl'])               . '</notes_url>
 		<status>' .             $this->parseToXML($attrs['state'])                  . '</status>
 		<origState>' .          $this->parseToXML($attrs['origState'])              . '</origState>
@@ -318,7 +320,7 @@ class xml
 
                 $this->hosts[$host][$service]['state']           = $this->statesArray[$attrs['state']];
                 $this->hosts[$host][$service]['origState']       = '';
-                $this->hosts[$host][$service]['serviceEncoded']  = urlencode($service);
+                $this->hosts[$host][$service]['serviceEncoded']  = urlencode($attrs['check_command']);
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
                 $this->hosts[$host][$service]['notesUrl']        = (!$this->icingaDB) ? $this->returnNotesUrl($host, $service) : $attrs['notes_url'];
@@ -359,6 +361,8 @@ class xml
                     'last_check'         => $servicesMatches['last_check'][$k],
                     'active_enabled'     => $servicesMatches['active_checks_enabled'][$k],
                     'next_check'         => $servicesMatches['next_check'][$k],
+                    'full_host_name'     => $host,
+                    'check_command'      => $servicesMatches['service'],
                     'comments'           => [
                         'ackComment'      => '',
                         'schedComment'    => '',
@@ -392,6 +396,8 @@ class xml
                     'last_check'         => $hostsMatches['last_check'][$k],
                     'active_enabled'     => 0,
                     'next_check'         => 0,
+                    'full_host_name'     => $host,
+                    'check_command'      => 'SERVER IS UP',
                     'comments'           => [
                         'ackComment'      => '',
                         'schedComment'    => '',
