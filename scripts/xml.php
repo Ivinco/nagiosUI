@@ -25,7 +25,7 @@ class xml
         global $icingaDB;
         global $icingaApiUser;
         global $icingaApiPass;
-        global $icingaApiHost;
+        global $icingaApiHosts;
         global $icingaHostUrl;
         global $icingaServiceUrl;
 
@@ -52,9 +52,10 @@ class xml
         $this->icingaDB                 = $icingaDB;
         $this->icingaApiUser            = $icingaApiUser;
         $this->icingaApiPass            = $icingaApiPass;
-        $this->icingaApiHost            = $icingaApiHost;
+        $this->icingaApiHosts           = $icingaApiHosts;
         $this->icingaHostUrl            = $icingaHostUrl;
         $this->icingaServiceUrl         = $icingaServiceUrl;
+        $this->icingaApiHost            = $this->findAliveHost();
 
         if ($this->memcacheEnabled) {
             $this->memcache = new Memcache;
@@ -135,11 +136,24 @@ class xml
     private function returnIcingaApiHosts()
     {
         $data = [
+            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
+            'filter' => '     host.state >  0' .
+                        ' || (host.state == 0 && host.downtime_depth != 0.0)' .
+                        ' || (host.state == 0 && !host.last_state_change && host.active)'
+        ];
+
+        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/hosts" -d \''. json_encode($data) .'\'  2>&1', $output);
+
+        return json_decode($output[0])->results;
+    }
+    private function returnIcingaApiServices()
+    {
+        $data = [
             'joins'  => ['host.display_name', 'host.name'],
             'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
             'filter' => '     service.state >  0' .
-                        ' || (service.state == 0 && service.downtime_depth != 0.0)' .
-                        ' || (service.state == 0 && !service.last_state_change && service.active)'
+                ' || (service.state == 0 && service.downtime_depth != 0.0)' .
+                ' || (service.state == 0 && !service.last_state_change && service.active)'
         ];
 
         exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/services" -d \''. json_encode($data) .'\'  2>&1', $output);
@@ -172,7 +186,7 @@ class xml
     {
         $this->hosts = [];
 
-        foreach ($this->returnIcingaApiHosts() as $item) {
+        foreach ($this->returnIcingaApiServices() as $item) {
             $this->hosts[$item->joins->host->display_name][$item->attrs->display_name] = [
                 'acked'              => $item->attrs->acknowledgement,
                 'scheduled'          => $item->attrs->downtime_depth,
@@ -202,6 +216,37 @@ class xml
                 ]
             ];
         }
+
+        foreach ($this->returnIcingaApiHosts() as $item) {
+            $this->hosts[$item->attrs->display_name]['SERVER IS UP'] = [
+                'acked'              => $item->attrs->acknowledgement,
+                'scheduled'          => $item->attrs->downtime_depth,
+                'state'              => 2,  // down host is always shown as CRITICAL alert
+                'origState'          => '',
+                'last_status_change' => $item->attrs->last_state_change,
+                'plugin_output'      => $item->attrs->last_check_result->output,
+                'attempts'           => $item->attrs->check_attempt,
+                'max_attempts'       => $item->attrs->max_check_attempts,
+                'last_check'         => $item->attrs->last_check,
+                'active_enabled'     => 0,
+                'next_check'         => 0,
+                'notes_url'          => $item->attrs->notes_url,
+                'full_host_name'     => $item->attrs->name,
+                'check_command'      => 'SERVER IS UP',
+                'comments'           => [
+                    'ackComment'      => '',
+                    'schedComment'    => '',
+                    'downtime_id'     => '',
+                    'ackLastTemp'     => '',
+                    'ackLastAuthor'   => '',
+                    'schedStart'      => '',
+                    'schedEnd'        => '',
+                    'schedDuration'   => '',
+                    'schedLastAuthor' => '',
+                    'schedLastTemp'   => '',
+                ]
+            ];
+        }
     }
     private function prepareIcingaDBComments()
     {
@@ -209,7 +254,7 @@ class xml
 
         foreach ($this->returnIcingaApiAckComments() as $item) {
             $host    = $item->joins->host->display_name;
-            $service = $item->joins->service->display_name;
+            $service = (isset($item->joins->service)) ? $item->joins->service->display_name : 'SERVER IS UP';
 
             if ($item->attrs->active && isset($this->hosts[$host]) && isset($this->hosts[$host][$service]) && $this->hosts[$host][$service]['acked']) {
                 $comments[$host][$service][] = array(
@@ -229,7 +274,7 @@ class xml
 
         foreach ($this->returnIcingaApiSchedComments() as $item) {
             $host    = $item->joins->host->display_name;
-            $service = $item->joins->service->display_name;
+            $service = (isset($item->joins->service)) ? $item->joins->service->display_name : 'SERVER IS UP';
 
             if ($item->attrs->active && isset($this->hosts[$host]) && isset($this->hosts[$host][$service]) && $this->hosts[$host][$service]['scheduled']) {
                 $comments[$host][$service][] = array(
@@ -829,5 +874,21 @@ class xml
         }
 
         return implode(';', $refreshArrayData);
+    }
+
+    private function findAliveHost() {
+        $data = ['attrs' => ['active']];
+
+        foreach ($this->icingaApiHosts as $host) {
+            $output = [];
+
+            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $host .'/v1/objects/hosts" -d \''. json_encode($data) .'\' 2>&1', $output);
+
+            if (count($output) && isset($output[0]) && isset(json_decode($output[0])->results) && count(json_decode($output[0])->results)) {
+                return $host;
+            }
+        }
+
+        return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
     }
 }

@@ -8,13 +8,13 @@ class actions
         global $icingaDB;
         global $icingaApiUser;
         global $icingaApiPass;
-        global $icingaApiHost;
+        global $icingaApiHosts;
 
-        $this->nagiosPipe    = $nagiosPipe;
-        $this->icingaDB      = $icingaDB;
-        $this->icingaApiUser = $icingaApiUser;
-        $this->icingaApiPass = $icingaApiPass;
-        $this->icingaApiHost = $icingaApiHost;
+        $this->nagiosPipe     = $nagiosPipe;
+        $this->icingaDB       = $icingaDB;
+        $this->icingaApiUser  = $icingaApiUser;
+        $this->icingaApiPass  = $icingaApiPass;
+        $this->icingaApiHosts = $icingaApiHosts;
     }
     public function verifyType()
     {
@@ -241,9 +241,25 @@ class actions
     }
     private function runIcingaCommand($data, $type)
     {
+        $this->icingaApiHost = $this->findAliveHost();
+
         exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST "'. $this->icingaApiHost .'/v1/actions/'. $type .'" -d \''. json_encode($data) .'\'');
     }
+    private function findAliveHost() {
+        $data = ['attrs' => ['active']];
 
+        foreach ($this->icingaApiHosts as $host) {
+            $output = [];
+
+            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $host .'/v1/objects/hosts" -d \''. json_encode($data) .'\' 2>&1', $output);
+
+            if (count($output) && isset($output[0]) && isset(json_decode($output[0])->results) && count(json_decode($output[0])->results)) {
+                return $host;
+            }
+        }
+
+        return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
+    }
 
     private function runNagiosCommand($data)
     {
