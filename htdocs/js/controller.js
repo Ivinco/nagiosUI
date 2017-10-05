@@ -92,9 +92,9 @@ Search = {}
 						var unAck = (data.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
 							down  = (data.down)            ? '<li><span class="list-downtime-icon"></span></li>' : '',
 							notes = (data.notes)           ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '',
-							pAuth = (data.pAuth)           ? '<img class="icons" src="http://www.gravatar.com/avatar/'+ data.pAuth +'?size=20" width="19" height="19" />' : '';
+							pAuth = (data.pAuth)           ? '<img class="icons" src="https://www.gravatar.com/avatar/'+ data.pAuth +'?size=20" width="19" height="19" />' : '';
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
-							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/'+ data.qUAck +'?size=20" width="19" height="19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
+							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ data.qUAck +'?size=20" width="19" height="19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
 							ack   = (!data.info) ? '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' : '',
 							sched = (!data.info && data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
@@ -809,6 +809,10 @@ Search.recheckIcons = function() {
 			if (d && d.type.search('__acked__') > -1) {
                 $(this).find('.service .acknowledgeIt').attr('title', 'Unacknowledge this Service').attr('alt', 'Unacknowledge this Service').removeClass('acknowledgeIt').addClass('unAcknowledgeIt');
             }
+
+            if (d && d.type.search('__sched__') > -1) {
+                $(this).find('.service .scheduleIt').attr('title', 'Unschedule Downtime for this Service').attr('alt', 'Unschedule Downtime for this Service').removeClass('scheduleIt').addClass('unScheduleIt');
+            }
 		});
 	}
 }
@@ -825,7 +829,7 @@ Search.extension = function () {
 	if ($(document).find('#mainTable_filter input').val() && Search.tableLength && !$('#ext_search').length) {
 		$('#mainTable_filter').after('<div id="ext_search"></div>');
 		$('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
-		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="http://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
+		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="https://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
 		$('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
 		$('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
 		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Refresh Services Status" title="Refresh Services Status"></span>');
@@ -1405,7 +1409,7 @@ Search.restoreGroupIcons = function(host, service, type) {
 
             if (rowHost == host && rowService == service) {
                 if (type == 'quickAck') {
-                    Search.allHeaderRows[key][item].find('.icons.quickAck').closest('li').html('<img class="icons quickUnAck" src="http://www.gravatar.com/avatar/' + Search.avatarUrl + '?size=20" width="19" height="19" alt="' + Search.currentUser + ' unack" title="' + Search.currentUser + ' unack">');
+                    Search.allHeaderRows[key][item].find('.icons.quickAck').closest('li').html('<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/' + Search.avatarUrl + '?size=20" width="19" height="19" alt="' + Search.currentUser + ' unack" title="' + Search.currentUser + ' unack">');
                 }
 
                 if (type == 'quickUnAck') {
