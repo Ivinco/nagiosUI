@@ -90,7 +90,7 @@ class actions
         if ($this->icingaDB) {
             $data = [
                 'author'      => $post['author'],
-                'comment'     => $post['com_data'],
+                'comment'     => $this->escapeSingleQuote($post['com_data']),
                 'notify'      => true,
                 'sticky'      => true,
                 'type'        => ucfirst($post['isHost']),
@@ -161,7 +161,7 @@ class actions
         if ($this->icingaDB) {
             $data = [
                 'author'      => $post['author'],
-                'comment'     => $post['com_data'],
+                'comment'     => $this->escapeSingleQuote($post['com_data']),
                 'start_time'  => $start,
                 'end_time'    => $end,
                 'fixed'       => true,
@@ -238,6 +238,9 @@ class actions
 
             $this->runNagiosCommand($data);
         }
+    }
+    private function escapeSingleQuote($text) {
+        return str_replace("'", "&#39;", $text);
     }
     private function runIcingaCommand($data, $type)
     {
