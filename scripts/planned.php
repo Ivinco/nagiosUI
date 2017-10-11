@@ -214,7 +214,7 @@ class planned
                                     $results[$plannedKey]['list'][$host][$service] = '';
                                 }
 
-                                $results[$plannedKey]['list'][$host][$service] = time() + 120;
+                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
                             }
                         }
 
