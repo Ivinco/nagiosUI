@@ -165,7 +165,7 @@ class planned
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
                     if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
-                        $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service])) ? 'old' : 'new';
+                        $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && time() < $plan['list'][$host][$service]) ? 'old' : 'new';
 
                         return [
                             'type'    => $type,
@@ -214,7 +214,7 @@ class planned
                                     $results[$plannedKey]['list'][$host][$service] = '';
                                 }
 
-                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
+                                $results[$plannedKey]['list'][$host][$service] = time() + 120;
                             }
                         }
 
