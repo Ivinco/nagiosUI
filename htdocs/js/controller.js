@@ -1329,62 +1329,40 @@ Search.prepareSendData = function () {
             }
         }
 
-		$.ajax({
-			url:    'post.php',
-			method: 'POST',
-			data:   { data: schedulesRequest, 'type': 'downtime' },
-		})
-		.always(function() {
-			$.ajax({
-				url:    'post.php',
-				method: 'POST',
-				data:   { data: requestData, type: 'unAck' },
-			})
-			.done(function() {
-				$.ajax({
-					url:    'post.php',
-					method: 'POST',
-					data:   { data: requestData, type: 'scheduleItTime' },
-				})
-				.fail(function(jqXHR, textStatus) {
-					alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
-					Search.tempShowButtons();
-				})
-				.done(function() {
-					Search.restoreAllData();
-				});
-			})
-			.fail(function(jqXHR, textStatus) {
-				alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
-				Search.tempShowButtons();
-			});
-		});
-	}
-	else if (whatWeChangeObject.type == 'acknowledgeIt' || (whatWeChangeObject.type == 'scheduleIt' && !Search.editComment)) {
-		$.ajax({
-			url:    'post.php',
-			method: 'POST',
-			data:   { data: requestData, type: 'unAck' },
-		})
-		.done(function() {
-			$.ajax({
-				url:    'post.php',
-				method: 'POST',
-				data:   { data: requestData, type: whatWeChangeObject.type },
-			})
-			.fail(function(jqXHR, textStatus) {
-				alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
-				Search.tempShowButtons();
-			})
-			.done(function() {
-				Search.restoreAllData();
-			});
-		})
-		.fail(function(jqXHR, textStatus) {
-			alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
-			Search.tempShowButtons();
-		});
-	}
+        $.ajax({
+            url:    'post.php',
+            method: 'POST',
+            data:   { data: schedulesRequest, 'type': 'downtime' },
+        })
+        .always(function() {
+            $.ajax({
+                url:    'post.php',
+                method: 'POST',
+                data:   { data: requestData, type: 'scheduleItTime' },
+            })
+            .fail(function(jqXHR, textStatus) {
+                alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+                Search.tempShowButtons();
+            })
+            .done(function() {
+                Search.restoreAllData();
+            });
+        });
+    }
+    else if (whatWeChangeObject.type == 'acknowledgeIt' || (whatWeChangeObject.type == 'scheduleIt' && !Search.editComment)) {
+        $.ajax({
+            url:    'post.php',
+            method: 'POST',
+            data:   { data: requestData, type: whatWeChangeObject.type },
+        })
+        .fail(function(jqXHR, textStatus) {
+            alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+            Search.tempShowButtons();
+        })
+        .done(function() {
+            Search.restoreAllData();
+        });
+    }
 	else {
 		$.ajax({
 			url:    'post.php',

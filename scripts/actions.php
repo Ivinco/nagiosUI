@@ -65,6 +65,7 @@ class actions
     {
         foreach ($data as $post) {
             if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
+                $this->unAcknowledgeProblem($post);
                 $this->acknowledgeProblem($post);
             }
 
@@ -73,6 +74,7 @@ class actions
             }
 
             if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
+                $this->unAcknowledgeProblem($post);
                 $this->scheduleProblem($post);
             }
 
