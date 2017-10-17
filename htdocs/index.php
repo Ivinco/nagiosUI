@@ -1,22 +1,23 @@
 <?php
-	$rev = exec('git rev-parse HEAD');
-	
-	if (!isset($_SESSION)) {
+    $rev = exec('git rev-parse HEAD');
+
+    if (!isset($_SESSION)) {
         session_start();
     }
-	
-	if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
-		include_once 'config/config.php';
-		
-		$user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
-		$user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
-		
-		$_SESSION["currentUser"] = $user;
-		$_SESSION["currentAvatar"] = md5(strtolower(trim($usersArray[$user])));
-	}
-	
-	$userName = $_SESSION["currentUser"];
-	$userAvatar = $_SESSION["currentAvatar"];
+
+    if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
+        include_once 'config/config.php';
+
+        $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+        $user = (!$user) ? ((isset($_SERVER['REDIRECT_REMOTE_USER']) ? $_SERVER['REDIRECT_REMOTE_USER'] : '')) : $user;
+        $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
+
+        $_SESSION["currentUser"] = $user;
+        $_SESSION["currentAvatar"] = md5(strtolower(trim($usersArray[$user])));
+    }
+
+    $userName = $_SESSION["currentUser"];
+    $userAvatar = $_SESSION["currentAvatar"];
 ?><html>
 <head>
     <title>Current Network Status</title>

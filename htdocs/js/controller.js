@@ -95,8 +95,8 @@ Search = {}
 							pAuth = (data.pAuth)           ? '<img class="icons" src="https://www.gravatar.com/avatar/'+ data.pAuth +'?size=20" width="19" height="19" />' : '';
 							qAck  = (data.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
 							qUAck = (data.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ data.qUAck +'?size=20" width="19" height="19" alt="'+ data.qAuth +' unack" title="'+ data.qAuth +' unack" />' : '',
-							ack   = (!data.info) ? '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>' : '',
-							sched = (!data.info && data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
+							ack   = '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
+							sched = (data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
 						if (data.pending) {
                             return '' +
@@ -482,8 +482,8 @@ function getGroupNormalThead(rowsHeader) {
 			subRowsBrown   = $('#mainTable tbody tr:contains("'+ contains +'") .host.brown-text').length,
 			subRowsInfo    = ((subRowsBlue + subRowsBrown) == subRows) ? true : false;
 			subRowsClass   = (subRowsInfo) ? ((subRowsBrown) ? ' brown-text' : ' blue-text') : '';
-			ackIconBlock   = (subRowsClass) ? '' : '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-			schedIconBlock = (subRowsClass) ? '' : '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
+			ackIconBlock   = '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
+			schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
 			
 			if (avatar) {
 				var quickAck = '<li><img class="icons" src="'+ avatar +'"></li>';
@@ -1039,7 +1039,7 @@ Search.tempHideButtons = function () {
 	if (whatWeChangeObject.what == 'group') {
 		var attr        = (whatWeChangeObject.service) ? whatWeChangeObject.service.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : whatWeChangeObject.host.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase(),
 			returnArray = [],
-			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false,
+			infoCheck   = false,
 			item        = Search.allHeaderRows[Search.currentTab + '_' + attr + '_rows'];
 		
 		for (var i = 0; i < item.length; i++) {
@@ -1088,7 +1088,7 @@ Search.tempHideButtons = function () {
     }
 	else if (whatWeChangeObject.what == 'all') {
 		var returnArray = [],
-			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
+			infoCheck   = false;
 			
 		$('#mainTable tbody tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
@@ -1181,7 +1181,7 @@ Search.tempHideButtons = function () {
 	}
 	else {
 		var returnArray = [],
-			infoCheck   = (whatWeChangeObject.type == 'acknowledgeIt' || whatWeChangeObject.type == 'scheduleIt') ? true : false;
+			infoCheck   = false;
 			
 		$('#mainTable tbody tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
