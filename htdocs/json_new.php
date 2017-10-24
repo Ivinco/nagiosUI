@@ -87,7 +87,7 @@ foreach ($array['alert'] as $item) {
 
     $infoRecord = returnInfoRecord($service, $statusInfo);
 
-    if (!$xmlFile && !$infoRecord['info'] && $plannedRecord = $plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment)) {
+    if (!$xmlFile && $plannedRecord = $plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment)) {
         $sched          = $plannedRecord['sched'];
         $schComment     = $plannedRecord['comment'];
         $acked          = $plannedRecord['acked'];
@@ -101,9 +101,9 @@ foreach ($array['alert'] as $item) {
     }
 
     $returnType = '';
-    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || $infoRecord['info'] || ($showInNormal && $state != 'OK')) ? '__normal__' : '';
-    $returnType.= ($acked && $tempCommen != 'temp' && !$infoRecord['info']) ? '__acked__' : '';
-    $returnType.= ($sched && !$infoRecord['info']) ? '__sched__' : '';
+    $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($showInNormal && $state != 'OK')) ? '__normal__' : '';
+    $returnType.= ($acked && $tempCommen != 'temp') ? '__acked__' : '';
+    $returnType.= ($sched) ? '__sched__' : '';
 
     $statusName = $state;
 
@@ -231,11 +231,11 @@ if ($filter) {
             }
         }
 
-        if (strpos($fullText, '__acked__') !== false) {
+        if (strpos($fullText, '__acked__') !== false && strpos($fullText, '__info__') === false) {
             $additional['acked']++;
         }
 
-        if (strpos($fullText, '__sched__') !== false) {
+        if (strpos($fullText, '__sched__') !== false && strpos($fullText, '__info__') === false) {
             $additional['sched']++;
         }
 

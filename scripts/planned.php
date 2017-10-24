@@ -117,7 +117,7 @@ class planned
     public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment) {
         $return = [];
 
-        if ($planned = $this->findPlannedRecord($host, $service)) {
+        if ($planned = $this->findPlannedRecord($host, $service, $hostOrService)) {
             if ($planned['type'] == 'new' && !$sched) {
                 $this->setPlanned($host, $service);
             }
@@ -164,7 +164,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
+                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time()) {
                         $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && time() < $plan['list'][$host][$service]) ? 'old' : 'new';
 
                         return [
@@ -184,7 +184,7 @@ class planned
 
         return '';
     }
-    private function setPlanned($host, $service) {
+    private function setPlanned($host, $service, $hostOrService) {
         $planned = $this->returnPlanned();
 
         foreach ($planned as $key => $plan) {
@@ -195,7 +195,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ") && $plan['end'] > time()) {
+                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time()) {
                         $results = [];
 
                         foreach ($planned as $plannedKey => $plannedValue) {
@@ -219,7 +219,7 @@ class planned
                         }
 
                         $this->writePlanned($results);
-                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user'], $plan['comment']);
+                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user'], $plan['comment'], $hostOrService);
 
                         return $plan['user'];
                     }
@@ -232,20 +232,20 @@ class planned
     private function returnPlannedPattern($pattern) {
         $pattern = trim($pattern);
         $pattern = ($pattern) ? $pattern : '*';
-        $pattern = str_replace("*", ".+", $pattern);
         $pattern = str_replace("?", ".", $pattern);
+        $pattern = str_replace("*", ".*?", $pattern);
         $pattern = str_replace("&quot;", "\"", $pattern);
-        $pattern = str_replace(".+.+", ".+", $pattern);
+        $pattern = str_replace(".*?.*?", ".*?", $pattern);
 
         return $pattern;
     }
-    private function schedulePlanned($host, $service, $end, $user, $comment) {
+    private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService) {
         $this->actions->setType('scheduleItTime');
         $this->actions->runActions([[
             'start_time' => time(),
             'end_time'   => $end,
             'hours'      => 1,
-            'isHost'     => 'service',
+            'isHost'     => $hostOrService,
             'host'       => $host,
             'service'    => $service,
             'author'     => $user,
@@ -275,7 +275,7 @@ class planned
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", $service) && $plan['end'] > time() && isset($plan['comment'])) {
+                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time() && isset($plan['comment'])) {
                         return [$plan['host'] . '___' . $plan['service'], $plan['comment']];
                     }
                 }
@@ -321,7 +321,7 @@ class planned
                 if ($downtimeId != 4) {
                     foreach ($hostCommands as $commandHost) {
                         foreach ($serviceCommands as $commandService) {
-                            if (preg_match("/^$commandHost$/iu", $host) && preg_match("/$commandService/iu", " " . $service . " ")) {
+                            if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service)) {
                                 $this->removeSchedulePlanned($downtime);
                             }
                         }
@@ -338,5 +338,11 @@ class planned
         ]]);
 
         return true;
+    }
+    private function pregMatchHost($commandHost, $host) {
+        return preg_match("/^$commandHost$/iu", $host);
+    }
+    private function pregMatchService($commandService, $service) {
+        return preg_match("/$commandService/iu", " " . $service . " ");
     }
 }
