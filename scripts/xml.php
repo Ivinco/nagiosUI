@@ -14,6 +14,7 @@ class xml
         global $usersArray;
         global $nagiosConfigFile;
         global $nagiosFullHostUrl;
+        global $icingaFullHostUrl;
         global $groupByService;
         global $groupByHost;
         global $refreshArray;
@@ -28,6 +29,8 @@ class xml
         global $icingaApiHosts;
         global $icingaHostUrl;
         global $icingaServiceUrl;
+        global $nagiosHostUrl;
+        global $nagiosServiceUrl;
 
         $this->icinga                   = $icinga;
         $this->statusFile_global        = $statusFile_global;
@@ -38,7 +41,6 @@ class xml
         $this->nagiosCommentUrl         = $nagiosCommentUrl;
         $this->usersArray               = $usersArray;
         $this->nagiosConfigFile         = $nagiosConfigFile;
-        $this->nagiosFullHostUrl        = $nagiosFullHostUrl;
         $this->groupByService           = $groupByService;
         $this->groupByHost              = $groupByHost;
         $this->refreshArray             = $refreshArray;
@@ -53,9 +55,11 @@ class xml
         $this->icingaApiUser            = $icingaApiUser;
         $this->icingaApiPass            = $icingaApiPass;
         $this->icingaApiHosts           = $icingaApiHosts;
-        $this->icingaHostUrl            = $icingaHostUrl;
-        $this->icingaServiceUrl         = $icingaServiceUrl;
         $this->icingaApiHost            = $this->findAliveHost();
+
+        $this->fullHostUrl              = ($this->icingaDB) ? $icingaFullHostUrl : $nagiosFullHostUrl;
+        $this->hostUrl                  = ($this->icingaDB) ? $icingaHostUrl     : $nagiosHostUrl;
+        $this->serviceUrl               = ($this->icingaDB) ? $icingaServiceUrl  : $nagiosServiceUrl;
 
         if ($this->memcacheEnabled) {
             $this->memcache = new Memcache;
@@ -313,7 +317,7 @@ class xml
 		<host>' .               $this->parseToXML($host)                            . '</host>
 		<host-url>' .           $this->parseToXML($this->hostUrl($attrs['full_host_name'])) . '</host-url>
 		<service>' .            $this->parseToXML($service)                         . '</service>
-		<service-url>' .        $this->parseToXML($this->serviceUrl($attrs['full_host_name'], $attrs['serviceEncoded'])) . '</service-url>
+		<service-url>' .        $this->parseToXML($this->serviceUrl($attrs['full_host_name'], $service)) . '</service-url>
 		<notes_url>' .          $this->parseToXML($attrs['notesUrl'])               . '</notes_url>
 		<status>' .             $this->parseToXML($attrs['state'])                  . '</status>
 		<origState>' .          $this->parseToXML($attrs['origState'])              . '</origState>
@@ -348,7 +352,7 @@ class xml
         $xmlContent .= '
 	<hash>'.                 md5($this->verificateCheck)                        .'</hash>
 	<nagios-config-file>'.   $this->parseToXML($this->nagiosConfigFile)         .'</nagios-config-file>
-	<nagios-full-list-url>'. $this->parseToXML($this->nagiosFullHostUrl)        .'</nagios-full-list-url>
+	<nagios-full-list-url>'. $this->parseToXML($this->fullHostUrl)              .'</nagios-full-list-url>
 	<group-by-service>'.     $this->parseToXML($this->groupByService)           .'</group-by-service>
 	<group-by-host>'.        $this->parseToXML($this->groupByHost)              .'</group-by-host>
 	<nagios-comment-url>'.   $this->parseToXML($this->nagiosCommentUrl)         .'</nagios-comment-url>
@@ -365,7 +369,6 @@ class xml
 
                 $this->hosts[$host][$service]['state']           = $this->statesArray[$attrs['state']];
                 $this->hosts[$host][$service]['origState']       = '';
-                $this->hosts[$host][$service]['serviceEncoded']  = urlencode($attrs['check_command']);
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
                 $this->hosts[$host][$service]['notesUrl']        = (!$this->icingaDB) ? $this->returnNotesUrl($host, $service) : $attrs['notes_url'];
@@ -824,7 +827,7 @@ class xml
     {
         $item = $this->hosts[$host][$service];
 
-        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $item['serviceEncoded'];
+        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $item['service'];
         $this->verificateCheck .= $item['comments']['ackLastTemp'] . $item['attempt'] . $item['notesUrl'] . $item['acked'];
         $this->verificateCheck .= $item['scheduled'] . $item['comments']['downtime_id'] . $item['comments']['ackLastAuthor'];
         $this->verificateCheck .= $item['plugin_output'] . $item['comments']['schedComment'] . $item['last_check_date'];
@@ -843,28 +846,16 @@ class xml
         return $xmlStr;
     }
     private function hostUrl($host) {
-        if ($this->icingaDB) {
-            return str_replace('___host___', $host, $this->icingaHostUrl);
-        }
-
-        return 'data/cgi-bin-status.cgi?host='. $host;
+        return str_replace('___host___', $host, $this->hostUrl);
     }
     private function serviceUrl($host, $service) {
-        $service = str_replace('+', ' ', $this->parseToXML($service));
+        $service = str_replace('+', ' ', urlencode($this->parseToXML($service)));
 
-        if ($service == 'SERVER IS UP') {
-            if ($this->icingaDB) {
-                return str_replace('___host___', $host, $this->icingaHostUrl);
-            }
-
-            return 'data/cgi-bin-extinfo.cgi?type=1&amp;host='. $host;
+        if ($service == 'SERVER IS UP' || $service == 'SERVER+IS+UP') {
+            return $this->hostUrl($host);
         }
 
-        if ($this->icingaDB) {
-            return str_replace('___host___', $host, str_replace('___service___', $service, $this->icingaServiceUrl));
-        }
-
-        return 'data/cgi-bin-extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
+        return str_replace('___host___', $host, str_replace('___service___', $service, $this->serviceUrl));
     }
     private function returnRefreshArray()
     {
