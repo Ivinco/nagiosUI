@@ -117,9 +117,9 @@ class planned
     public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment) {
         $return = [];
 
-        if ($planned = $this->findPlannedRecord($host, $service, $hostOrService)) {
+        if ($planned = $this->findPlannedRecord($host, $service)) {
             if ($planned['type'] == 'new' && !$sched) {
-                $this->setPlanned($host, $service);
+                $this->setPlanned($host, $service, $hostOrService);
             }
 
             $return = [

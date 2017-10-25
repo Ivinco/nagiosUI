@@ -225,7 +225,7 @@ Search = {}
             if (data.status.origin) {
                 $(row).find('.status').addClass(data.status.origin);
             }
-			if (!data.service.info && data.service.sched) {
+			if (data.service.sched) {
 				$(row).find('.host, .service, .status, .last_check, .duration, .status_information, .comment, .more').addClass('grey-text');
 			}
 			if (data.service.info && (data.state == 'WARNING' || data.state == 'UNKNOWN')) {
