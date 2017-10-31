@@ -827,7 +827,7 @@ class xml
     {
         $item = $this->hosts[$host][$service];
 
-        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $item['service'];
+        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $service;
         $this->verificateCheck .= $item['comments']['ackLastTemp'] . $item['attempt'] . $item['notesUrl'] . $item['acked'];
         $this->verificateCheck .= $item['scheduled'] . $item['comments']['downtime_id'] . $item['comments']['ackLastAuthor'];
         $this->verificateCheck .= $item['plugin_output'] . $item['comments']['schedComment'] . $item['last_check_date'];
