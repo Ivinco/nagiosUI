@@ -65,6 +65,8 @@ class xml
             $this->memcache = new Memcache;
             $this->memcache->connect($this->memcacheHost, $this->memcachePort);
         }
+
+        $this->backendStatus = '';
     }
 
     public function returnXml($isHash, $xmlFile)
@@ -346,6 +348,10 @@ class xml
 		<pending>' .            $this->parseToXML($attrs['pending'])                . '</pending>
 		<next_check>' .         $this->parseToXML($attrs['next_check'])             . '</next_check>
 	</alert>';
+
+                if (!$this->backendStatus && round(microtime(true) - $this->parseToXML($attrs['last_check'])) < 600) {
+                    $this->backendStatus = 'ok';
+                }
             }
         }
 
@@ -357,6 +363,7 @@ class xml
 	<group-by-host>'.        $this->parseToXML($this->groupByHost)              .'</group-by-host>
 	<nagios-comment-url>'.   $this->parseToXML($this->nagiosCommentUrl)         .'</nagios-comment-url>
 	<refresh-array>'.        $this->parseToXML($this->returnRefreshArray())     .'</refresh-array>
+	<backend_status>'.       $this->backendStatus                               .'</backend_status>
 </alerts>';
 
         return $xmlContent;
