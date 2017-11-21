@@ -141,6 +141,8 @@ class xml
     }
     private function returnIcingaApiHosts()
     {
+        $this->checkIcingaHostsBackendStatus();
+        $this->checkIcingaServiceBackendStatus();
         $data = [
             'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
             'filter' => '     host.state >  0' .
@@ -348,10 +350,6 @@ class xml
 		<pending>' .            $this->parseToXML($attrs['pending'])                . '</pending>
 		<next_check>' .         $this->parseToXML($attrs['next_check'])             . '</next_check>
 	</alert>';
-
-                if (!$this->backendStatus && round(microtime(true) - $this->parseToXML($attrs['last_check'])) < 600) {
-                    $this->backendStatus = 'ok';
-                }
             }
         }
 
@@ -432,6 +430,8 @@ class xml
                     ],
                 );
             }
+
+            $this->checkBackendStatus($servicesMatches['last_check'][$k]);
         }
         unset($servicesMatches);
 
@@ -467,6 +467,8 @@ class xml
                     ],
                 );
             }
+
+            $this->checkBackendStatus($servicesMatches['last_check'][$k]);
         }
     }
     private function prepareAckSchedComment($comment, $author, $date)
@@ -888,5 +890,42 @@ class xml
         }
 
         return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
+    }
+
+    private function checkBackendStatus($lastCheck)
+    {
+        if (!$this->backendStatus && round(microtime(true) - $lastCheck) < 600) {
+            $this->backendStatus = 'ok';
+        }
+    }
+    private function checkIcingaHostsBackendStatus()
+    {
+        if (!$this->backendStatus) {
+            $data = [
+                'attrs'  => ['last_check'],
+                'filter' => 'host.last_check > ' . (time() - 600),
+            ];
+
+            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/hosts" -d \''. json_encode($data) .'\'  2>&1', $output);
+
+            if (count(json_decode($output[0])->results)) {
+                $this->backendStatus = 'ok';
+            }
+        }
+    }
+    private function checkIcingaServiceBackendStatus()
+    {
+        if (!$this->backendStatus) {
+            $data = [
+                'attrs'  => ['last_check'],
+                'filter' => 'host.last_check > ' . (time() - 600),
+            ];
+
+            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/services" -d \''. json_encode($data) .'\'  2>&1', $output);
+
+            if (count(json_decode($output[0])->results)) {
+                $this->backendStatus = 'ok';
+            }
+        }
     }
 }
