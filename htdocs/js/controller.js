@@ -22,6 +22,8 @@ localStorage.setItem('currentGroup', tmpGroup);
 localStorage.setItem('canceledReloads', '0');
 
 lastTime = (new Date()).getTime();
+globalTime = 0;
+globalReload = true;
 
 Search = {}
 	Search.whatWeChangeObject = [{}];
@@ -684,6 +686,7 @@ Search.stopReloads = function(stop) {
 	Search.backgroundReload = false;
 	Search.autoRefresh      = false;
 	Search.startedGetData   = false;
+    globalReload            = false;
 }
 Search.startReloads = function() {
 	if (localStorage.getItem('canceledReloads') == '0') {
@@ -695,6 +698,8 @@ Search.startReloads = function() {
 			Search.autoRefresh = true;
 		}
     }
+
+    globalReload = true;
 }
 Search.getContent = function() {
     if (Search.backgroundReload && !Search.startedGetData) {
@@ -3064,6 +3069,12 @@ Search.init = function() {
 	
 
 	setInterval(function() {
+        globalTime += 2;
+
+        if (globalTime > 300 && globalReload) {
+            location.reload(true);
+        }
+
 		var currentTime = (new Date()).getTime();
 		if (currentTime > (lastTime + 300000)) {
 			Search.stopReloads();

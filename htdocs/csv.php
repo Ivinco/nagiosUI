@@ -30,14 +30,14 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
         foreach ($hostsMatches['host'] as $k=>$host) {
             $results[$host]['SERVER IS UP'] = array(
                 'state'   => $statesArray[intval($hostsMatches['state'][$k])],
-                'output'  => $hostsMatches['output'][$k],
+                'output'  => str_replace("\n", " ", $hostsMatches['output'][$k]),
             );
         }
 
         foreach ($servicesMatches['host'] as $k=>$host) {
             $results[$host][$servicesMatches['service'][$k]] = array(
                 'state'   => $statesArray[intval($servicesMatches['state'][$k])],
-                'output'  => $servicesMatches['output'][$k],
+                'output'  => str_replace("\n", " ", $servicesMatches['output'][$k]),
             );
         }
     } else {
@@ -50,7 +50,7 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
         foreach (json_decode($icingaHosts[0])->results as $item) {
             $results[$item->attrs->display_name]['SERVER IS UP'] = array(
                 'state'   => $statesArray[intval($item->attrs->state)],
-                'output'  => $item->attrs->last_check_result->output,
+                'output'  => str_replace("\n", " ", $item->attrs->last_check_result->output),
             );
         }
 
@@ -66,7 +66,7 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
         foreach (json_decode($icingaServices[0])->results as $item) {
             $results[$item->joins->host->display_name][$item->attrs->display_name] = array(
                 'state'   => $statesArray[intval($item->attrs->state)],
-                'output'  => $item->attrs->last_check_result->output,
+                'output'  => str_replace("\n", " ", $item->attrs->last_check_result->output),
             );
         }
     }
