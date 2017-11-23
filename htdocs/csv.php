@@ -12,7 +12,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
 
         $pregHostStatus = '/hoststatus {'.
             '[^{}]*?host_name=(?P<host>[^{}]*?)\n'.
-            '[^{}]*?check_command=(?P<command>[^{}]*?)\n'.
             '[^{}]*?current_state=(?P<state>.*?)\n'.
             '[^{}]*?plugin_output=(?P<output>[^{}]*?)\n'.
             '[^{}]*?}/is';
@@ -20,7 +19,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
         $pregServiceStatus = '/servicestatus {'.
             '.*?host_name=(?P<host>.*?)\n'.
             '.*?service_description=(?P<service>.*?)\n'.
-            '.*?check_command=(?P<command>.*?)\n'.
             '.*?current_state=(?P<state>.*?)\n'.
             '.*?plugin_output=(?P<output>.*?)\n'.
             '.*?}/is';
@@ -31,7 +29,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
 
         foreach ($hostsMatches['host'] as $k=>$host) {
             $results[$host]['SERVER IS UP'] = array(
-                'command' => $hostsMatches['command'][$k],
                 'state'   => $statesArray[intval($hostsMatches['state'][$k])],
                 'output'  => $hostsMatches['output'][$k],
             );
@@ -39,7 +36,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
 
         foreach ($servicesMatches['host'] as $k=>$host) {
             $results[$host][$servicesMatches['service'][$k]] = array(
-                'command' => $servicesMatches['command'][$k],
                 'state'   => $statesArray[intval($servicesMatches['state'][$k])],
                 'output'  => $servicesMatches['output'][$k],
             );
@@ -53,7 +49,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
 
         foreach (json_decode($icingaHosts[0])->results as $item) {
             $results[$item->attrs->display_name]['SERVER IS UP'] = array(
-                'command' => implode(' ', $item->attrs->last_check_result->command),
                 'state'   => $statesArray[intval($item->attrs->state)],
                 'output'  => $item->attrs->last_check_result->output,
             );
@@ -70,7 +65,6 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
 
         foreach (json_decode($icingaServices[0])->results as $item) {
             $results[$item->joins->host->display_name][$item->attrs->display_name] = array(
-                'command' => implode(' ', $item->attrs->last_check_result->command),
                 'state'   => $statesArray[intval($item->attrs->state)],
                 'output'  => $item->attrs->last_check_result->output,
             );
@@ -83,13 +77,13 @@ if (isset($_GET['source']) && in_array($_GET['source'], ['nagios', 'icinga'])) {
     header('Content-Disposition: attachment; filename='. $source .'.csv');
     $output = fopen('php://output', 'w');
 
-    fputcsv($output, ['Host', 'Service', 'State', 'Command', 'Output']);
+    fputcsv($output, ['Host', 'Service', 'State', 'Output'], ';');
 
     foreach ($results as $host => $result) {
         foreach ($result as $service => $item) {
-            $record = [$host, $service, $item['state'], $item['command'], $item['output']];
+            $record = [$host, $service, $item['state'], $item['output']];
 
-            fputcsv($output, $record);
+            fputcsv($output, $record, ';');
         }
     }
 }
