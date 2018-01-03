@@ -56,6 +56,7 @@ class xml
         $this->icingaApiPass            = $icingaApiPass;
         $this->icingaApiHosts           = $icingaApiHosts;
         $this->icingaApiHost            = $this->findAliveHost();
+        $this->actions                  = new actions;
 
         $this->fullHostUrl              = ($this->icingaDB) ? $icingaFullHostUrl : $nagiosFullHostUrl;
         $this->hostUrl                  = ($this->icingaDB) ? $icingaHostUrl     : $nagiosHostUrl;
@@ -533,6 +534,13 @@ class xml
                     }
                 }
 
+                if (count($result['schedComment']) > 1) {
+                    $return = $this->removeDuplicates($result['downtime_id'], $result['schedComment']);
+
+                    $result['downtime_id']  = array_keys($return);
+                    $result['schedComment'] = array_values($return);
+                }
+
                 $result['ackComment']      = implode('<br /><br />', $result['ackComment']);
                 $result['schedComment']    = implode('<br /><br />', $result['schedComment']);
                 $result['ackLastAuthor']   = (!empty($result['ackLastAuthor']))   ? end($result['ackLastAuthor'])         : '';
@@ -544,6 +552,31 @@ class xml
                 $this->hosts[$host][$service]['comments'] = $result;
             }
         }
+    }
+    private function removeDuplicates($ids, $comments) {
+        $newList     = [];
+        $return      = [];
+        $lastComment = '';
+
+        for ($i = 0; $i < count($comments); $i++) {
+            $newList[$ids[$i]] = $comments[$i];
+        }
+
+        natsort($newList);
+
+        foreach ($newList as $key => $value) {
+            if (!$lastComment || explode(' by ', $lastComment)[0] != explode(' by ', $value)[0]) {
+                $return[$key] = $lastComment = $value;
+            } else if (explode(' by ', $lastComment)[0] == explode(' by ', $value)[0]) {
+                $this->actions->setType('downtime');
+                $this->actions->runActions([[
+                    'down_id' => $key,
+                    'isHost'  => 'service',
+                ]]);
+            }
+        }
+
+        return $return;
     }
     private function otherFiles()
     {

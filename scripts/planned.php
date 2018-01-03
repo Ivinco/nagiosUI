@@ -118,7 +118,7 @@ class planned
         $return = [];
 
         if ($planned = $this->findPlannedRecord($host, $service)) {
-            if ($planned['type'] == 'new' && !$sched) {
+            if ($planned['type'] == 'new' && !$sched && !$schComment) {
                 $this->setPlanned($host, $service, $hostOrService);
             }
 
