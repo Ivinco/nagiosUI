@@ -15,31 +15,17 @@ class nagiosPercentile
 {
     function __construct()
     {
-        global $icinga;
         global $statusFile_global;
-        global $icingaDB;
-        global $icingaApiUser;
-        global $icingaApiPass;
-        global $icingaApiHosts;
         global $nagiosPercentileUrl;
 
-        $this->icinga                   = $icinga;
-        $this->statusFile_global        = $statusFile_global;
-        $this->icingaDB                 = $icingaDB;
-        $this->icingaApiUser            = $icingaApiUser;
-        $this->icingaApiPass            = $icingaApiPass;
-        $this->icingaApiHosts           = $icingaApiHosts;
-        $this->icingaApiHost            = $this->findAliveHost();
-        $this->nagiosPercentileUrl      = $nagiosPercentileUrl;
+        $this->statusFile_global   = $statusFile_global;
+        $this->nagiosPercentileUrl = $nagiosPercentileUrl;
+        $this->statusFile          = file_get_contents($this->statusFile_global);
 
         $this->comments    = [];
         $this->statuses    = [];
         $this->percentiles = [];
         $this->durations   = [];
-
-        if (!$this->icingaDB) {
-            $this->statusFile = file_get_contents($this->statusFile_global);
-        }
     }
 
     public function calculatePercentile() {
@@ -82,33 +68,6 @@ class nagiosPercentile
         file_put_contents("{$this->nagiosPercentileUrl}/durations", serialize($this->durations));
     }
     private function setStatuses() {
-        if ($this->icingaDB) {
-            $this->setStatusesFromIcingaApi();
-        } else {
-            $this->setStatusesFromStatusDat();
-        }
-    }
-    private function setStatusesFromIcingaApi() {
-        $data = [
-            'joins'  => ['host.display_name'],
-            'attrs'  => ['display_name', 'state', 'acknowledgement', 'downtime_depth'],
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/services" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-        foreach (json_decode($output[0])->results as $item) {
-            $this->statuses[] = [
-                'host'        => $item->joins->host->display_name,
-                'service'     => $item->attrs->display_name,
-                'hostService' => $item->joins->host->display_name . '_' . $item->attrs->display_name,
-                'serviceHash' => md5($item->attrs->display_name),
-                'state'       => $item->attrs->state,
-                'acked'       => $item->attrs->acknowledgement,
-                'sched'       => $item->attrs->downtime_depth,
-            ];
-        }
-    }
-    private function setStatusesFromStatusDat() {
         $pregServiceStatus  = '/servicestatus {'.
             '.*?host_name=(?P<host>.*?)\n'.
             '.*?service_description=(?P<service>.*?)\n'.
@@ -132,48 +91,11 @@ class nagiosPercentile
         }
     }
     private function setComments() {
-        if ($this->icingaDB) {
-            $this->setCommentsFromIcingaApi();
-        } else {
-            $this->setCommentsFromStatusDat();
-        }
-    }
-    private function setCommentsFromIcingaApi() {
-        $data = [
-            'joins'  => ['host.display_name', 'service.display_name'],
-            'attrs'  => ['text'],
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/comments" -d \''. json_encode($data) .'\'  2>&1', $outputAck);
-
-        foreach (json_decode($outputAck[0])->results as $item) {
-            $this->comments[$item->joins->host->display_name.'_'.$item->joins->service->display_name] = $item->attrs->text;
-        }
-
-
-
-        $data['attrs'] = ['comment'];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/downtimes" -d \''. json_encode($data) .'\'  2>&1', $outputSched);
-
-        foreach (json_decode($outputSched[0])->results as $item) {
-            $this->comments[$item->joins->host->display_name.'_'.$item->joins->service->display_name] = $item->attrs->comment;
-        }
-    }
-    private function setCommentsFromStatusDat() {
-        if ($this->icinga) {
-            $pregServiceComment = '/(servicedowntime|servicecomment) {'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?(comment|comment_data)=(?P<comment>.*?)\n'.
-                '.*?}/is';
-        } else {
-            $pregServiceComment = '/(servicedowntime|servicecomment) {'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?(comment|comment_data)=(?P<comment>.*?)\n'.
-                '.*?}/is';
-        }
+        $pregServiceComment = '/(servicedowntime|servicecomment) {'.
+            '.*?host_name=(?P<host>.*?)\n'.
+            '.*?service_description=(?P<service>.*?)\n'.
+            '.*?(comment|comment_data)=(?P<comment>.*?)\n'.
+            '.*?}/is';
 
         if (preg_match_all($pregServiceComment, $this->statusFile, $matches)) {
             foreach ($matches['host'] as $k=>$host) {
@@ -202,24 +124,7 @@ class nagiosPercentile
 
         return 0;
     }
-    private function findAliveHost() {
-        $data = ['attrs' => ['active']];
-
-        foreach ($this->icingaApiHosts as $host) {
-            $output = [];
-
-            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $host .'/v1/objects/hosts" -d \''. json_encode($data) .'\' 2>&1', $output);
-
-            if (count($output) && isset($output[0]) && isset(json_decode($output[0])->results) && count(json_decode($output[0])->results)) {
-                return $host;
-            }
-        }
-
-        return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
-    }
 }
-
-
 
 $percentile = new nagiosPercentile;
 $percentile->calculatePercentile();

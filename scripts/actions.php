@@ -5,16 +5,8 @@ class actions
     function __construct()
     {
         global $nagiosPipe;
-        global $icingaDB;
-        global $icingaApiUser;
-        global $icingaApiPass;
-        global $icingaApiHosts;
 
-        $this->nagiosPipe     = $nagiosPipe;
-        $this->icingaDB       = $icingaDB;
-        $this->icingaApiUser  = $icingaApiUser;
-        $this->icingaApiPass  = $icingaApiPass;
-        $this->icingaApiHosts = $icingaApiHosts;
+        $this->nagiosPipe = $nagiosPipe;
     }
     public function verifyType()
     {
@@ -26,19 +18,17 @@ class actions
             $this->returnError('type not in array', 404);
         }
 
-        if (!$this->icingaDB) {
-            if (!file_exists($this->nagiosPipe)) {
-                $this->returnError('file ('. $this->nagiosPipe .') not exists, please check in config.php $nagiosPipe value', 404);
-            }
-
-            $this->openFile();
-
-            if (!$this->file) {
-                $this->returnError('check file permissions', 400);
-            }
-
-            $this->closeFile();
+        if (!file_exists($this->nagiosPipe)) {
+            $this->returnError('file ('. $this->nagiosPipe .') not exists, please check in config.php $nagiosPipe value', 404);
         }
+
+        $this->openFile();
+
+        if (!$this->file) {
+            $this->returnError('check file permissions', 400);
+        }
+
+        $this->closeFile();
 
         $this->type = $_REQUEST['type'];
     }
@@ -89,58 +79,20 @@ class actions
     }
     public function acknowledgeProblem($post)
     {
-        if ($this->icingaDB) {
-            $data = [
-                'author'      => $post['author'],
-                'comment'     => $this->escapeSingleQuote($post['com_data']),
-                'notify'      => true,
-                'sticky'      => true,
-                'type'        => ucfirst($post['isHost']),
-                'filter'      => 'host.display_name==hostName',
-                'filter_vars' => [
-                    'hostName' => $post['host']
-                ]
-            ];
+        $data = ($post['isHost'] == 'service') ? 'ACKNOWLEDGE_SVC_PROBLEM;' : 'ACKNOWLEDGE_HOST_PROBLEM;';
+        $data.= $post['host'] .';';
+        $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
+        $data.= "2;1;0;{$post['author']};{$post['com_data']}";
 
-            if ($post['isHost'] == 'service') {
-                $data['filter'] = $data['filter'] . ' && service.display_name==serviceName';
-                $data['filter_vars']['serviceName'] = $post['service'];
-            }
-
-            $this->runIcingaCommand($data, 'acknowledge-problem');
-        } else {
-            $data = ($post['isHost'] == 'service') ? 'ACKNOWLEDGE_SVC_PROBLEM;' : 'ACKNOWLEDGE_HOST_PROBLEM;';
-            $data.= $post['host'] .';';
-            $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
-            $data.= "2;1;0;{$post['author']};{$post['com_data']}";
-
-            $this->runNagiosCommand($data);
-        }
+        $this->runNagiosCommand($data);
     }
     public function unAcknowledgeProblem($post)
     {
-        if ($this->icingaDB) {
-            $data = [
-                'type'        => ucfirst($post['isHost']),
-                'filter'      => 'host.display_name==hostName',
-                'filter_vars' => [
-                    'hostName' => $post['host']
-                ]
-            ];
+        $data = ($post['isHost'] == 'service') ? 'REMOVE_SVC_ACKNOWLEDGEMENT;' : 'REMOVE_HOST_ACKNOWLEDGEMENT;';
+        $data.= $post['host'] .';';
+        $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
 
-            if ($post['isHost'] == 'service') {
-                $data['filter'] = $data['filter'] . ' && service.display_name==serviceName';
-                $data['filter_vars']['serviceName'] = $post['service'];
-            }
-
-            $this->runIcingaCommand($data, 'remove-acknowledgement');
-        } else {
-            $data = ($post['isHost'] == 'service') ? 'REMOVE_SVC_ACKNOWLEDGEMENT;' : 'REMOVE_HOST_ACKNOWLEDGEMENT;';
-            $data.= $post['host'] .';';
-            $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
-
-            $this->runNagiosCommand($data);
-        }
+        $this->runNagiosCommand($data);
     }
     public function scheduleProblem($post)
     {
@@ -160,51 +112,19 @@ class actions
             $duration = $post['hours'];
         }
 
-        if ($this->icingaDB) {
-            $data = [
-                'author'      => $post['author'],
-                'comment'     => $this->escapeSingleQuote($post['com_data']),
-                'start_time'  => $start,
-                'end_time'    => $end,
-                'fixed'       => true,
-                'duration'    => $duration,
-                'type'        => ucfirst($post['isHost']),
-                'filter'      => 'host.display_name==hostName',
-                'filter_vars' => [
-                    'hostName' => $post['host']
-                ]
-            ];
+        $data = ($post['isHost'] == 'service') ? 'SCHEDULE_SVC_DOWNTIME;' : 'SCHEDULE_HOST_DOWNTIME;';
+        $data.= $post['host'] .';';
+        $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
+        $data.= "{$start};{$end};1;0;{$duration};{$post['author']};{$post['com_data']}";
 
-            if ($post['isHost'] == 'service') {
-                $data['filter'] = $data['filter'] . ' && service.display_name==serviceName';
-                $data['filter_vars']['serviceName'] = $post['service'];
-            }
-
-            $this->runIcingaCommand($data, 'schedule-downtime');
-        } else {
-            $data = ($post['isHost'] == 'service') ? 'SCHEDULE_SVC_DOWNTIME;' : 'SCHEDULE_HOST_DOWNTIME;';
-            $data.= $post['host'] .';';
-            $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
-            $data.= "{$start};{$end};1;0;{$duration};{$post['author']};{$post['com_data']}";
-
-            $this->runNagiosCommand($data);
-        }
+        $this->runNagiosCommand($data);
     }
     public function unScheduleProblem($post)
     {
-        if ($this->icingaDB) {
-            $data = [
-                'type'        => 'Downtime',
-                'filter'      => 'downtime.legacy_id=='. $post['down_id'],
-            ];
+        $data  = ($post['isHost'] == 'service') ? 'DEL_SVC_DOWNTIME;' : 'DEL_HOST_DOWNTIME;';
+        $data .= $post['down_id'];
 
-            $this->runIcingaCommand($data, 'remove-downtime');
-        } else {
-            $data  = ($post['isHost'] == 'service') ? 'DEL_SVC_DOWNTIME;' : 'DEL_HOST_DOWNTIME;';
-            $data .= $post['down_id'];
-
-            $this->runNagiosCommand($data);
-        }
+        $this->runNagiosCommand($data);
     }
     public function recheckProblem($post)
     {
@@ -215,57 +135,13 @@ class actions
         $date     = explode('-', $dateTime[0]);
         $start    = strtotime($date[2] .'-'. $date[0] .'-'. $date[1] .' '. $dateTime[1]);
 
-        if ($this->icingaDB) {
-            $data = [
-                'force_check' => true,
-                'next_check'  => $start,
-                'type'        => ucfirst($post['isHost']),
-                'filter'      => 'host.display_name==hostName',
-                'filter_vars' => [
-                    'hostName' => $post['host']
-                ]
-            ];
+        $data = ($post['isHost'] == 'service') ? 'SCHEDULE_FORCED_SVC_CHECK;' : 'SCHEDULE_FORCED_HOST_CHECK;';
+        $data.= $post['host'] .';';
+        $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
+        $data.= $start;
 
-            if ($post['isHost'] == 'service') {
-                $data['filter'] = $data['filter'] . ' && service.display_name==serviceName';
-                $data['filter_vars']['serviceName'] = $post['service'];
-            }
-
-            $this->runIcingaCommand($data, 'reschedule-check');
-        } else {
-            $data = ($post['isHost'] == 'service') ? 'SCHEDULE_FORCED_SVC_CHECK;' : 'SCHEDULE_FORCED_HOST_CHECK;';
-            $data.= $post['host'] .';';
-            $data.= ($post['isHost'] == 'service') ? ($post['service'] . ';') : '';
-            $data.= $start;
-
-            $this->runNagiosCommand($data);
-        }
+        $this->runNagiosCommand($data);
     }
-    private function escapeSingleQuote($text) {
-        return str_replace("'", "&#39;", $text);
-    }
-    private function runIcingaCommand($data, $type)
-    {
-        $this->icingaApiHost = $this->findAliveHost();
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST "'. $this->icingaApiHost .'/v1/actions/'. $type .'" -d \''. json_encode($data) .'\'');
-    }
-    private function findAliveHost() {
-        $data = ['attrs' => ['active']];
-
-        foreach ($this->icingaApiHosts as $host) {
-            $output = [];
-
-            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $host .'/v1/objects/hosts" -d \''. json_encode($data) .'\' 2>&1', $output);
-
-            if (count($output) && isset($output[0]) && isset(json_decode($output[0])->results) && count(json_decode($output[0])->results)) {
-                return $host;
-            }
-        }
-
-        return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
-    }
-
     private function runNagiosCommand($data)
     {
         $this->openFile();

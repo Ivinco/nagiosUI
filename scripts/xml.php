@@ -4,7 +4,6 @@ class xml
 {
     function __construct()
     {
-        global $icinga;
         global $statusFile_global;
         global $alertsPercentile_global;
         global $durationsFromFile_global;
@@ -14,7 +13,6 @@ class xml
         global $usersArray;
         global $nagiosConfigFile;
         global $nagiosFullHostUrl;
-        global $icingaFullHostUrl;
         global $groupByService;
         global $groupByHost;
         global $refreshArray;
@@ -23,16 +21,9 @@ class xml
         global $memcachePort;
         global $memcacheName;
         global $xmlArchive;
-        global $icingaDB;
-        global $icingaApiUser;
-        global $icingaApiPass;
-        global $icingaApiHosts;
-        global $icingaHostUrl;
-        global $icingaServiceUrl;
         global $nagiosHostUrl;
         global $nagiosServiceUrl;
 
-        $this->icinga                   = $icinga;
         $this->statusFile_global        = $statusFile_global;
         $this->alertsPercentile_global  = $alertsPercentile_global;
         $this->durationsFromFile_global = $durationsFromFile_global;
@@ -51,16 +42,10 @@ class xml
         $this->xmlArchive               = $xmlArchive;
         $this->verificateCheck          = '';
         $this->statesArray              = [0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN'];
-        $this->icingaDB                 = $icingaDB;
-        $this->icingaApiUser            = $icingaApiUser;
-        $this->icingaApiPass            = $icingaApiPass;
-        $this->icingaApiHosts           = $icingaApiHosts;
-        $this->icingaApiHost            = $this->findAliveHost();
         $this->actions                  = new actions;
-
-        $this->fullHostUrl              = ($this->icingaDB) ? $icingaFullHostUrl : $nagiosFullHostUrl;
-        $this->hostUrl                  = ($this->icingaDB) ? $icingaHostUrl     : $nagiosHostUrl;
-        $this->serviceUrl               = ($this->icingaDB) ? $icingaServiceUrl  : $nagiosServiceUrl;
+        $this->fullHostUrl              = $nagiosFullHostUrl;
+        $this->hostUrl                  = $nagiosHostUrl;
+        $this->serviceUrl               = $nagiosServiceUrl;
 
         if ($this->memcacheEnabled) {
             $this->memcache = new Memcache;
@@ -127,181 +112,11 @@ class xml
     private function prepareDataToXml()
     {
         $this->otherFiles();
-
-        if (!$this->icingaDB) {
-            $this->statusFile = file_get_contents($this->statusFile_global);
-            $this->pregMatches();
-            $this->prepareHosts();
-            $this->prepareComments();
-        } else {
-            $this->prepareIcingaDBHosts();
-            $this->prepareIcingaDBComments();
-        }
-
+        $this->statusFile = file_get_contents($this->statusFile_global);
+        $this->pregMatches();
+        $this->prepareHosts();
+        $this->prepareComments();
         $this->prepareOtherData();
-    }
-    private function returnIcingaApiHosts()
-    {
-        $this->checkIcingaHostsBackendStatus();
-        $this->checkIcingaServiceBackendStatus();
-        $data = [
-            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
-            'filter' => '     host.state >  0' .
-                        ' || (host.state == 0 && host.downtime_depth != 0.0)' .
-                        ' || (host.state == 0 && !host.last_state_change && host.active)'
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/hosts" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-        return json_decode($output[0])->results;
-    }
-    private function returnIcingaApiServices()
-    {
-        $data = [
-            'joins'  => ['host.display_name', 'host.name'],
-            'attrs'  => ['display_name', 'state', 'last_check_result', 'last_check', 'check_attempt', 'max_check_attempts', 'last_state_change', 'next_check', 'active', 'acknowledgement', 'downtime_depth', 'notes_url', 'name'],
-            'filter' => '     service.state >  0' .
-                ' || (service.state == 0 && service.downtime_depth != 0.0)' .
-                ' || (service.state == 0 && !service.last_state_change && service.active)'
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/services" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-        return json_decode($output[0])->results;
-    }
-    private function returnIcingaApiAckComments()
-    {
-        $data = [
-            'joins'  => ['host.display_name', 'service.display_name'],
-            'attrs'  => ['active', 'entry_time', 'author', 'text'],
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/comments" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-        return json_decode($output[0])->results;
-    }
-    private function returnIcingaApiSchedComments()
-    {
-        $data = [
-            'joins'  => ['host.display_name', 'service.display_name'],
-            'attrs'  => ['legacy_id', 'entry_time', 'start_time', 'end_time', 'author', 'comment', 'duration', 'active'],
-        ];
-
-        exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/downtimes" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-        return json_decode($output[0])->results;
-    }
-    private function prepareIcingaDBHosts()
-    {
-        $this->hosts = [];
-
-        foreach ($this->returnIcingaApiServices() as $item) {
-            $this->hosts[$item->joins->host->display_name][$item->attrs->display_name] = [
-                'acked'              => $item->attrs->acknowledgement,
-                'scheduled'          => $item->attrs->downtime_depth,
-                'state'              => $item->attrs->state,
-                'origState'          => '',
-                'last_status_change' => $item->attrs->last_state_change,
-                'plugin_output'      => $item->attrs->last_check_result->output,
-                'attempts'           => $item->attrs->check_attempt,
-                'max_attempts'       => $item->attrs->max_check_attempts,
-                'last_check'         => $item->attrs->last_check,
-                'active_enabled'     => $item->attrs->active,
-                'next_check'         => $item->attrs->next_check,
-                'notes_url'          => $item->attrs->notes_url,
-                'full_host_name'     => $item->joins->host->name,
-                'check_command'      => $item->attrs->name,
-                'comments'           => [
-                    'ackComment'      => '',
-                    'schedComment'    => '',
-                    'downtime_id'     => '',
-                    'ackLastTemp'     => '',
-                    'ackLastAuthor'   => '',
-                    'schedStart'      => '',
-                    'schedEnd'        => '',
-                    'schedDuration'   => '',
-                    'schedLastAuthor' => '',
-                    'schedLastTemp'   => '',
-                ]
-            ];
-        }
-
-        foreach ($this->returnIcingaApiHosts() as $item) {
-            $this->hosts[$item->attrs->display_name]['SERVER IS UP'] = [
-                'acked'              => $item->attrs->acknowledgement,
-                'scheduled'          => $item->attrs->downtime_depth,
-                'state'              => 2,  // down host is always shown as CRITICAL alert
-                'origState'          => '',
-                'last_status_change' => $item->attrs->last_state_change,
-                'plugin_output'      => $item->attrs->last_check_result->output,
-                'attempts'           => $item->attrs->check_attempt,
-                'max_attempts'       => $item->attrs->max_check_attempts,
-                'last_check'         => $item->attrs->last_check,
-                'active_enabled'     => 0,
-                'next_check'         => 0,
-                'notes_url'          => $item->attrs->notes_url,
-                'full_host_name'     => $item->attrs->name,
-                'check_command'      => 'SERVER IS UP',
-                'comments'           => [
-                    'ackComment'      => '',
-                    'schedComment'    => '',
-                    'downtime_id'     => '',
-                    'ackLastTemp'     => '',
-                    'ackLastAuthor'   => '',
-                    'schedStart'      => '',
-                    'schedEnd'        => '',
-                    'schedDuration'   => '',
-                    'schedLastAuthor' => '',
-                    'schedLastTemp'   => '',
-                ]
-            ];
-        }
-    }
-    private function prepareIcingaDBComments()
-    {
-        $comments = [];
-
-        foreach ($this->returnIcingaApiAckComments() as $item) {
-            $host    = $item->joins->host->display_name;
-            $service = (isset($item->joins->service)) ? $item->joins->service->display_name : 'SERVER IS UP';
-
-            if ($item->attrs->active && isset($this->hosts[$host]) && isset($this->hosts[$host][$service]) && $this->hosts[$host][$service]['acked']) {
-                $comments[$host][$service][] = array(
-                    'ackAuthor'        => $item->attrs->author,
-                    'ackComment'       => $item->attrs->text,
-                    'ackCommentDate'   => $item->attrs->entry_time,
-                    'schedAuthor'      => '',
-                    'schedComment'     => '',
-                    'schedCommentDate' => '',
-                    'downtime_id'      => '',
-                    'start_time'       => '',
-                    'end_time'         => '',
-                    'duration'         => '',
-                );
-            }
-        }
-
-        foreach ($this->returnIcingaApiSchedComments() as $item) {
-            $host    = $item->joins->host->display_name;
-            $service = (isset($item->joins->service)) ? $item->joins->service->display_name : 'SERVER IS UP';
-
-            if ($item->attrs->active && isset($this->hosts[$host]) && isset($this->hosts[$host][$service]) && $this->hosts[$host][$service]['scheduled']) {
-                $comments[$host][$service][] = array(
-                    'ackAuthor'        => '',
-                    'ackComment'       => '',
-                    'ackCommentDate'   => '',
-                    'schedAuthor'      => $item->attrs->author,
-                    'schedComment'     => $item->attrs->comment,
-                    'schedCommentDate' => $item->attrs->entry_time,
-                    'downtime_id'      => $item->attrs->legacy_id,
-                    'start_time'       => $item->attrs->start_time,
-                    'end_time'         => $item->attrs->end_time,
-                    'duration'         => $item->attrs->duration,
-                );
-            }
-        }
-
-        $this->setCommentsToHost($comments);
     }
     private function addDataToMemcache()
     {
@@ -377,7 +192,7 @@ class xml
                 $this->hosts[$host][$service]['origState']       = '';
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
-                $this->hosts[$host][$service]['notesUrl']        = (!$this->icingaDB) ? $this->returnNotesUrl($host, $service) : $attrs['notes_url'];
+                $this->hosts[$host][$service]['notesUrl']        = $this->returnNotesUrl($host, $service);
                 $this->hosts[$host][$service]['last_check_date'] = date('m-d-Y H:i:s', $attrs['last_check']);
                 $this->hosts[$host][$service]['attempt']         = $attrs['attempts']/$attrs['max_attempts'];
                 $this->hosts[$host][$service]['host_or_service'] = ($service == "SERVER IS UP") ? "host" : "service";
@@ -622,77 +437,39 @@ class xml
             '.*?author=(?P<author>.*?)\n'.
             '.*?comment_data=(?P<comment>.*?)\n'.
             '.*?}/is';
-
-
-        if ($this->icinga) {
-            $this->pregServiceStatus  = '/servicestatus {'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?current_state=(?P<state>.*?)\n'.
-                '.*?plugin_output=(?P<plugin_output>.*?)\n'.
-                '.*?last_check=(?P<last_check>.*?)\n'.
-                '.*?current_attempt=(?P<attempts>.*?)\n'.
-                '.*?max_attempts=(?P<max_attempts>.*?)\n'.
-                '.*?last_state_change=(?P<last_status_change>.*?)\n'.
-                '.*?next_check=(?P<next_check>.*?)\n'.
-                '.*?active_checks_enabled=(?P<active_checks_enabled>.*?)\n'.
-                '.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
-                '.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
-                '.*?}/is';
-            $this->pregServiceComment = '/servicecomment {'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?entry_time=(?P<entry_time>.*?)\n'.
-                '.*?entry_type=(?P<entry_type>.*?)\n'.
-                '.*?author=(?P<author>.*?)\n'.
-                '.*?comment_data=(?P<comment>.*?)\n'.
-                '.*?}/is';
-            $this->pregDowntimeComment = '/servicedowntime {'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?downtime_id=(?P<downtime_id>.*?)\n'.
-                '.*?entry_time=(?P<entry_time>.*?)\n'.
-                '.*?start_time=(?P<start_time>.*?)\n'.
-                '.*?end_time=(?P<end_time>.*?)\n'.
-                '.*?duration=(?P<duration>.*?)\n'.
-                '.*?author=(?P<author>.*?)\n'.
-                '.*?comment=(?P<comment>.*?)\n'.
-                '.*?}/is';
-        } else {
-            $this->pregServiceStatus  = '/servicestatus {'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?current_state=(?P<state>.*?)\n'.
-                '.*?current_attempt=(?P<attempts>.*?)\n'.
-                '.*?max_attempts=(?P<max_attempts>.*?)\n'.
-                '.*?last_state_change=(?P<last_status_change>.*?)\n'.
-                '.*?plugin_output=(?P<plugin_output>.*?)\n'.
-                '.*?last_check=(?P<last_check>.*?)\n'.
-                '.*?next_check=(?P<next_check>.*?)\n'.
-                '.*?active_checks_enabled=(?P<active_checks_enabled>.*?)\n'.
-                '.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
-                '.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
-                '.*?}/is';
-            $this->pregServiceComment = '/servicecomment {'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?entry_type=(?P<entry_type>.*?)\n'.
-                '.*?entry_time=(?P<entry_time>.*?)\n'.
-                '.*?author=(?P<author>.*?)\n'.
-                '.*?comment_data=(?P<comment>.*?)\n'.
-                '.*?}/is';
-            $this->pregDowntimeComment = '/servicedowntime {'.
-                '.*?host_name=(?P<host>.*?)\n'.
-                '.*?service_description=(?P<service>.*?)\n'.
-                '.*?downtime_id=(?P<downtime_id>.*?)\n'.
-                '.*?entry_time=(?P<entry_time>.*?)\n'.
-                '.*?start_time=(?P<start_time>.*?)\n'.
-                '.*?end_time=(?P<end_time>.*?)\n'.
-                '.*?duration=(?P<duration>.*?)\n'.
-                '.*?author=(?P<author>.*?)\n'.
-                '.*?comment=(?P<comment>.*?)\n'.
-                '.*?}/is';
-        }
+        $this->pregServiceStatus  = '/servicestatus {'.
+            '.*?host_name=(?P<host>.*?)\n'.
+            '.*?service_description=(?P<service>.*?)\n'.
+            '.*?current_state=(?P<state>.*?)\n'.
+            '.*?current_attempt=(?P<attempts>.*?)\n'.
+            '.*?max_attempts=(?P<max_attempts>.*?)\n'.
+            '.*?last_state_change=(?P<last_status_change>.*?)\n'.
+            '.*?plugin_output=(?P<plugin_output>.*?)\n'.
+            '.*?last_check=(?P<last_check>.*?)\n'.
+            '.*?next_check=(?P<next_check>.*?)\n'.
+            '.*?active_checks_enabled=(?P<active_checks_enabled>.*?)\n'.
+            '.*?problem_has_been_acknowledged=(?P<acked>.*?)\n'.
+            '.*?scheduled_downtime_depth=(?P<scheduled>.*?)\n'.
+            '.*?}/is';
+        $this->pregServiceComment = '/servicecomment {'.
+            '.*?host_name=(?P<host>.*?)\n'.
+            '.*?service_description=(?P<service>.*?)\n'.
+            '.*?entry_type=(?P<entry_type>.*?)\n'.
+            '.*?entry_time=(?P<entry_time>.*?)\n'.
+            '.*?author=(?P<author>.*?)\n'.
+            '.*?comment_data=(?P<comment>.*?)\n'.
+            '.*?}/is';
+        $this->pregDowntimeComment = '/servicedowntime {'.
+            '.*?host_name=(?P<host>.*?)\n'.
+            '.*?service_description=(?P<service>.*?)\n'.
+            '.*?downtime_id=(?P<downtime_id>.*?)\n'.
+            '.*?entry_time=(?P<entry_time>.*?)\n'.
+            '.*?start_time=(?P<start_time>.*?)\n'.
+            '.*?end_time=(?P<end_time>.*?)\n'.
+            '.*?duration=(?P<duration>.*?)\n'.
+            '.*?author=(?P<author>.*?)\n'.
+            '.*?comment=(?P<comment>.*?)\n'.
+            '.*?}/is';
     }
     private function getNotesUrls() {
         if (file_exists($this->getNotesUrls_cacheFile) && (time() - filemtime($this->getNotesUrls_cacheFile)) < 3600) {
@@ -908,57 +685,10 @@ class xml
 
         return implode(';', $refreshArrayData);
     }
-
-    private function findAliveHost() {
-        $data = ['attrs' => ['active']];
-
-        foreach ($this->icingaApiHosts as $host) {
-            $output = [];
-
-            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $host .'/v1/objects/hosts" -d \''. json_encode($data) .'\' 2>&1', $output);
-
-            if (count($output) && isset($output[0]) && isset(json_decode($output[0])->results) && count(json_decode($output[0])->results)) {
-                return $host;
-            }
-        }
-
-        return isset($this->icingaApiHosts[0]) ? $this->icingaApiHosts[0] : '';
-    }
-
     private function checkBackendStatus($lastCheck)
     {
         if (!$this->backendStatus && round(microtime(true) - $lastCheck) < 600) {
             $this->backendStatus = 'ok';
-        }
-    }
-    private function checkIcingaHostsBackendStatus()
-    {
-        if (!$this->backendStatus) {
-            $data = [
-                'attrs'  => ['last_check'],
-                'filter' => 'host.last_check > ' . (time() - 600),
-            ];
-
-            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/hosts" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-            if (count(json_decode($output[0])->results)) {
-                $this->backendStatus = 'ok';
-            }
-        }
-    }
-    private function checkIcingaServiceBackendStatus()
-    {
-        if (!$this->backendStatus) {
-            $data = [
-                'attrs'  => ['last_check'],
-                'filter' => 'host.last_check > ' . (time() - 600),
-            ];
-
-            exec('curl -k -s -u '. $this->icingaApiUser .':'. $this->icingaApiPass .' -H "Accept: application/json" -X POST -H "X-HTTP-Method-Override: GET" "'. $this->icingaApiHost .'/v1/objects/services" -d \''. json_encode($data) .'\'  2>&1', $output);
-
-            if (count(json_decode($output[0])->results)) {
-                $this->backendStatus = 'ok';
-            }
         }
     }
 }
