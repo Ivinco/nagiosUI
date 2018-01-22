@@ -5,9 +5,9 @@
         session_start();
     }
 
-    if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
-        include_once 'config/config.php';
+    include_once __DIR__ . '/../scripts/init.php';
 
+    if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
         $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
         $user = (!$user) ? ((isset($_SERVER['REDIRECT_REMOTE_USER']) ? $_SERVER['REDIRECT_REMOTE_USER'] : '')) : $user;
         $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
@@ -16,8 +16,16 @@
         $_SESSION["currentAvatar"] = md5(strtolower(trim($usersArray[$user])));
     }
 
-    $userName = $_SESSION["currentUser"];
+    $userName   = $_SESSION["currentUser"];
     $userAvatar = $_SESSION["currentAvatar"];
+
+    if (isset($_GET['file']) && trim($_GET['file'])) {
+        $xml = new xml;
+
+        if (!$xml->verifyXmlArchive()) {
+            $xml->dieXmlArchiveNotFound();
+        }
+    }
 ?><html>
 <head>
     <title>Current Network Status</title>

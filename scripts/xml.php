@@ -73,13 +73,13 @@ class xml
 
 
         if ($xmlFile) {
-            $files = glob($this->xmlArchive . $_GET['file'] . "*.log");
+            $this->stopMemcacheCheck();
 
-            if (count($files) == 1 and preg_match('/' . preg_quote($this->xmlArchive, '/') . '\d\d\d\d\d\d\d\d_\d\d\d\d\d\d\.log/', $files[0])) {
-                $this->stopMemcacheCheck();
-
-                return file_get_contents($files[0]);
+            if ($file = $this->verifyXmlArchive()) {
+                return file_get_contents($file);
             }
+
+            $this->dieXmlArchiveNotFound();
         }
 
         if ($this->memcacheEnabled) {
@@ -96,6 +96,21 @@ class xml
         $this->prepareDataToXml();
 
         return $this->generateXml();
+    }
+    public function dieXmlArchiveNotFound()
+    {
+        http_response_code(404);
+        die('Archive file not found.');
+    }
+    public function verifyXmlArchive()
+    {
+        $files = glob($this->xmlArchive . $_GET['file'] . "*.log");
+
+        if ($files[0]) {
+            return $files[0];
+        }
+
+        return false;
     }
     private function stopMemcacheCheck()
     {
