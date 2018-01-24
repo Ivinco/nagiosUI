@@ -643,7 +643,7 @@ class xml
             $this->hosts[$host][$service]['state']       = 'CRITICAL';
         }
         else {
-            $this->hosts[$host][$service]['durationSec'] = (isset($this->durationsFromFile[$host.'_'.$service]) and $this->durationsFromFile[$host.'_'.$service] * 60 < time() - $last_status_change) ? $this->durationsFromFile[$host.'_'.$service] * 60 : time() - $last_status_change;
+            $this->hosts[$host][$service]['durationSec'] = (isset($this->durationsFromFile[$host.'_'.$service]) && $this->durationsFromFile[$host.'_'.$service] && $this->durationsFromFile[$host.'_'.$service] * 60 < time() - $last_status_change) ? $this->durationsFromFile[$host.'_'.$service] * 60 : time() - $last_status_change;
             $this->hosts[$host][$service]['duration']    = $this->duration($this->hosts[$host][$service]['durationSec'], false);
         }
     }
