@@ -3304,6 +3304,7 @@ Planned = {
 
         if (data.file.length > 0) {
             $.each(data.file, function( index, value ) {
+                value['status'] = (value['status']) ? value['status'] : '';
                 var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
                     service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
                     status  = (value['status']) ? ('<strong> Status information: </strong>'+ value['status']) : '',
