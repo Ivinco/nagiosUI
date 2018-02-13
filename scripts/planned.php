@@ -4,6 +4,7 @@ class planned
 {
     public $host;
     public $service;
+    public $status;
     public $comment;
     public $time;
     public $line;
@@ -32,7 +33,7 @@ class planned
     }
 
     public function verifyPostData() {
-        if ((!$this->host && !$this->service) || !$this->comment || !$this->line || !$this->user || $this->time < 1) {
+        if ((!$this->host && !$this->service && !$this->status) || !$this->comment || !$this->line || !$this->user || $this->time < 1) {
             return true;
         }
 
@@ -47,6 +48,7 @@ class planned
             $json[] = [
                 'host'    => $this->host,
                 'service' => $this->service,
+                'status'  => $this->status,
                 'comment' => $this->comment,
                 'time'    => $this->time,
                 'end'     => $end,
@@ -84,9 +86,10 @@ class planned
         $results = [];
 
         foreach ($json as $key => $record) {
-            if (($record['host'] . '___' . $record['service']) == $id) {
+            if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $id) {
                 $record['host']    = $this->host;
                 $record['service'] = $this->service;
+                $record['status']  = $this->status;
                 $record['comment'] = $this->comment;
                 $record['normal']  = $this->normal;
             }
@@ -102,11 +105,11 @@ class planned
         $delete  = null;
 
         foreach ($json as $key => $record) {
-            if ($record['end'] > time() && ($record['host'] . '___' . $record['service']) != $this->line) {
+            if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) != $this->line) {
                 $results[] = $record;
             }
 
-            if ($record['end'] > time() && ($record['host'] . '___' . $record['service']) == $this->line) {
+            if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
                 $delete = $this->line;
             }
         }
@@ -114,12 +117,12 @@ class planned
         $this->removePlannedMaintenance($delete);
         $this->writePlanned($results);
     }
-    public function findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment) {
+    public function findPlannedRecords($host, $service, $status, $acked, $tempCommen, $hostOrService, $sched, $schComment) {
         $return = [];
 
-        if ($planned = $this->findPlannedRecord($host, $service)) {
+        if ($planned = $this->findPlannedRecord($host, $service, $status)) {
             if ($planned['type'] == 'new' && !$sched && !$schComment) {
-                $this->setPlanned($host, $service, $hostOrService);
+                $this->setPlanned($host, $service, $status, $hostOrService);
             }
 
             $return = [
@@ -153,30 +156,34 @@ class planned
 
         return $return;
     }
-    public function findPlannedRecord($host, $service) {
+    public function findPlannedRecord($host, $service, $status) {
         $planned = $this->returnPlanned();
 
         foreach ($planned as $key => $plan) {
             $hostCommand     = $this->returnPlannedPattern($plan['host']);
             $serviceCommand  = $this->returnPlannedPattern($plan['service']);
+            $statusCommand   = $this->returnPlannedPattern($plan['status']);
             $hostCommands    = explode(',', $hostCommand);
             $serviceCommands = explode(',', $serviceCommand);
+            $statusCommands  = explode(',', $statusCommand);
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time()) {
-                        $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && time() < $plan['list'][$host][$service]) ? 'old' : 'new';
+                    foreach ($statusCommands as $commandStatus) {
+                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status) && $plan['end'] > time()) {
+                            $type = (isset($plan['list']) && isset($plan['list'][$host]) && isset($plan['list'][$host][$service]) && isset($plan['list'][$host][$service][$status]) && time() < $plan['list'][$host][$service][$status]) ? 'old' : 'new';
 
-                        return [
-                            'type'    => $type,
-                            'author'  => $plan['user'],
-                            'email'   => $this->usersArray[$plan['user']],
-                            'comment' => $plan['comment'],
-                            'date'    => ($type == 'old') ? $plan['list'][$host][$service] : time(),
-                            'normal'  => $plan['normal'],
-                            'command' => $plan['host'] . '___' . $plan['service'],
-                            'end'     => $plan['end'],
-                        ];
+                            return [
+                                'type'    => $type,
+                                'author'  => $plan['user'],
+                                'email'   => $this->usersArray[$plan['user']],
+                                'comment' => $plan['comment'],
+                                'date'    => ($type == 'old') ? $plan['list'][$host][$service][$status] : time(),
+                                'normal'  => $plan['normal'],
+                                'command' => $plan['host'] . '___' . $plan['service'] . '___' . $plan['status'],
+                                'end'     => $plan['end'],
+                            ];
+                        }
                     }
                 }
             }
@@ -184,44 +191,52 @@ class planned
 
         return '';
     }
-    private function setPlanned($host, $service, $hostOrService) {
+    private function setPlanned($host, $service, $status, $hostOrService) {
         $planned = $this->returnPlanned();
 
         foreach ($planned as $key => $plan) {
             $hostCommand     = $this->returnPlannedPattern($plan['host']);
             $serviceCommand  = $this->returnPlannedPattern($plan['service']);
+            $statusCommand   = $this->returnPlannedPattern($plan['status']);
             $hostCommands    = explode(',', $hostCommand);
             $serviceCommands = explode(',', $serviceCommand);
+            $statusCommands  = explode(',', $statusCommand);
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time()) {
-                        $results = [];
+                    foreach ($statusCommands as $commandStatus) {
+                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status) && $plan['end'] > time()) {
+                            $results = [];
 
-                        foreach ($planned as $plannedKey => $plannedValue) {
-                            $results[$plannedKey] = $plannedValue;
+                            foreach ($planned as $plannedKey => $plannedValue) {
+                                $results[$plannedKey] = $plannedValue;
 
-                            if ($key == $plannedKey) {
-                                if (!isset($plan['list'])) {
-                                    $results[$plannedKey]['list'] = [];
+                                if ($key == $plannedKey) {
+                                    if (!isset($plan['list'])) {
+                                        $results[$plannedKey]['list'] = [];
+                                    }
+
+                                    if (!isset($plan['list'][$host])) {
+                                        $results[$plannedKey]['list'][$host] = [];
+                                    }
+
+                                    if (!isset($plan['list'][$host][$service])) {
+                                        $results[$plannedKey]['list'][$host][$service] = [];
+                                    }
+
+                                    if (!isset($plan['list'][$host][$service][$status])) {
+                                        $results[$plannedKey]['list'][$host][$service][$status] = '';
+                                    }
+
+                                    $results[$plannedKey]['list'][$host][$service][$status] = time() + 10;
                                 }
-
-                                if (!isset($plan['list'][$host])) {
-                                    $results[$plannedKey]['list'][$host] = [];
-                                }
-
-                                if (!isset($plan['list'][$host][$service])) {
-                                    $results[$plannedKey]['list'][$host][$service] = '';
-                                }
-
-                                $results[$plannedKey]['list'][$host][$service] = time() + 10;
                             }
+
+                            $this->writePlanned($results);
+                            $this->schedulePlanned($host, $service, $plan['end'], $plan['user'], $plan['comment'], $hostOrService);
+
+                            return $plan['user'];
                         }
-
-                        $this->writePlanned($results);
-                        $this->schedulePlanned($host, $service, $plan['end'], $plan['user'], $plan['comment'], $hostOrService);
-
-                        return $plan['user'];
                     }
                 }
             }
@@ -264,19 +279,23 @@ class planned
 
         return true;
     }
-    public function returnPlannedComment($host, $service) {
+    public function returnPlannedComment($host, $service, $status) {
         $planned = $this->returnPlanned();
 
         foreach ($planned as $key => $plan) {
             $hostCommand     = $this->returnPlannedPattern($plan['host']);
             $serviceCommand  = $this->returnPlannedPattern($plan['service']);
+            $statusCommand   = $this->returnPlannedPattern($plan['status']);
             $hostCommands    = explode(',', $hostCommand);
             $serviceCommands = explode(',', $serviceCommand);
+            $statusCommands  = explode(',', $statusCommand);
 
             foreach ($hostCommands as $commandHost) {
                 foreach ($serviceCommands as $commandService) {
-                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $plan['end'] > time() && isset($plan['comment'])) {
-                        return [$plan['host'] . '___' . $plan['service'], $plan['comment']];
+                    foreach ($statusCommands as $commandStatus) {
+                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status) && $plan['end'] > time() && isset($plan['comment'])) {
+                            return [$plan['host'] . '___' . $plan['service'] . '___' . $plan['status'], $plan['comment']];
+                        }
                     }
                 }
             }
@@ -289,7 +308,7 @@ class planned
         $results = [];
 
         foreach ($json as $key => $record) {
-            if (($record['host'] . '___' . $record['service']) == $this->line) {
+            if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
                 $record['comment'] = $this->comment;
             }
 
@@ -303,8 +322,10 @@ class planned
         $delete          = explode('___', $delete);
         $hostCommand     = $this->returnPlannedPattern($delete[0]);
         $serviceCommand  = $this->returnPlannedPattern($delete[1]);
+        $statusCommand   = $this->returnPlannedPattern($delete[2]);
         $hostCommands    = explode(',', $hostCommand);
         $serviceCommands = explode(',', $serviceCommand);
+        $statusCommands  = explode(',', $statusCommand);
         $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, false))),TRUE);
 
         if (isset($array['alert']['host'])) {
@@ -314,6 +335,7 @@ class planned
         foreach ($array['alert'] as $item) {
             $host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
             $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+            $status     = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
             $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
             $downtimeId = explode(',', $downtimeId);
 
@@ -321,8 +343,10 @@ class planned
                 if ($downtimeId != 4) {
                     foreach ($hostCommands as $commandHost) {
                         foreach ($serviceCommands as $commandService) {
-                            if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service)) {
-                                $this->removeSchedulePlanned($downtime);
+                            foreach ($statusCommands as $commandStatus) {
+                                if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
+                                    $this->removeSchedulePlanned($downtime);
+                                }
                             }
                         }
                     }
@@ -344,5 +368,8 @@ class planned
     }
     private function pregMatchService($commandService, $service) {
         return preg_match("/$commandService/iu", " " . $service . " ");
+    }
+    private function pregMatchStatus($commandStatus, $status) {
+        return preg_match("/$commandStatus/iu", " " . $status . " ");
     }
 }

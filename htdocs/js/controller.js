@@ -3306,35 +3306,38 @@ Planned = {
             $.each(data.file, function( index, value ) {
                 var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
                     service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
+                    status  = (value['status']) ? ('<strong> Status information: </strong>'+ value['status']) : '',
                     date    = ' <strong>till:</strong> '+ value['date'],
                     comment = ' <strong>comment:</strong> '+ value['comment'],
                     normal  = (parseInt(value['normal'])) ? ' <strong>show in Normal</strong>' : '',
                     editBtn = ' <button ' +
-                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service']) +'" ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
                         '			data-service="'+ encodeURIComponent(value['service']) +'" ' +
+                        '			data-status="'+ encodeURIComponent(value['status']) +'" ' +
                         '			data-comment="'+ encodeURIComponent(value['comment']) +'" ' +
                         '			data-normal="'+ encodeURIComponent(parseInt(value['normal'])) +'" ' +
                         '			class="edit-planned"' +
                         '		>Edit</button>',
                     button  = ' <button ' +
-                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service']) +'" ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			class="save-planned"' +
                         '		>Delete</button>';
 
-                $('#planned-list').append('<li><small>'+ host + service +' ('+ date + comment + normal +')</small>'+ editBtn + button +'</li>');
+                $('#planned-list').append('<li><small>'+ host + service + status +' ('+ date + comment + normal +')</small>'+ editBtn + button +'</li>');
             });
         }
 
         if (data.templates && data.templates.length > 0) {
             $.each(data.templates, function( index, value ) {
-                var host    = (value['host'] && value['host'] != '*')                     ? ('<strong>Host: </strong>'     + value['host'])    : '',
-                    service = (value['service'] && value['service'] != '*')               ? ('<strong> Service: </strong>' + value['service']) : '',
-                    time    = (parseInt(value['time']) && parseInt(value['time']) > 0)    ? ('<strong> Time: </strong>'    + value['time'])    : '',
-                    comment = (value['comment'])                                          ? ('<strong> Comment: </strong>' + value['comment']) : '',
-                    normal  = (parseInt(value['normal']))                                 ? ('<strong> Show in Normal</strong>')               : '';
+                var host    = (value['host'] && value['host'] != '*')                     ? ('<strong>Host: </strong>'                + value['host'])    : '',
+                    service = (value['service'] && value['service'] != '*')               ? ('<strong> Service: </strong>'            + value['service']) : '',
+                    status  = (value['status'] && value['status'] != '*')                 ? ('<strong> Status information: </strong>' + value['status']) : '',
+                    time    = (parseInt(value['time']) && parseInt(value['time']) > 0)    ? ('<strong> Time: </strong>'               + value['time'])    : '',
+                    comment = (value['comment'])                                          ? ('<strong> Comment: </strong>'            + value['comment']) : '',
+                    normal  = (parseInt(value['normal']))                                 ? ('<strong> Show in Normal</strong>')                          : '';
 
-                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service +')'+ time + comment + normal +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" data-normal="'+ encodeURIComponent(value['normal']) +'" class="add-from-planned-template" style="margin-top: 0;">Use</button></li>');
+                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service + status +')'+ time + comment + normal +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" data-status="'+ encodeURIComponent(value['status']) +'" data-normal="'+ encodeURIComponent(value['normal']) +'" class="add-from-planned-template" style="margin-top: 0;">Use</button></li>');
             });
         }
     },
@@ -3342,13 +3345,15 @@ Planned = {
         var error           = 0,
             host            = $('#planned_host').val(),
             service         = $('#planned_service').val(),
+            status          = $('#planned_status').val(),
             requiredHost    = parseInt($('#planned_host').attr('data-required')),
-            requiredService = parseInt($('#planned_service').attr('data-required'));
+            requiredService = parseInt($('#planned_service').attr('data-required')),
+            requiredStatus  = parseInt($('#planned_status').attr('data-required'));
 
         if ($('#planned_host').length) {
             $('#planned_host').css('border-color', '#aaa');
 
-            if ((requiredHost && !host) || (!host && ($('#planned_service').length && !service))) {
+            if ((requiredHost && !host) || (!host && ($('#planned_service').length && !service) && ($('#planned_status').length && !status))) {
                 error++;
                 $('#planned_host').css('border-color', 'red');
             }
@@ -3356,9 +3361,17 @@ Planned = {
         if ($('#planned_service').length) {
             $('#planned_service').css('border-color', '#aaa');
 
-            if ((requiredService && !service) || (!service && ($('#planned_host').length && !host))) {
+            if ((requiredService && !service) || (!service && ($('#planned_host').length && !host) && ($('#planned_status').length && !status))) {
                 error++;
                 $('#planned_service').css('border-color', 'red');
+            }
+        }
+        if ($('#planned_status').length) {
+            $('#planned_status').css('border-color', '#aaa');
+
+            if ((requiredStatus && !status) || (!status && ($('#planned_host').length && !host) && ($('#planned_service').length && !service))) {
+                error++;
+                $('#planned_status').css('border-color', 'red');
             }
         }
         if ($('#planned_time').length) {
@@ -3395,6 +3408,14 @@ Planned = {
                 }
             }
 
+            if ($('#planned_status').length) {
+                if (requiredStatus) {
+                    Planned.plannedData.status = Planned.plannedData.status.replace('${status}', status);
+                } else {
+                    Planned.plannedData.status = status;
+                }
+            }
+
             if ($('#planned_time').length) {
                 Planned.plannedData.time = parseInt($('#planned_time').val());
             }
@@ -3408,7 +3429,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php',
                 method: 'POST',
-                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal },
+                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, status: Planned.plannedData.status, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3423,18 +3444,22 @@ Planned = {
     savePlannedEdit: function(command, refresh) {
         var host    = $('#edit_planned_host').val(),
             service = $('#edit_planned_service').val(),
+            status  = $('#edit_planned_status').val(),
             comment = $('#edit_planned_comment').val(),
             normal  = +$('#edit_planned_normal').prop('checked'),
             user    = $('#userName').text();
 
-        if ((!host && !service) || !comment) {
-            $('#edit_planned_host, #edit_planned_service, #edit_planned_comment').css('border-color', '#aaa');
+        if ((!host && !service && !status) || !comment) {
+            $('#edit_planned_host, #edit_planned_service, #edit_planned_status, #edit_planned_comment').css('border-color', '#aaa');
 
             if (!host) {
                 $('#edit_planned_host').css('border-color', 'red');
             }
             if (!service) {
                 $('#edit_planned_service').css('border-color', 'red');
+            }
+            if (!status) {
+                $('#edit_planned_status').css('border-color', 'red');
             }
             if (!comment) {
                 $('#edit_planned_comment').css('border-color', 'red');
@@ -3446,7 +3471,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php',
                 method: 'POST',
-                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, comment: comment, normal: normal },
+                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3458,7 +3483,7 @@ Planned = {
         }
     },
     savePlannedEditComment: function(command) {
-        $('#edit_planned_host, #edit_planned_service, #edit_planned_comment').css('border-color', '#aaa');
+        $('#edit_planned_host, #edit_planned_service, #edit_planned_status, #edit_planned_comment').css('border-color', '#aaa');
 
         var comment = $('#edit_planned_comment').val();
 
@@ -3502,40 +3527,40 @@ Planned = {
             Planned.showHidePlanned();
             $('#maintenance-normal').prop('checked', true);
         });
-        $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
+        $('#maintenance-host, #maintenance-service, #maintenance-status, #maintenance-time, #maintenance-comment').on('keypress', function(e) {
             if (e.keyCode && e.keyCode == 13) {
                 $('#planned-save').trigger('click');
             }
         });
         $(document).on('click', '#planned-save', function() {
-            $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').removeAttr('style');
+            $('#maintenance-host, #maintenance-service, #maintenance-status, #maintenance-time, #maintenance-comment').removeAttr('style');
 
             var host    = $('#maintenance-host').val(),
                 service = $('#maintenance-service').val(),
+                status  = $('#maintenance-status').val(),
                 time    = parseInt($('#maintenance-time').val()),
                 comment = $('#maintenance-comment').val(),
                 user    = $('#userName').text(),
                 normal  = +$('#maintenance-normal').prop('checked');
 
-            if ((host || service) && comment && time > 0) {
+            if ((host || service || status) && comment && time > 0) {
                 $.ajax({
                     url: 'planned.php',
                     method: 'POST',
-                    data: {host: host, service: service, comment: comment, time: time, line: 'new', user: user, normal: normal },
+                    data: {host: host, service: service, status: status, comment: comment, time: time, line: 'new', user: user, normal: normal },
                 })
                     .always(function (data) {
-                        $('#maintenance-host, #maintenance-service, #maintenance-time, #maintenance-comment').val('');
+                        $('#maintenance-host, #maintenance-service, #maintenance-status, #maintenance-time, #maintenance-comment').val('');
                         $('#maintenance-normal').prop('checked', true)
                         Planned.drawPlanned(data);
                         Search.stopReloads();
                         Search.startReloads();
                     });
             } else {
-                if (!host) {
+                if (!host && !service && !status) {
                     $('#maintenance-host').css('border-color', 'red');
-                }
-                if (!service) {
                     $('#maintenance-service').css('border-color', 'red');
+                    $('#maintenance-status').css('border-color', 'red');
                 }
                 if (!comment) {
                     $('#maintenance-comment').css('border-color', 'red');
@@ -3549,11 +3574,12 @@ Planned = {
             var values  = $(this),
                 host    = decodeURIComponent(values.attr('data-host')),
                 service = decodeURIComponent(values.attr('data-service')),
+                status  = decodeURIComponent(values.attr('data-status')),
                 id      = decodeURIComponent(values.attr('data-id')),
                 comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
                 normal  = parseInt(decodeURIComponent(values.attr('data-normal'))),
                 checked = (normal) ? ' checked="checked"' : '',
-                html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Comment:</strong> '+ comment +'</p>';
+                html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Status information:</strong> '+ status +' <strong>Comment:</strong> '+ comment +'</p>';
 
             html+= '<table style="width: 100%">';
             html+= '<tr>';
@@ -3563,6 +3589,10 @@ Planned = {
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
             html+= '<td><input type="text" name="edit_planned_service" id="edit_planned_service" class="text ui-widget-content" value="'+ service +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Status information</td>';
+            html+= '<td><input type="text" name="edit_planned_status" id="edit_planned_status" class="text ui-widget-content" value="'+ status +'" style="width: 100%; font-size: 14px;"></td>';
             html+= '</tr>';
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
@@ -3613,15 +3643,18 @@ Planned = {
         });
         $(document).on('click', '.add-from-planned-template', function() {
             var host          = decodeURIComponent($(this).attr('data-host')),
-                service       = decodeURIComponent($(this).attr('data-service'));
+                service       = decodeURIComponent($(this).attr('data-service')),
+                status        = decodeURIComponent($(this).attr('data-status'));
 
             Planned.plannedData = {
                 host:          host,
                 service:       service,
+                status:        status,
                 time:          parseInt($(this).attr('data-time')),
                 comment:       decodeURIComponent($(this).attr('data-comment')),
                 changeHost:    (host.indexOf('${host}') > -1)       ? 1 : 0,
                 changeService: (service.indexOf('${service}') > -1) ? 1 : 0,
+                changeStatus:  (status.indexOf('${status}') > -1)   ? 1 : 0,
                 normal:        parseInt($(this).attr('data-normal')),
             };
 
@@ -3629,16 +3662,20 @@ Planned = {
                 && Planned.plannedData.comment
                 && !Planned.plannedData.changeHost
                 && !Planned.plannedData.changeService
-                && ((Planned.plannedData.host || Planned.plannedData.service) && !(Planned.plannedData.host == '*' && Planned.plannedData.service == '*'))
+                && (
+                        (Planned.plannedData.host || Planned.plannedData.service || Planned.plannedData.status)
+                    && !(Planned.plannedData.host == '*' && Planned.plannedData.service == '*' && Planned.plannedData.status == '*')
+                )
             ) {
                 Planned.savePlanned();
             }
             else {
                 var title = '';
-                    title+= (Planned.plannedData.host)    ? ('<strong> Host:</strong> '+    Planned.plannedData.host)    : '';
-                    title+= (Planned.plannedData.service) ? ('<strong> Service:</strong> '+ Planned.plannedData.service) : '';
-                    title+= (Planned.plannedData.comment) ? ('<strong> Comment:</strong> '+ Planned.plannedData.comment) : '';
-                    title+= (Planned.plannedData.time)    ? ('<strong> Time:</strong> '+    Planned.plannedData.time)    : '';
+                    title+= (Planned.plannedData.host)    ? ('<strong> Host:</strong> '               + Planned.plannedData.host)    : '';
+                    title+= (Planned.plannedData.service) ? ('<strong> Service:</strong> '            + Planned.plannedData.service) : '';
+                    title+= (Planned.plannedData.status)  ? ('<strong> Status Information:</strong> ' + Planned.plannedData.status)  : '';
+                    title+= (Planned.plannedData.comment) ? ('<strong> Comment:</strong> '            + Planned.plannedData.comment) : '';
+                    title+= (Planned.plannedData.time)    ? ('<strong> Time:</strong> '               + Planned.plannedData.time)    : '';
 
                 var html = '<p style="font-size: 12px;">'+ title +'</p>';
 
@@ -3655,6 +3692,13 @@ Planned = {
                     html+= '<tr>';
                     html+= '<td style="font-size: 13px; white-space: nowrap;">Service</td>';
                     html+= '<td><input type="text" name="planned_service" id="planned_service" class="text ui-widget-content" data-required="'+ Planned.plannedData.changeService +'" style="width: 100%; font-size: 14px;"></td>';
+                    html+= '</tr>';
+                }
+
+                if (Planned.plannedData.changeStatus || !Planned.plannedData.status) {
+                    html+= '<tr>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Status<br />information</td>';
+                    html+= '<td><input type="text" name="planned_status" id="planned_status" class="text ui-widget-content" data-required="'+ Planned.plannedData.changeStatus +'" style="width: 100%; font-size: 14px;"></td>';
                     html+= '</tr>';
                 }
 
@@ -3699,10 +3743,12 @@ Planned = {
                 command      = decodeURIComponent(element.attr('data-command')),
                 host         = command.split('___')[0],
                 service      = command.split('___')[1],
-                titleHost    = (host)    ? ('<strong> Host: </strong>'    + host)    : '',
-                titleService = (service) ? ('<strong> Service: </strong>' + service) : '',
+                status       = command.split('___')[2],
+                titleHost    = (host)    ? ('<strong> Host: </strong>'               + host)    : '',
+                titleService = (service) ? ('<strong> Service: </strong>'            + service) : '',
+                titleStatus  = (status)  ? ('<strong> Status information: </strong>' + status) : '',
                 comment      = element.closest('ul').find('.planned.text span').text(),
-                html         = '<p style="font-size: 12px;"><strong>Edit comment for:</strong> '+ titleHost + titleService +'</p>';
+                html         = '<p style="font-size: 12px;"><strong>Edit comment for:</strong> '+ titleHost + titleService + titleStatus +'</p>';
 
             html+= '<table style="width: 100%">';
             html+= '<tr>';
@@ -3751,6 +3797,11 @@ Planned = {
             }
         });
         $(document).on('keypress', '#planned_service', function(e) {
+            if (e.keyCode && e.keyCode == 13) {
+                $(document).find('#save-planned-template').trigger('click');
+            }
+        });
+        $(document).on('keypress', '#planned_status', function(e) {
             if (e.keyCode && e.keyCode == 13) {
                 $(document).find('#save-planned-template').trigger('click');
             }

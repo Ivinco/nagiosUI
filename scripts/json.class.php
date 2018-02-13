@@ -88,7 +88,7 @@ class json
 
             $infoRecord = $this->returnInfoRecord($service, $statusInfo);
 
-            if (!$this->xmlFile && $plannedRecord = $this->plannedData->findPlannedRecords($host, $service, $acked, $tempCommen, $hostOrService, $sched, $schComment)) {
+            if (!$this->xmlFile && $plannedRecord = $this->plannedData->findPlannedRecords($host, $service, $statusInfo, $acked, $tempCommen, $hostOrService, $sched, $schComment)) {
                 $sched          = $plannedRecord['sched'];
                 $schComment     = $plannedRecord['comment'];
                 $acked          = $plannedRecord['acked'];

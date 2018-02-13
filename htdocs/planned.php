@@ -10,6 +10,7 @@ $planned = new planned;
 if (!empty($_POST)) {
     $planned->host    = (isset($_POST['host'])) ? str_replace("\"", "&quot;", trim($_POST['host'])) : '';
     $planned->service = (isset($_POST['service'])) ? str_replace("\"", "&quot;", trim($_POST['service'])) : '';
+    $planned->status  = (isset($_POST['status'])) ? str_replace("\"", "&quot;", trim($_POST['status'])) : '';
     $planned->comment = (isset($_POST['comment'])) ? trim($_POST['comment']) : '';
     $planned->time    = (isset($_POST['time'])) ? intval($_POST['time']) : 0;
     $planned->line    = (isset($_POST['line'])) ? trim($_POST['line']) : '';

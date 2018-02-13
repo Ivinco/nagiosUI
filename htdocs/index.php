@@ -139,6 +139,8 @@
 			<input type="text" name="maintenance-host" id="maintenance-host" /><br />
             <label for="maintenance-service">Service</label><br />
             <input type="text" name="maintenance-service" id="maintenance-service" /><br />
+            <label for="maintenance-status">Status Information</label><br />
+            <input type="text" name="maintenance-status" id="maintenance-status" /><br />
 			<label for="maintenance-time">Downtime <small>(minutes)</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
