@@ -240,6 +240,10 @@ Search = {}
 			}
 
 			$(row).attr('data-service', data.service.original);
+
+			if (Search.currentTab == 'normal' && Search.additionalFile) {
+				$(row).find('td.service .likeTable li img.icons.quickUnAck').closest('li').attr('style', 'display: list-item !important');
+			}
         },
 		"drawCallback": function( settings ) {
 			Search.filterDataTable($('#mainTable_filter input').val());
@@ -2435,14 +2439,16 @@ Search.init = function() {
         return false;
     });
     $('#mainTable').on('click', '.quickUnAck', function () {
-        var key = Search.changeWhatWeChangeObject({
-            'type':    'quickUnAck',
-            'what':    'this',
-            'host':    $(this).closest('tr').find('.host').text(),
-            'service': $(this).closest('tr').find('.service ul li:first').text(),
-        });
+        if (!Search.additionalFile) {
+            var key = Search.changeWhatWeChangeObject({
+                'type':    'quickUnAck',
+                'what':    'this',
+                'host':    $(this).closest('tr').find('.host').text(),
+                'service': $(this).closest('tr').find('.service ul li:first').text(),
+            });
 
-        $.when(Search.tempHideButtons(key)).then(function(){Search.prepareSendData(key)});
+            $.when(Search.tempHideButtons(key)).then(function(){Search.prepareSendData(key)});
+        }
     });
     $(document).on('click', '#'+ Search.quickUnAckButtonId, function () {
         var key = Search.changeWhatWeChangeObject({
