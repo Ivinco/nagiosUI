@@ -373,13 +373,15 @@ class planned
             $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
             $downtimeId = explode(',', $downtimeId);
 
-            foreach ($downtimeId as $downtime) {
-                if ($downtimeId != 4) {
-                    foreach ($hostCommands as $commandHost) {
-                        foreach ($serviceCommands as $commandService) {
-                            foreach ($statusCommands as $commandStatus) {
-                                if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                    $this->removeSchedulePlanned($downtime);
+            if (isset($downtimeId[0]) && $downtimeId[0]) {
+                foreach ($downtimeId as $downtime) {
+                    if ($downtime != 4) {
+                        foreach ($hostCommands as $commandHost) {
+                            foreach ($serviceCommands as $commandService) {
+                                foreach ($statusCommands as $commandStatus) {
+                                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
+                                        $this->removeSchedulePlanned($downtime);
+                                    }
                                 }
                             }
                         }
