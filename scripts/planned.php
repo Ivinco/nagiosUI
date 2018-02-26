@@ -123,7 +123,7 @@ class planned
         if ($planned = $this->findPlannedRecord($host, $service, $status, $schComment)) {
             $planned = end($planned);
 
-            if ($planned['type'] == 'new' || $this->returnRawComment($schComment) != $planned['comment']) {
+            if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
                         $this->removeSchedulePlanned($downtime);
@@ -200,6 +200,7 @@ class planned
                                 'normal'  => $plan['normal'],
                                 'command' => $plan['host'] . '___' . $plan['service'] . '___' . $plan['status'],
                                 'end'     => $plan['end'],
+                                'key'     => $key,
                             ];
                         }
                     }
@@ -211,31 +212,7 @@ class planned
     }
     private function setPlanned($host, $service, $status, $hostOrService) {
         $planned = $this->returnPlanned();
-        $return  = [];
-
-        foreach ($planned as $key => $plan) {
-            $hostCommand     = $this->returnPlannedPattern($plan['host']);
-            $serviceCommand  = $this->returnPlannedPattern($plan['service']);
-            $statusCommand   = $this->returnPlannedPattern($plan['status']);
-            $hostCommands    = explode(',', $hostCommand);
-            $serviceCommands = explode(',', $serviceCommand);
-            $statusCommands  = explode(',', $statusCommand);
-
-            foreach ($hostCommands as $commandHost) {
-                foreach ($serviceCommands as $commandService) {
-                    foreach ($statusCommands as $commandStatus) {
-                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status) && $plan['end'] > time()) {
-                            $return[] = [
-                                'comment' => $plan['comment'],
-                                'user'    => $plan['user'],
-                                'end'     => $plan['end'],
-                                'key'     => $key,
-                            ];
-                        }
-                    }
-                }
-            }
-        }
+        $return  = $this->findPlannedRecord($host, $service, $status);
 
         if ($return) {
             $return  = end($return);
@@ -266,9 +243,9 @@ class planned
             }
 
             $this->writePlanned($results);
-            $this->schedulePlanned($host, $service, $return['end'], $return['user'], $return['comment'], $hostOrService);
+            $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService);
 
-            return $return['user'];
+            return $return['author'];
         }
 
         return '';
@@ -309,30 +286,11 @@ class planned
         return true;
     }
     public function returnPlannedComment($host, $service, $status) {
-        $planned = $this->returnPlanned();
-        $return  = [];
-
-        foreach ($planned as $key => $plan) {
-            $hostCommand     = $this->returnPlannedPattern($plan['host']);
-            $serviceCommand  = $this->returnPlannedPattern($plan['service']);
-            $statusCommand   = $this->returnPlannedPattern($plan['status']);
-            $hostCommands    = explode(',', $hostCommand);
-            $serviceCommands = explode(',', $serviceCommand);
-            $statusCommands  = explode(',', $statusCommand);
-
-            foreach ($hostCommands as $commandHost) {
-                foreach ($serviceCommands as $commandService) {
-                    foreach ($statusCommands as $commandStatus) {
-                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status) && $plan['end'] > time() && isset($plan['comment'])) {
-                            $return[] = [$plan['host'] . '___' . $plan['service'] . '___' . $plan['status'], $plan['comment']];
-                        }
-                    }
-                }
-            }
-        }
+        $return = $this->findPlannedRecord($host, $service, $status);
 
         if ($return) {
-            return end($return);
+            $return = end($return);
+            return [$return['command'], $return['comment']];
         }
 
         return '';
