@@ -3314,9 +3314,10 @@ Planned = {
                 var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
                     service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
                     status  = (value['status']) ? ('<strong> Status information: </strong>'+ value['status']) : '',
-                    date    = ' <strong>till:</strong> '+ value['date'],
-                    comment = ' <strong>comment:</strong> '+ value['comment'],
+                    date    = ' <strong>Till:</strong> '+ value['date'],
+                    comment = ' <strong>Comment:</strong> '+ value['comment'],
                     normal  = (parseInt(value['normal'])) ? ' <strong>show in Normal</strong>' : '',
+                    user    = '<strong>Created by:</strong> '+ value['user'],
                     editBtn = ' <button ' +
                         '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
@@ -3331,7 +3332,7 @@ Planned = {
                         '			class="save-planned"' +
                         '		>Delete</button>';
 
-                $('#planned-list').append('<li><small>'+ host + service + status +' ('+ date + comment + normal +')</small>'+ editBtn + button +'</li>');
+                $('#planned-list').append('<li><small>'+ host + service + status +' ('+ user + date + comment + normal +')</small>'+ editBtn + button +'</li>');
             });
         }
 
