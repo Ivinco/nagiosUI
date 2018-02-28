@@ -248,6 +248,16 @@ table.dataTable thead .no-border-th {
 
 #nagiosCommentUrl { display: none; }
 
+#planned-maintenance .holder.planned-holder { width: calc(100% - 400px); min-width: 400px; max-width: 1000px; }
+.full-planned-list { border-top: 1px solid #ccc; border-left: 1px solid #ccc; width: 100%; border-spacing: 0; }
+.full-planned-list th, .full-planned-list td { border-bottom: 1px solid #ccc; border-right: 1px solid #ccc; }
+.full-planned-list th, .full-planned-list td { font-size: 13px; padding: 5px 3px; }
+#planned-maintenance .holder .save-planned, #planned-maintenance .holder .edit-planned { margin-top: 0; }
+.full-planned-list tbody tr td:nth-child(6) { text-align: center; }
+.full-planned-list tbody tr td:nth-child(7) { text-align: center; }
+.full-planned-list tbody tr td:nth-child(8) { text-align: center; }
+.full-planned-list tbody tr td:nth-child(9) { text-align: center; }
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }

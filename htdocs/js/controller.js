@@ -3305,19 +3305,14 @@ Planned = {
     },
     drawPlanned: function(data) {
         $('#planned-list, #planned-templates-list').html('');
-        $('#planned-list').closest('div').toggle(data.file.length > 0);
+        $('#planned-list').closest('table').toggle(data.file.length > 0);
         $('#planned-templates-list').closest('div').toggle(data.templates && data.templates.length > 0);
 
         if (data.file.length > 0) {
             $.each(data.file, function( index, value ) {
                 value['status'] = (value['status']) ? value['status'] : '';
-                var host    = (value['host'])    ? ('<strong> Host: </strong>'+ value['host'])       : '',
-                    service = (value['service']) ? ('<strong> Service: </strong>'+ value['service']) : '',
-                    status  = (value['status']) ? ('<strong> Status information: </strong>'+ value['status']) : '',
-                    date    = ' <strong>Till:</strong> '+ value['date'],
-                    comment = ' <strong>Comment:</strong> '+ value['comment'],
-                    normal  = (parseInt(value['normal'])) ? ' <strong>show in Normal</strong>' : '',
-                    user    = '<strong>Created by:</strong> '+ value['user'],
+
+                var normal  = (parseInt(value['normal'])) ? 'yes' : 'no',
                     editBtn = ' <button ' +
                         '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
@@ -3332,7 +3327,18 @@ Planned = {
                         '			class="save-planned"' +
                         '		>Delete</button>';
 
-                $('#planned-list').append('<li><small>'+ host + service + status +' ('+ user + date + comment + normal +')</small>'+ editBtn + button +'</li>');
+                $('#planned-list').append(
+                '<tr>' +
+                    '<td>'+ value['host']    +'</td>' +
+                    '<td>'+ value['service'] +'</td>' +
+                    '<td>'+ value['status']  +'</td>' +
+                    '<td>'+ value['date']    +'</td>' +
+                    '<td>'+ value['comment'] +'</td>' +
+                    '<td>'+ value['user']    +'</td>' +
+                    '<td>'+ normal           +'</td>' +
+                    '<td>'+ editBtn          +'</td>' +
+                    '<td>'+ button           +'</td>' +
+                '</tr>');
             });
         }
 
@@ -3632,7 +3638,7 @@ Planned = {
             });
         });
         $(document).on('click', '.save-planned', function() {
-            var li = $(this).closest('li');
+            var li = $(this).closest('tr');
 
             if (confirm('Are you sure?')) {
                 $(this).attr('disabled', 'disabled');

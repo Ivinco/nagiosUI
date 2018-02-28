@@ -134,7 +134,7 @@
         </thead>
     </table>
 	<div id="planned-maintenance">
-		<div class="holder">
+		<div class="holder" style="width: 350px;">
 			<label for="maintenance-host">Host</label><br />
 			<input type="text" name="maintenance-host" id="maintenance-host" /><br />
             <label for="maintenance-service">Service</label><br />
@@ -161,15 +161,28 @@
 				</small>
 			</p>
 		</div>
-		
-		<div class="holder">
-			<strong>Scheduled downtime list:</strong>
-			<ul id="planned-list"></ul>
-			<br /><br />
-		</div>
-		<div class="holder">
-			<strong>Use a template:</strong>
-			<ul id="planned-templates-list"></ul>
+
+        <div class="holder planned-holder">
+            <p style="margin-top: 10px;"><strong>Scheduled downtime list:</strong></p>
+            <table class="full-planned-list">
+                <thead>
+                    <tr>
+                        <th>Host</th>
+                        <th>Service</th>
+                        <th>Status Information</th>
+                        <th>Till</th>
+                        <th>Comment</th>
+                        <th>Created by</th>
+                        <th>Show in normal</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="planned-list"></tbody>
+            </table>
+            <br /><br />
+            <p><strong>Use a template:</strong></p>
+            <ul id="planned-templates-list"></ul>
 		</div>
 	</div>
 	<div id="lastUpdated"></div>
