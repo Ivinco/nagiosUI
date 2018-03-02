@@ -264,6 +264,8 @@ Search = {}
 				$('#refreshArray').text(json.additional.refreshArray);
                 $('#nagiosCommentUrl').html(json.additional.nagiosCommentUrl);
 
+                Planned.getPlanned();
+
 				var refreshData = $('#refreshArray').text().split(';');
 				var refreshList = '';
 					refreshList += '<option value="auto">Refresh: Auto</option>';
@@ -3325,7 +3327,8 @@ Planned = {
                     button  = ' <button ' +
                         '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			class="save-planned"' +
-                        '		>Delete</button>';
+                        '		>Delete</button>',
+                    comment = Search.changeNagiosComment($('#nagiosCommentUrl').html(), value['comment']);
 
                 $('#planned-list').append(
                 '<tr>' +
@@ -3333,7 +3336,7 @@ Planned = {
                     '<td>'+ value['service'] +'</td>' +
                     '<td>'+ value['status']  +'</td>' +
                     '<td>'+ value['date']    +'</td>' +
-                    '<td>'+ value['comment'] +'</td>' +
+                    '<td>'+ comment          +'</td>' +
                     '<td>'+ value['user']    +'</td>' +
                     '<td>'+ normal           +'</td>' +
                     '<td>'+ editBtn          +'</td>' +
@@ -3526,8 +3529,6 @@ Planned = {
         }
     },
     init: function() {
-        Planned.getPlanned();
-
         $('#planned').on('click', function() {
             if (Search.currentTab == $(this).attr('id')) {
                 location.reload();
