@@ -574,9 +574,9 @@ class xml
                         'schedComment'     => ($type == 'sched') ? $matches['comment'][$k]    : '',
                         'schedCommentDate' => ($type == 'sched') ? $matches['entry_time'][$k] : '',
                         'downtime_id'      => ($type != 'other') ? $id                        : '',
-                        'start_time'       => ($type == 'sched') ? $matches['start_time'][$k] : '',
-                        'end_time'         => ($type == 'sched') ? $matches['end_time'][$k]   : '',
-                        'duration'         => ($type == 'sched') ? $matches['duration'][$k]   : '',
+                        'start_time'       => ($type == 'sched' && isset($matches['start_time'][$k])) ? $matches['start_time'][$k] : '',
+                        'end_time'         => ($type == 'sched' && isset($matches['start_time'][$k])) ? $matches['end_time'][$k]   : '',
+                        'duration'         => ($type == 'sched' && isset($matches['start_time'][$k])) ? $matches['duration'][$k]   : '',
                     );
                 }
             }
