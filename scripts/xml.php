@@ -299,7 +299,7 @@ class xml
                 );
             }
 
-            $this->checkBackendStatus($servicesMatches['last_check'][$k]);
+            $this->checkBackendStatus($hostsMatches['last_check'][$k]);
         }
     }
     private function prepareAckSchedComment($comment, $author, $date)
