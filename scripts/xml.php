@@ -365,7 +365,7 @@ class xml
                 }
 
                 if (count($result['schedComment']) > 1) {
-                    $return = $this->removeDuplicates($result['downtime_id'], $result['schedComment']);
+                    $return = $this->removeDuplicates($result['downtime_id'], $result['schedComment'], $service);
 
                     $result['downtime_id']  = array_keys($return);
                     $result['schedComment'] = array_values($return);
@@ -383,7 +383,7 @@ class xml
             }
         }
     }
-    private function removeDuplicates($ids, $comments) {
+    private function removeDuplicates($ids, $comments, $service) {
         $newList     = [];
         $return      = [];
         $lastComment = '';
@@ -401,7 +401,7 @@ class xml
                 $this->actions->setType('downtime');
                 $this->actions->runActions([[
                     'down_id' => $key,
-                    'isHost'  => 'service',
+                    'isHost'  => ($service != 'SERVER IS UP') ? 'service' : 'host',
                 ]]);
             }
         }
