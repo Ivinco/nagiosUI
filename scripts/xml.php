@@ -398,11 +398,13 @@ class xml
             if (!$lastComment || explode(' by ', $lastComment)[0] != explode(' by ', $value)[0]) {
                 $return[$key] = $lastComment = $value;
             } else if (explode(' by ', $lastComment)[0] == explode(' by ', $value)[0]) {
-                $this->actions->setType('downtime');
-                $this->actions->runActions([[
-                    'down_id' => $key,
-                    'isHost'  => ($service != 'SERVER IS UP') ? 'service' : 'host',
-                ]]);
+                if ($key != 4) {
+                    $this->actions->setType('downtime');
+                    $this->actions->runActions([[
+                        'down_id' => $key,
+                        'isHost'  => ($service != 'SERVER IS UP') ? 'service' : 'host',
+                    ]]);
+                }
             }
         }
 

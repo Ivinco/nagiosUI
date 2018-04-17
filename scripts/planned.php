@@ -117,11 +117,15 @@ class planned
         $this->removePlannedMaintenance($delete);
         $this->writePlanned($results);
     }
-    public function findPlannedRecords($host, $service, $status, $acked, $hostOrService, $sched, $schComment, $downtimeId) {
+    public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId) {
         $return = [];
 
-        if ($planned = $this->findPlannedRecord($host, $service, $status, $schComment)) {
+        if ($planned = $this->findPlannedRecord($host, $service, $status)) {
             $planned = end($planned);
+
+            list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
+
+            $sched = ($schComment) ? 1 : 0;
 
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
@@ -147,13 +151,27 @@ class planned
                 'scheduled'  => true,
                 'sched'      => 1,
             ];
-
-            if ($acked) {
-                $this->unAckForPlanned($host, $service, $hostOrService);
-            }
         }
 
         return $return;
+    }
+    private function removeNonPlannedComments($schComment, $downtimeId) {
+        $schComment = explode('<br /><br />', $schComment);
+        $downtimeId = explode(',', $downtimeId);
+
+        $comments  = [];
+        $downtimes = [];
+
+        foreach ($schComment as $key => $value) {
+            $comment = $this->returnRawComment($value);
+
+            if (substr($comment, 0, 9) == '(planned)') {
+                $comments[]  = str_replace('(planned)', '', $value);
+                $downtimes[] = $downtimeId[$key];
+            }
+        }
+
+        return [implode('<br /><br />', $comments), implode(',', $downtimes)];
     }
     public function formatScheduledComment($comment, $author, $time) {
         $return  = preg_replace('/(#(\d+))/', $this->nagiosCommentUrl, $comment);
@@ -270,7 +288,7 @@ class planned
             'host'       => $host,
             'service'    => $service,
             'author'     => $user,
-            'com_data'   => $comment,
+            'com_data'   => '(planned)' . $comment,
         ]]);
 
         return true;
@@ -329,6 +347,10 @@ class planned
             $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
             $status     = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
             $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
+            $schComment = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
+
+            list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
+
             $downtimeId = explode(',', $downtimeId);
 
             if (isset($downtimeId[0]) && $downtimeId[0]) {
@@ -349,11 +371,13 @@ class planned
         }
     }
     private function removeSchedulePlanned($downtimeId) {
-        $this->actions->setType('downtime');
-        $this->actions->runActions([[
-            'down_id' => $downtimeId,
-            'isHost'  => 'service',
-        ]]);
+        if ($downtimeId != 4) {
+            $this->actions->setType('downtime');
+            $this->actions->runActions([[
+                'down_id' => $downtimeId,
+                'isHost'  => 'service',
+            ]]);
+        }
 
         return true;
     }

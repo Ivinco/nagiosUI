@@ -63,8 +63,12 @@ class actions
                 $this->unAcknowledgeProblem($post);
             }
 
-            if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
+            if (in_array($this->type, ['scheduleIt'])) {
                 $this->unAcknowledgeProblem($post);
+                $this->scheduleProblem($post);
+            }
+
+            if (in_array($this->type, ['scheduleItTime'])) {
                 $this->scheduleProblem($post);
             }
 
