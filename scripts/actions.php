@@ -5,8 +5,10 @@ class actions
     function __construct()
     {
         global $nagiosPipe;
+        global $sendQuickAckDataUrl;
 
         $this->nagiosPipe = $nagiosPipe;
+        $this->sendQuickAckDataUrl = $sendQuickAckDataUrl;
     }
     public function verifyType()
     {
@@ -54,7 +56,12 @@ class actions
     public function runActions($data)
     {
         foreach ($data as $post) {
-            if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
+            if (in_array($this->type, ['quickAck'])) {
+                $this->unAcknowledgeProblem($post);
+                $this->quickAcknowledgeProblem($post);
+            }
+
+            if (in_array($this->type, ['acknowledgeIt'])) {
                 $this->unAcknowledgeProblem($post);
                 $this->acknowledgeProblem($post);
             }
@@ -80,6 +87,27 @@ class actions
                 $this->recheckProblem($post);
             }
         }
+    }
+    private function sendQuickAckData($post)
+    {
+        if ($this->sendQuickAckDataUrl) {
+            $host = preg_replace("/( *\d+(-*\d+)*)$/", "", $post['host']);
+            $url  = $this->sendQuickAckDataUrl;
+            $url  = str_replace('___host___',    urlencode($host),            $url);
+            $url  = str_replace('___service___', urlencode($post['service']), $url);
+            $url  = str_replace('___user___',    urlencode($post['author']),  $url);
+
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $url);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            $output = curl_exec($curl);
+            curl_close($curl);
+        }
+    }
+    public function quickAcknowledgeProblem($post)
+    {
+        $this->acknowledgeProblem($post);
+        $this->sendQuickAckData($post);
     }
     public function acknowledgeProblem($post)
     {

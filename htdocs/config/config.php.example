@@ -37,6 +37,9 @@ $nagiosPercentileUrl      = '/url/tmp/nagios_percentile';
 /* nagios.cmd file path */
 $nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
 
+/* url to send user, host and service after QuickAck */
+$sendQuickAckDataUrl      = 'http://domain/path/?user=___user___&group=___host___&service=___service___';
+
 /* user name/email array for gravatar.com icons. leave default value */
 $usersArray = array(
 	'dev'      => 'dev@domain.com',
