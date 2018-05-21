@@ -43,6 +43,7 @@ class json
         $this->orderRecords();
 
         $this->additional['total_tab'] = count($this->returnJson);
+        $this->additional['planned']   = count($this->plannedData->returnPlanned());
     }
 
     private function formatJson() {

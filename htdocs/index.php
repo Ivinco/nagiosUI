@@ -114,6 +114,7 @@
 			<label for="planned" id="planned-label">
 				<span class="top-planned-icon"></span>
 				<span class="small-hide">&#160;Schedule a downtime</span>
+                <span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
         </div>
     </form>

@@ -2131,6 +2131,7 @@ Search.countRecords = function() {
     $('#radio label[for="acked"] em').text(Search.ajaxData.acked);
     $('#radio label[for="sched"] em').text(Search.ajaxData.sched);
     $('#radio label[for="EMERGENCY"] em').text(Search.ajaxData.EMERGENCY);
+    $('#radio label[for="planned"] em').text(Search.ajaxData.planned);
 	Search.infoRowCounter();
 }
 Search.countRecordsMinus = function(buttonID) {
