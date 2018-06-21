@@ -6,9 +6,11 @@ class actions
     {
         global $nagiosPipe;
         global $sendQuickAckDataUrl;
+        global $isUserOnline;
 
         $this->nagiosPipe = $nagiosPipe;
         $this->sendQuickAckDataUrl = $sendQuickAckDataUrl;
+        $this->isUserOnline = $isUserOnline;
     }
     public function verifyType()
     {
@@ -88,6 +90,26 @@ class actions
             }
         }
     }
+    private function isUserOnline($user)
+    {
+        if ($this->isUserOnline) {
+            $url = str_replace('___user___', urlencode($user), $this->isUserOnline);
+
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $url);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            $output = curl_exec($curl);
+            curl_close($curl);
+
+            $output = json_decode($output);
+
+            if ($output->online == 'false') {
+                return false;
+            }
+        }
+
+        return true;
+    }
     private function sendQuickAckData($post)
     {
         if ($this->sendQuickAckDataUrl) {
@@ -106,8 +128,12 @@ class actions
     }
     public function quickAcknowledgeProblem($post)
     {
-        $this->acknowledgeProblem($post);
-        $this->sendQuickAckData($post);
+        if ($this->isUserOnline($post['author'])) {
+            $this->acknowledgeProblem($post);
+            $this->sendQuickAckData($post);
+        } else {
+            $this->returnError('offline', 400);
+        }
     }
     public function acknowledgeProblem($post)
     {

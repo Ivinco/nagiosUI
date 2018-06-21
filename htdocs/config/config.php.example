@@ -40,6 +40,9 @@ $nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
 /* url to send user, host and service after QuickAck */
 $sendQuickAckDataUrl      = 'http://domain/path/?user=___user___&group=___host___&service=___service___';
 
+/* url to send verify is user online or not. if user is offline quick ack won't be set. */
+$isUserOnline = 'http://domain/isOnline?user=___user___';
+
 /* user name/email array for gravatar.com icons. leave default value */
 $usersArray = array(
 	'dev'      => 'dev@domain.com',

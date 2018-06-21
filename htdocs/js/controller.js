@@ -1383,7 +1383,12 @@ Search.prepareSendData = function (key) {
 			data:   { data: requestData, type: Search.whatWeChangeObject[key].type },
 		})
 		.fail(function(jqXHR, textStatus) {
-			alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+			if (jqXHR.responseText == 'offline') {
+                alert("Quick ack can't be set, because you're offline in Slack. Please try later.");
+			} else {
+                alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+			}
+
 			Search.tempShowButtons(key);
 		})
 		.done(function() {
