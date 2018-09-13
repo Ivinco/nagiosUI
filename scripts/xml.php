@@ -527,7 +527,7 @@ class xml
 
         foreach ($o as $k=>$el) {
             if (preg_match('/service_description\s+(.*?)$/', $el, $match)) {
-                if (preg_match('/notes\s+depends on (.*?)$/', $o[$k+1], $match2)) {
+                if (isset($o[$k+1]) && preg_match('/notes\s+depends on (.*?)$/', $o[$k+1], $match2)) {
                     $out[$match[1]] = $match2[1];
                 }
             }

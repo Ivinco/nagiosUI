@@ -195,6 +195,10 @@ class planned
         $planned = $this->returnPlanned();
         $return  = [];
 
+        if (!is_array($planned)) {
+            return $return;
+        }
+
         foreach ($planned as $key => $plan) {
             $hostCommand     = $this->returnPlannedPattern($plan['host']);
             $serviceCommand  = $this->returnPlannedPattern($plan['service']);
