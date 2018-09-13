@@ -182,8 +182,10 @@
                 <tbody id="planned-list"></tbody>
             </table>
             <br /><br />
-            <p><strong>Use a template:</strong></p>
-            <ul id="planned-templates-list"></ul>
+            <div>
+                <p><strong>Use a template:</strong></p>
+                <ul id="planned-templates-list"></ul>
+            </div>
 		</div>
 	</div>
 	<div id="lastUpdated"></div>
