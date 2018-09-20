@@ -50,6 +50,11 @@ $usersArray = array(
 	'default'  => 'djshdsjkhd@dkjshjsh.com',
 );
 
+/* Aliases array, needed if user name (for check is user online) is different. In this example to $isUserOnline user will be 'administrator'  */
+$userAliases = [
+    'admin' => 'administrator',
+];
+
 /* grouping by Service count */
 $groupByService = 2;
 

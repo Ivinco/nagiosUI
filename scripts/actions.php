@@ -7,10 +7,12 @@ class actions
         global $nagiosPipe;
         global $sendQuickAckDataUrl;
         global $isUserOnline;
+        global $userAliases;
 
         $this->nagiosPipe = $nagiosPipe;
         $this->sendQuickAckDataUrl = $sendQuickAckDataUrl;
         $this->isUserOnline = $isUserOnline;
+        $this->userAliases = $userAliases;
     }
     public function verifyType()
     {
@@ -92,6 +94,10 @@ class actions
     }
     private function isUserOnline($user)
     {
+        if ($this->userAliases && is_array($this->userAliases) && isset($this->userAliases[$user])) {
+            $user = $this->userAliases[$user];
+        }
+
         if ($this->isUserOnline) {
             $url = str_replace('___user___', urlencode($user), $this->isUserOnline);
 
