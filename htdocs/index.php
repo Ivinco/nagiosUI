@@ -216,6 +216,7 @@
         $(document).ready(function() {
             Search.init();
             Planned.init();
+            Grouping.init();
         });
     </script>
 </body>

@@ -258,6 +258,8 @@ table.dataTable thead .no-border-th {
 .full-planned-list tbody tr td:nth-child(8) { text-align: center; }
 .full-planned-list tbody tr td:nth-child(9) { text-align: center; }
 
+#mainTable .comment .likeTable ul li.sched.text, #mainTable .comment .likeTable ul li.ack.text { word-break: break-all; }
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
