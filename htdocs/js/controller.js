@@ -3589,7 +3589,7 @@ Grouping = {
             schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
 
         if (avatar) {
-            var quickAck = '<li><img class="icons" src="'+ avatar +'"></li>';
+            var quickAck = '<li><img class="icons" src="https://www.gravatar.com/avatar/'+ avatar +'?size=20"></li>';
         } else {
             var quickAck = '<li class="'+ liClass +'"><span class="icons '+ liImgClass +' '+ liImgSrc +'" alt="'+ liImgTitle +'" title="'+ liImgTitle +'"></span></li>';
         }
@@ -3713,7 +3713,7 @@ Grouping = {
                         comment = '<p style="margin:0;'+ hide +'">Comment: <span>' + item.info.comment + '</span></p>',
                         commentEdit = (item.info.schedPlanned) ? ('<li class="planned"><em class="edit_planned_comment" data-command="'+ encodeURIComponent(item.info.command) +'" alt="Edit comment" title="Edit comment"></em></li>') : '';
 
-                    results += '' +
+                    result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
                         '		<li class="planned text">' + comment + item.info.name + '</li>' +
