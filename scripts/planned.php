@@ -240,34 +240,36 @@ class planned
             $return  = end($return);
             $results = [];
 
-            foreach ($planned as $plannedKey => $plannedValue) {
-                $results[$plannedKey] = $plannedValue;
+            if (is_array($planned)) {
+                foreach ($planned as $plannedKey => $plannedValue) {
+                    $results[$plannedKey] = $plannedValue;
 
-                if ($return['key'] == $plannedKey) {
-                    if (!isset($plan['list'])) {
-                        $results[$plannedKey]['list'] = [];
+                    if ($return['key'] == $plannedKey) {
+                        if (!isset($plan['list'])) {
+                            $results[$plannedKey]['list'] = [];
+                        }
+
+                        if (!isset($plan['list'][$host])) {
+                            $results[$plannedKey]['list'][$host] = [];
+                        }
+
+                        if (!isset($plan['list'][$host][$service])) {
+                            $results[$plannedKey]['list'][$host][$service] = [];
+                        }
+
+                        if (!isset($plan['list'][$host][$service][$status])) {
+                            $results[$plannedKey]['list'][$host][$service][$status] = '';
+                        }
+
+                        $results[$plannedKey]['list'][$host][$service][$status] = time() + 10;
                     }
-
-                    if (!isset($plan['list'][$host])) {
-                        $results[$plannedKey]['list'][$host] = [];
-                    }
-
-                    if (!isset($plan['list'][$host][$service])) {
-                        $results[$plannedKey]['list'][$host][$service] = [];
-                    }
-
-                    if (!isset($plan['list'][$host][$service][$status])) {
-                        $results[$plannedKey]['list'][$host][$service][$status] = '';
-                    }
-
-                    $results[$plannedKey]['list'][$host][$service][$status] = time() + 10;
                 }
+
+                $this->writePlanned($results);
+                $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService);
+
+                return $return['author'];
             }
-
-            $this->writePlanned($results);
-            $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService);
-
-            return $return['author'];
         }
 
         return '';

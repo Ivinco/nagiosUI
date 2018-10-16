@@ -87,6 +87,8 @@ Search = {}
                         data: Grouping.setInfo(json)
                     });
                 } else {
+                    Grouping.clearData();
+
                     return data;
                 }
             }
@@ -3641,7 +3643,7 @@ Grouping = {
 
                 prevHost = item.host.name;
 
-                result += '<tr data-service="'+ encodeURIComponent(item.service.name) +'" role="row" class="even" data-group="'+ key +'" data-group-type="child">';
+                result += '<tr data-service="'+ item.service.original +'" role="row" class="even" data-group="'+ key +'" data-group-type="child">';
 
                 //host
                 result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-host="'+ item.host.host +'" href="'+ item.host.url +'" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';

@@ -106,7 +106,7 @@ class xml
     {
         $files = glob($this->xmlArchive . $_GET['file'] . "*.log");
 
-        if ($files[0]) {
+        if (isset($files[0]) && $files[0]) {
             return $files[0];
         }
 
