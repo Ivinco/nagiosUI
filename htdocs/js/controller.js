@@ -262,7 +262,11 @@ Search = {}
 			}
         },
 		"drawCallback": function( settings ) {
+            var colspan = (Search.currentTab == 'normal') ? 6 : 7;
+
             Grouping.drawGrouping();
+            $('#mainTable tbody .dataTables_empty').attr('colspan', colspan);
+            
 			Search.filterDataTable($('#mainTable_filter input').val());
 			Search.countRecords();
 			$('#infoHolder').show();
