@@ -71,13 +71,15 @@ class planned
 
         $results = [];
 
-        foreach ($json as $record) {
-            if ($record['end'] > time()) {
-                $results[] = $record;
+        if (is_array($json)) {
+            foreach ($json as $record) {
+                if ($record['end'] > time()) {
+                    $results[] = $record;
+                }
             }
-        }
 
-        $this->writePlanned($results);
+            $this->writePlanned($results);
+        }
 
         print_r(json_encode(['file' => $results, 'templates' => $this->templates], true));
     }
@@ -85,37 +87,41 @@ class planned
         $json    = $this->returnPlanned();
         $results = [];
 
-        foreach ($json as $key => $record) {
-            if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $id) {
-                $record['host']    = $this->host;
-                $record['service'] = $this->service;
-                $record['status']  = $this->status;
-                $record['comment'] = $this->comment;
-                $record['normal']  = $this->normal;
+        if (is_array($json)) {
+            foreach ($json as $key => $record) {
+                if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $id) {
+                    $record['host']    = $this->host;
+                    $record['service'] = $this->service;
+                    $record['status']  = $this->status;
+                    $record['comment'] = $this->comment;
+                    $record['normal']  = $this->normal;
+                }
+
+                $results[] = $record;
             }
 
-            $results[] = $record;
+            $this->writePlanned($results);
         }
-
-        $this->writePlanned($results);
     }
     public function removeData() {
         $json    = $this->returnPlanned();
         $results = [];
         $delete  = null;
 
-        foreach ($json as $key => $record) {
-            if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) != $this->line) {
-                $results[] = $record;
+        if (is_array($json)) {
+            foreach ($json as $key => $record) {
+                if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) != $this->line) {
+                    $results[] = $record;
+                }
+
+                if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
+                    $delete = $this->line;
+                }
             }
 
-            if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
-                $delete = $this->line;
-            }
+            $this->removePlannedMaintenance($delete);
+            $this->writePlanned($results);
         }
-
-        $this->removePlannedMaintenance($delete);
-        $this->writePlanned($results);
     }
     public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId) {
         $return = [];
@@ -323,15 +329,17 @@ class planned
         $json    = $this->returnPlanned();
         $results = [];
 
-        foreach ($json as $key => $record) {
-            if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
-                $record['comment'] = $this->comment;
+        if (is_array($json)) {
+            foreach ($json as $key => $record) {
+                if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
+                    $record['comment'] = $this->comment;
+                }
+
+                $results[] = $record;
             }
 
-            $results[] = $record;
+            $this->writePlanned($results);
         }
-
-        $this->writePlanned($results);
     }
     public function removePlannedMaintenance($delete) {
         $xml             = new xml;

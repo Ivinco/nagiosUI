@@ -266,7 +266,7 @@ Search = {}
 
             Grouping.drawGrouping();
             $('#mainTable tbody .dataTables_empty').attr('colspan', colspan);
-            
+
 			Search.filterDataTable($('#mainTable_filter input').val());
 			Search.countRecords();
 			$('#infoHolder').show();
