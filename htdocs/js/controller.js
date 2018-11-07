@@ -3303,6 +3303,8 @@ Grouping = {
         this.listByService = [];
         this.listReturn = [];
         this.listGroups = [];
+        this.listGroupsComments = [];
+        this.listGroupsStatusInformation = [];
 
         $('#mainTable thead tr').not(':first').remove();
     },
@@ -3417,6 +3419,12 @@ Grouping = {
         this.sortChildren();
         this.prepareParents();
         this.checkQuickAckIcons();
+
+        for (var key in this.listGroups) {
+            $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .status_information').text(Grouping.returnStatusInformation(key));
+            $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .comment .likeTable .ack.text').html(Grouping.returnComments(key));
+            $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .comment .likeTable .sched.text').html(Grouping.returnComments(key));
+        }
     },
     sortParents: function() {
         var tmp = [];
@@ -3468,12 +3476,12 @@ Grouping = {
     },
     sortChildren: function() {
         for (var key in this.listGroups) {
-            var firstCheck = 0;
-
             this.listGroups[key].data.greyText      = 0;
             this.listGroups[key].data.plannedAvatar = '';
             this.listGroups[key].data.blueText      = 0;
             this.listGroups[key].data.brownText     = 0;
+            this.listGroupsComments[key] = [];
+            this.listGroupsStatusInformation[key] = [];
 
             for (var i = 0; i < this.listGroups[key].children.length; i++) {
                 var childrenNewData = this.returnEmptyTheadObj(),
@@ -3502,6 +3510,9 @@ Grouping = {
                 childrenNewData.blueText       = false;
                 childrenNewData.brownText      = false;
 
+                this.listGroupsComments[key].push(childrenNewData.comment);
+                this.listGroupsStatusInformation[key].push(childrenNewData.information.name);
+
                 if (item.service.sched) {
                     this.listGroups[key].data.greyText++;
                     childrenNewData.greyText = true;
@@ -3518,11 +3529,11 @@ Grouping = {
                     childrenNewData.brownText = true;
                 }
 
-                if (!firstCheck) {
+                if (!i) {
                     this.fillEmptyValues(key, childrenNewData);
                 }
 
-                if (firstCheck) {
+                if (i) {
                     if (this.listGroups[key].data.statusOrder < childrenNewData.statusOrder) {
                         this.listGroups[key].data.statusOrder = childrenNewData.statusOrder;
                         this.listGroups[key].data.status      = childrenNewData.status;
@@ -3541,17 +3552,7 @@ Grouping = {
                         this.listGroups[key].data.lastCheckOrder = childrenNewData.lastCheckOrder;
                         this.listGroups[key].data.lastCheck      = childrenNewData.lastCheck;
                     }
-
-                    if (this.listGroups[key].data.information.name != childrenNewData.information.name) {
-                        this.listGroups[key].data.information.name = '';
-                    }
-
-                    if (this.listGroups[key].data.comment != childrenNewData.comment) {
-                        this.listGroups[key].data.comment = '';
-                    }
                 }
-
-                firstCheck++;
 
                 var allValues = item;
 
@@ -3563,6 +3564,31 @@ Grouping = {
                 this.listGroups[key].children[i].full = allValues;
             }
         }
+    },
+    uniq: function(a) {
+        return a.sort().filter(function(item, pos, ary) {
+            return !pos || item != ary[pos - 1];
+        })
+    },
+    returnStatusInformation: function(key) {
+        var statuses = this.uniq(this.listGroupsStatusInformation[key]);
+        var status = '';
+
+        if (statuses.length < 2) {
+            status = statuses[0];
+        }
+
+        return status;
+    },
+    returnComments: function(key) {
+        var comments = this.uniq(this.listGroupsComments[key]);
+        var comment = '';
+
+        if (comments.length < 2) {
+            comment = comments[0];
+        }
+
+        return comment;
     },
     prepareParents: function() {
         for (var key in this.listGroups) {
