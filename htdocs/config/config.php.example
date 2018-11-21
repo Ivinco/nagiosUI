@@ -183,3 +183,7 @@ $commentsSelectService     = "mysql -hhost -uuser -ppassword -NB database -e \"s
 
 /* command example only for host & service */
 $commentsSelectHostService = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
+
+
+/* insert comment to db on add/remove: Schedule downtime. Leave empty if not needed. */
+$plannedInsertActionsToDb = "mysql -hhost -uuser -ppassword database -e \"INSERT INTO table SET logged=__logged__, host='__host__', service='__service__', command='planned', author='__author__', comment='__comment__'\" 2>/dev/null";

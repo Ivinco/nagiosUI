@@ -15,6 +15,7 @@ class planned
     public $nagiosPipe;
     public $usersArray;
     public $nagiosCommentUrl;
+    private $plannedInsertActionsToDb;
 
     function __construct()
     {
@@ -23,12 +24,14 @@ class planned
         global $nagiosPipe;
         global $usersArray;
         global $nagiosCommentUrl;
+        global $plannedInsertActionsToDb;
 
         $this->file             = $plannedUrl;
         $this->templates        = $plannedTemplates;
         $this->nagiosPipe       = $nagiosPipe;
         $this->usersArray       = $usersArray;
         $this->nagiosCommentUrl = $nagiosCommentUrl;
+        $this->plannedInsertActionsToDb = $plannedInsertActionsToDb;
         $this->actions          = new actions;
     }
 
@@ -42,7 +45,7 @@ class planned
     public function addData() {
         $json = $this->returnPlanned();
 
-        if ($this->line == 'new') {
+        if ($this->line == 'new' && is_array($json)) {
             $end = (time() + $this->time * 60);
 
             $json[] = [
@@ -56,12 +59,60 @@ class planned
                 'user'    => $this->user,
                 'normal'  => $this->normal,
             ];
-        }
 
-        $this->writePlanned($json);
+            $this->writePlanned($json);
+            $this->logToDb($this->host, $this->service, $this->status, date('Y-m-d H:i:s', $end), $this->user, $this->comment, true);
+        }
+    }
+    private function logToDb($host, $service, $status, $till, $author, $comment, $add)
+    {
+        if ($this->plannedInsertActionsToDb) {
+            $text = [];
+            $command = $this->plannedInsertActionsToDb;
+
+            if ($host) {
+                $text[] = 'host: ' . $host;
+            }
+
+            if ($service) {
+                $text[] = 'service: ' . $service;
+            }
+
+            if ($status) {
+                $text[] = 'status information: ' . $status;
+            }
+
+            if ($till) {
+                $text[] = 'till: ' . $till;
+            }
+
+            if ($comment) {
+                $text[] = 'comment: ' . $comment;
+            }
+
+            $text = implode(', ', $text);
+            $text = $author . ': ' . (($add) ? 'added' : 'removed' ) . ' planned downtime on ' . $text;
+            $command = str_replace('__logged__', date('Y-m-d H:i:s'), $command);
+            $command = str_replace('__host__', $host, $command);
+            $command = str_replace('__service__', $service, $command);
+            $command = str_replace('__author__', $author, $command);
+            $command = str_replace('__comment__', $text, $command);
+
+            exec($command, $output);
+        }
     }
     public function returnPlanned() {
-        return json_decode(file_get_contents($this->file), true);
+        $data = file_get_contents($this->file);
+
+        if ($data) {
+            $data = @json_decode($data, true);
+
+            if (null !== $data && is_array($data)) {
+                return $data;
+            }
+        }
+
+        return false;
     }
     private function writePlanned($data) {
         file_put_contents($this->file, json_encode($data, true));
@@ -116,6 +167,8 @@ class planned
 
                 if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
                     $delete = $this->line;
+
+                    $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $record['user'], $record['comment'], false);
                 }
             }
 
