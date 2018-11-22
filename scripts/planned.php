@@ -109,13 +109,28 @@ class planned
 
             if (null !== $data && is_array($data)) {
                 return $data;
+            } else {
+                return [];
             }
         }
 
         return false;
     }
     private function writePlanned($data) {
-        file_put_contents($this->file, json_encode($data, true));
+        $data  = @json_encode($data);
+        $count = 5;
+
+        if ($data) {
+            while ($count > 0) {
+                if (file_put_contents($this->file, $data, LOCK_EX) !== false) {
+                    if ($data == file_get_contents($this->file)) {
+                        $count = 0;
+                    }
+                }
+
+                $count--;
+            }
+        }
     }
     public function recheckData() {
         $json = $this->returnPlanned();
