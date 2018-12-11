@@ -200,6 +200,8 @@ class json
             'warnings'          => 0,
             'critical'          => 0,
             'unknown'           => 0,
+            'infoCritical'      => 0,
+            'infoWarnings'      => 0,
             'total'             => count($this->returnJson),
             'commentsSelect'    => $this->commentsSelect,
             'nagiosCommentUrl'  => $this->fullData['nagios-comment-url'],
@@ -234,6 +236,16 @@ class json
                     }
                 }
 
+                if (strpos($fullText, '__normal__') !== false && strpos($fullText, '__info__') !== false) {
+                    if ($record['status']['name'] == 'WARNING') {
+                        $this->additional['infoWarnings']++;
+                    }
+
+                    if ($record['status']['name'] == 'CRITICAL') {
+                        $this->additional['infoCritical']++;
+                    }
+                }
+
                 if (strpos($fullText, '__acked__') !== false && strpos($fullText, '__info__') === false) {
                     $this->additional['acked']++;
                 }
@@ -248,6 +260,10 @@ class json
             }
 
             $this->returnJson = $return;
+
+            if (!$this->additional['normal']) {
+                $this->additional['normal'] = $this->additional['infoWarnings'] + $this->additional['infoCritical'];
+            }
         }
     }
     private function filterBySearch() {

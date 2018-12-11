@@ -1717,8 +1717,14 @@ Search.drawTinycon = function() {
     } else if (Search.ajaxData.warnings) {
         Tinycon.setOptions({ colour: '#000000', background: '#ffff00' });
         Tinycon.setBubble(Search.ajaxData.warnings);
+    } else if (Search.ajaxData.infoCritical) {
+        Tinycon.setOptions({ colour: '#ffffff', background: '#ad7e36' });
+        Tinycon.setBubble(Search.ajaxData.infoCritical);
+    } else if (Search.ajaxData.infoWarnings) {
+        Tinycon.setOptions({ colour: '#ffffff', background: '#676cff' });
+        Tinycon.setBubble(Search.ajaxData.infoWarnings);
     } else if (typeof Tinycon !== 'undefined') {
-    Tinycon.setBubble(0);
+        Tinycon.setBubble(0);
     }
 }
 Search.countRecords = function() {
