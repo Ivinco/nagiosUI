@@ -183,7 +183,7 @@ class planned
                 if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
                     $delete = $this->line;
 
-                    $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $record['user'], $record['comment'], false);
+                    $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
                 }
             }
 
