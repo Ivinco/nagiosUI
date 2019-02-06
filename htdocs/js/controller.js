@@ -3071,7 +3071,7 @@ Planned = {
                 $.ajax({
                     url:    'planned.php',
                     method: 'POST',
-                    data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')) },
+                    data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')), user: $('#userName').text() },
                 })
                     .always(function(data) {
                         Planned.drawPlanned(data);
