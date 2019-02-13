@@ -47,6 +47,10 @@ class json
     }
 
     private function formatJson() {
+        if (!isset($this->fullData['alert']) || !is_array($this->fullData['alert'])) {
+            http_response_code(404);
+            die;
+        }
         foreach ($this->fullData['alert'] as $item) {
             $acked           = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
             $ackComment      = (!is_array($item['ack_comment']))          ? $item['ack_comment']          : implode(' ', $item['ack_comment']);

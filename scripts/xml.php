@@ -46,6 +46,7 @@ class xml
         $this->fullHostUrl              = $nagiosFullHostUrl;
         $this->hostUrl                  = $nagiosHostUrl;
         $this->serviceUrl               = $nagiosServiceUrl;
+        $this->statusFile               = [];
 
         if ($this->memcacheEnabled) {
             $this->memcache = new Memcache;
@@ -127,11 +128,28 @@ class xml
     private function prepareDataToXml()
     {
         $this->otherFiles();
-        $this->statusFile = file_get_contents($this->statusFile_global);
+        $this->getStatusFile();
         $this->pregMatches();
         $this->prepareHosts();
         $this->prepareComments();
         $this->prepareOtherData();
+    }
+    private function getStatusFile()
+    {
+        $i = 0;
+        while ($i < 5) {
+            if (file_exists($this->statusFile_global)) {
+                $this->statusFile = file_get_contents($this->statusFile_global);
+                break;
+            }
+
+            $i++;
+        }
+
+        if (!$this->statusFile) {
+            http_response_code(404);
+            die('Status file not found.');
+        }
     }
     private function addDataToMemcache()
     {
