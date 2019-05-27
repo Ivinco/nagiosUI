@@ -5,39 +5,18 @@ header('Content-Type: application/json');
 
 include_once __DIR__ . '/../scripts/init.php';
 
-$host    = (isset($_REQUEST['host']) && $_REQUEST['host']) ? $_REQUEST['host'] : '';
+$server  = (isset($_REQUEST['server'])  && $_REQUEST['server'])  ? $_REQUEST['server']  : '';
+$host    = (isset($_REQUEST['host'])    && $_REQUEST['host'])    ? $_REQUEST['host']    : '';
 $service = (isset($_REQUEST['service']) && $_REQUEST['service']) ? $_REQUEST['service'] : '';
-$return  = [];
 
-if ((!$host && !$service) || !$commentsSelect) {
+if ((!$host && !$service) || !$server) {
 	http_response_code(404);
 	die;
 }
 
-if ($host && $service) {
-	$commentsSelectHostService = str_replace('<host>', $host, $commentsSelectHostService);
-	$commentsSelectHostService = str_replace('<service>', $service, $commentsSelectHostService);
-	exec($commentsSelectHostService, $output);
-} else if ($host) {
-	$commentsSelectHost = str_replace('<host>', $host, $commentsSelectHost);
-	exec($commentsSelectHost, $output);
-} else {
-	$commentsSelectService = str_replace('<service>', $service, $commentsSelectService);
-	exec($commentsSelectService, $output);
-}
+$db = new db;
 
-foreach ($output as $record) {
-	$item = explode("\t", $record);
-	
-	if ($item[0]) {
-		$return[] = [
-			'name' => trim($item[0]),
-			'date' => trim($item[1]),
-		];
-	}
-}
-
-echo json_encode($return);
+echo json_encode($db->returnComments($host, $service, $server));
 
 http_response_code(200);
 die;

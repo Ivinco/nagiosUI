@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 include_once __DIR__ . '/../scripts/init.php';
 
 $planned = new planned;
+$planned->server = (isset($_GET['server']) && $_GET['server']) ? $_GET['server'] : '';
 
 if (!empty($_POST)) {
     $planned->host    = (isset($_POST['host'])) ? str_replace("\"", "&quot;", trim($_POST['host'])) : '';

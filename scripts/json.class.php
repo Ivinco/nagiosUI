@@ -4,16 +4,18 @@ class json
 {
     function __construct()
     {
-        global $usersArray;
-        global $commentsSelect;
+        global $serversList;
+
+        $this->serversList = $serversList;
+
         global $infoRecordMark;
 
         $this->xml         = new xml;
         $this->ac          = new accessControl;
         $this->plannedData = new planned;
 
-        $this->usersArray     = $usersArray;
-        $this->commentsSelect = $commentsSelect;
+        $this->xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
+        $this->plannedData->server  = (isset($_GET['server_tab'])) ? $_GET['server_tab'] : '';
         $this->infoRecordMark = $infoRecordMark;
 
         $this->returnJson = [];
@@ -43,7 +45,7 @@ class json
         $this->orderRecords();
 
         $this->additional['total_tab'] = count($this->returnJson);
-        $this->additional['planned']   = count($this->plannedData->returnPlanned());
+        $this->additional['planned']   = $this->plannedData->returnPlannedCount();
     }
 
     private function formatJson() {
@@ -207,8 +209,8 @@ class json
             'infoCritical'      => 0,
             'infoWarnings'      => 0,
             'total'             => count($this->returnJson),
-            'commentsSelect'    => $this->commentsSelect,
-            'nagiosCommentUrl'  => $this->fullData['nagios-comment-url'],
+            'tabsList'          => $this->returnTabsList(),
+            'tabCurrent'        => $this->xml->getCurrentTab(),
         );
     }
     private function filterByTab() {
@@ -448,5 +450,13 @@ class json
         $search = (trim($search)) ? trim($search) : '';
 
         return $search;
+    }
+
+    private function returnTabsList() {
+        $servers = array_keys($this->serversList);
+        sort($servers);
+        $servers = implode(',', $servers);
+
+        return $servers;
     }
 }

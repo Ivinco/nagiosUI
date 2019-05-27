@@ -6,9 +6,11 @@ header('Content-Type: application/json');
 include_once __DIR__ . '/../scripts/init.php';
 
 $longAlerts = new longAlerts();
+$db = new db;
+
 $return = [
-    'last'    => ((isset($lastActionsList)    && $lastActionsList)    ? getLastActionsList($lastActionsList)    : []),
-    'planned' => ((isset($plannedActionsList) && $plannedActionsList) ? getLastActionsList($plannedActionsList) : []),
+    'last'    => $db->lastActionsList(),
+    'planned' => $db->plannedActionsList(),
     'long'    => $longAlerts->returnLongAlerts(),
 ];
 

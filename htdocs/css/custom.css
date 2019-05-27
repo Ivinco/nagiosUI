@@ -260,6 +260,40 @@ table.dataTable thead .no-border-th {
 
 #mainTable .comment .likeTable ul li.sched.text, #mainTable .comment .likeTable ul li.ack.text { word-break: break-all; }
 
+#tabs {
+    border-bottom: 1px solid #c5c5c5;
+    margin: 0 0 15px 0;
+}
+#tabs ul {
+    margin: 0;
+    padding: 5px 0 15px 0;
+    text-align: right;
+}
+#tabs ul li {
+    display: inline-block;
+    list-style: none;
+    margin: 1px .2em 0 0;
+    padding: .5em 1em;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid #c5c5c5;
+    background: #f6f6f6;
+    font-weight: normal;
+    color: #454545;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+}
+#tabs ul li:hover {
+    background: #e0e0e0;
+}
+#tabs ul li.active {
+    border: 1px solid #003eff;
+    background: #007fff;
+    color: #ffffff;
+    cursor: default;
+}
+
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }

@@ -48,34 +48,21 @@ Features:
 * services dependency
 
 Installation:
+* install and run nagios-api: https://github.com/zorkian/nagios-api
 * you need to change htdocs/config/config.php.example file content and rename file to config.php:
-  - $statusFile_global        = status.dat file path
-  - $getNotesUrls_cacheFile   = nagios notes url file path
-  - $getDepends_cacheFile     = nagios depends file path
-  - $alertsPercentile_global  = nagios alerts critical 50pct file path
-  - $durationsFromFile_global = nagios percentile durations file path
-  - $xmlArchive               = nagios xml output path
-  - $nagiosConfigFile         = nagios config file path
-  - $nagiosFullHostUrl        = nagios full host url
-  - $nagiosCommentUrl         = comments url
-  - $nagiosPercentileUrl      = nagios percentile file path
-  - $nagiosPipe               = nagios.cmd file path
-  - $usersArray               = user name/email array for gravatar.com icons. leave default value.
-  - $groupByService           = grouping by Service count
-  - $groupByHost              = grouping by Host count
-  - $refreshArray             = refresh select values
-  - $memcacheHost             = memcache host
-  - $memcachePort             = memcache port
-  - $memcacheName             = memcache key (if you have few nagiosUI)
-  - $commentsSelect           = enable/disable last comments for acknowledge and schedule downtime
-  - $commentsSelectHost       = command example only for host
-  - $commentsSelectService    = command example only for service
-  - $commentsSelectHostService = command example only for host & service
-
-* you need to set up cron job:
-  - * * * * * root php /domain/admin_scripts/cron/nagios_percentile.php >>/domain/log/nagios_percentile.log 2>&1
-* you need to configure .git/hooks/post-receive file:
-  - #!/bin/sh
-  - GIT_WORK_TREE=/path to your git repository git checkout -f
-  - cd /path to your git repository/htdocs
-  - exec sudo chmod 666 planned.json
+  - $serversList = add information about nagios-api server
+  - $database = mysql config
+  - $infoRecordMark = inromation how detect info alert
+  - $xmlArchive = nagios xml output path
+  - $memcacheHost = memcache host
+  - $memcachePort = memcache port
+  - $memcacheName = memcache key (if you have few nagiosUI)
+  - $accessControl = access control usage
+  - $accessControlSuperUsers = superusers list
+  - $accessControlGroupUrl = contact group path
+  - $accessControlServiceUrl = services path
+  - $longAlertsConfig = long alert notifications list
+* add data to db:
+  - notes_urls
+  - planned_templates
+  - users_list

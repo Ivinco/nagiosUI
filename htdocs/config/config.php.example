@@ -1,156 +1,43 @@
 <?php
 
-/* you need to change htdocs/config/config.php.example file
-   content and rename file to nagios2Config.php: */
-
-
-/* status.dat file path */
-$statusFile_global        = '/var/log/nagios/status.dat';
-
-/* nagios notes url file path */
-$getNotesUrls_cacheFile   = '/domain/tmp/nagios_notes_url.cache';
-
-/* nagios depends file path */
-$getDepends_cacheFile     = '/domain/tmp/nagios_depends.cache';
-
-/* nagios alerts critical 50pct file path */
-$alertsPercentile_global  = '/domain/tmp/nagios_percentile/alerts_critical_50pct';
-
-/* nagios percentile durations file path */
-$durationsFromFile_global = '/domain/tmp/nagios_percentile/durations';
-
-/* nagios xml output path */
-$xmlArchive               = '/domain/log/nagios_xml_output/';
-
-/* nagios config file path */
-$nagiosConfigFile         = '/cgi-bin/config.cgi';
-
-/* nagios full host url */
-$nagiosFullHostUrl        = '/cgi-bin/status.cgi?hostgroup=all&;style=hostdetail';
-
-/* nagios comments url */
-$nagiosCommentUrl         = '<a href=url/view.php?id=$2" target="_blank">$1</a>';
-
-/* nagios percentile file path */
-$nagiosPercentileUrl      = '/url/tmp/nagios_percentile';
-
-/* nagios.cmd file path */
-$nagiosPipe               = '/var/log/nagios/rw/nagios.cmd';
-
-/* url to send user, host and service after QuickAck */
-$sendQuickAckDataUrl      = 'http://domain/path/?user=___user___&group=___host___&service=___service___';
-
-/* url to send verify is user online or not. if user is offline quick ack won't be set. */
-$isUserOnline = 'http://domain/isOnline?user=___user___';
-
-/* user name/email array for gravatar.com icons. leave default value */
-$usersArray = array(
-	'dev'      => 'dev@domain.com',
-	'admin'    => 'admin@domain.com',
-	'default'  => 'djshdsjkhd@dkjshjsh.com',
-);
-
-/* Aliases array, needed if user name (for check is user online) is different. In this example to $isUserOnline user will be 'administrator'  */
-$userAliases = [
-    'admin' => 'administrator',
-];
-
-/* grouping by Service count */
-$groupByService = 2;
-
-/* grouping by Host count */
-$groupByHost    = 11;
-
-/* refresh select values in seconds */
-$refreshArray   = [
-	[ 'value' =>  '10', 'name' => '10 sec' ],
-	[ 'value' =>  '20', 'name' => '20 sec' ],
-	[ 'value' =>  '40', 'name' => '40 sec' ],
-	[ 'value' =>  '60', 'name' =>  '1 min' ],
-	[ 'value' => '120', 'name' =>  '2 min' ],
-	[ 'value' => '180', 'name' =>  '3 min' ],
-	[ 'value' => '300', 'name' =>  '5 min' ],
-	[ 'value' => '600', 'name' => '10 min' ],
-];
-
-/* Planned Maintenance file (full path to file) */
-$plannedUrl = '/full_path/planned.json';
+/* you need to change htdocs/config/config.php.example file content and rename file to config.php: */
 
 /*
-   Planned Maintenance template:
-      - 'name': template name (visible in planned tab)
-      - 'host': maintenance command for host:
-          - ${host} will be prompt before activation to add host
-          - if you don't want to add host: leave empty or *
-      - 'service': maintenance command for service:
-          - ${service} will be prompt before activation to add service
-          - if you don't want to add service: leave empty or *
-      - 'status': maintenance command for status information:
-          - ${status} will be prompt before activation to add information status
-          - if you don't want to add status: leave empty or *
-      - 'time': is Maintenance Time (minutes):
-          - if value 0 then will be prompt before activation to add Maintenance Time (minutes)
-      - 'comment': is Comment:
-          - if value '' then will be prompt before activation to add Comment
-      - 'normal': show planned in Normal tab
+    nagios-api servers list:
+         - array key: will be used as button name in UI, as 'server' in DB for storing/retrieving data
+         - 'url': nagios-api url
+         - 'port': nagios-api port
+         - 'hostUrl': nagios host url
+         - 'serviceUrl': nagios service url
+         - 'fullHostUrl': nagios full host url
 */
-
-$plannedTemplates = [
-    [
-        'name'    => 'Server reboot',
-        'host'    => '${host}',
-        'status'  => '',
-        'service' => '',
-        'time'    => 60,
-        'comment' => '',
-        'normal'  => 0,
+$serversList = [
+    'someServer1' => [
+        'url'  => 'http://someurl1.com',
+        'port' => '8881',
+        'hostUrl' => '/cgi-bin/extinfo.cgi?type=1&host=___host___',
+        'serviceUrl' => '/cgi-bin/extinfo.cgi?type=2&host=___host___&service=___service___',
+        'fullHostUrl' => '/cgi-bin/status.cgi?hostgroup=all&style=hostdetail',
     ],
-    [
-        'name'    => 'Log errors',
-        'host'    => 'log*',
-        'status'  => '',
-        'service' => '*error*',
-        'time'    => 0,
-        'comment' => '',
-        'normal'  => 1,
+    'someServer2' => [
+        'url'  => 'http://someurl2.com',
+        'port' => '8882',
+        'hostUrl' => '/cgi-bin/extinfo.cgi?type=1&host=___host___',
+        'serviceUrl' => '/cgi-bin/extinfo.cgi?type=2&host=___host___&service=___service___',
+        'fullHostUrl' => '/cgi-bin/status.cgi?hostgroup=all&style=hostdetail',
     ],
 ];
 
-/* Memcache Host */
-$memcacheHost = 'localhost';
 
-/* Memcache Port */
-$memcachePort = 12345;
-
-/* memcache key (if you have few nagiosUI) */
-$memcacheName = 'nagiosUI';
-
-/* enable/disable memcache usage */
-$memcacheEnabled = true;
-
-function hostUrl($host) {
-	return 'https://monitor.domain.com/nagios/cgi-bin/status.cgi?host='. $host;
-}
-
-function serviceUrl($host, $service) {
-   if ($service == 'SERVER+IS+UP') {
-		return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=1&amp;host='. $host;
-	}
-	
-	return 'https://monitor.domain.com/nagios/cgi-bin/extinfo.cgi?type=2&amp;host='. $host .'&amp;service='. $service;
-}
-
-/* Access control - if enabled: only users who are in /etc/nagios/contacts/contactgroups.cfg or in /etc/nagios/services (contact_groups|contacts) can see alerts */
-$accessControl           = true;
-
-/* Super users can see all alerts */
-$accessControlSuperUsers = ['admin'];
-
-/* Contact group URL */
-$accessControlGroupUrl   = '/etc/nagios/contacts/contactgroups.cfg';
-
-/* Services URL */
-$accessControlServiceUrl = '/etc/nagios/services';
+/* mysql config */
+$database = [
+    'host'   => 'localhost',
+    'user'   => 'username',
+    'pass'   => 'password',
+    'db'     => 'database',
+    'prefix' => 'nagiosUI_',
+    'port'   => 3306,
+];
 
 
 /*
@@ -172,28 +59,40 @@ $infoRecordMark = [
 ];
 
 
-/* enable/disable last comments for acknowledge and schedule downtime */
-$commentsSelect            = false;
 
-/* command example only for host */
-$commentsSelectHost        = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' group by comment order by last_seen desc limit 10\" 2>&1";
-
-/* command example only for service */
-$commentsSelectService     = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
-
-/* command example only for host & service */
-$commentsSelectHostService = "mysql -hhost -uuser -ppassword -NB database -e \"select comment, max(logged) last_seen from table where comment != 'temp' AND host = '<host>' AND service = '<service>' group by comment order by last_seen desc limit 10\" 2>&1";
+/* nagios xml output path */
+$xmlArchive               = '/domain/log/nagios_xml_output/';
 
 
-/* insert comment to db on add/remove: Schedule downtime. Leave empty if not needed. */
-$plannedInsertActionsToDb = "mysql -hhost -uuser -ppassword database -e \"INSERT INTO table SET logged=__logged__, host='__host__', service='__service__', command='planned', author='__author__', comment='__comment__'\" 2>/dev/null";
+
+/* Memcache Host */
+$memcacheHost = 'localhost';
+
+/* Memcache Port */
+$memcachePort = 12345;
+
+/* memcache key (if you have few nagiosUI) */
+$memcacheName = 'nagiosUI';
+
+/* enable/disable memcache usage */
+$memcacheEnabled = true;
 
 
-/* Last actions list for last 30 minutes (last_actions.php). Format: 'logged', 'host', 'service', 'command', 'author', 'comment'. Leave empty if not needed. */
-$lastActionsList = "mysql -hhost -uuser -ppassword -NB logs -e \"SELECT * FROM table WHERE command IN ('sched', 'ack') AND logged > date_sub(now(), INTERVAL 30 MINUTE) AND comment not like '(planned)%' ORDER BY logged ASC;\" 2>&1";
 
-/* Last planned actions list for last 30 minutes (last_actions.php). Format: 'logged', 'host', 'service', 'command', 'author', 'comment'. Leave empty if not needed. */
-$plannedActionsList = "mysql -hhost -uuser -ppassword -NB logs -e \"SELECT * FROM table WHERE command = 'planned' AND logged > date_sub(now(), INTERVAL 300 MINUTE) ORDER BY logged ASC;\" 2>&1";
+/* Access control - if enabled: only users who are in /etc/nagios/contacts/contactgroups.cfg or in /etc/nagios/services (contact_groups|contacts) can see alerts */
+$accessControl           = false;
+
+/* Super users can see all alerts */
+$accessControlSuperUsers = ['admin'];
+
+/* Contact group path */
+$accessControlGroupUrl   = '/etc/nagios/contacts/contactgroups.cfg';
+
+/* Services path */
+$accessControlServiceUrl = '/etc/nagios/services';
+
+
+
 
 /*
    Long alert notifications list.
@@ -208,4 +107,54 @@ $longAlertsConfig = array(
     'notify_about_alerts_longer_than' => 30*60,
     'remember_notification_for' => 30*60,
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// reikia parasyt kad saugom duomenis DB
+/* user name/email array for gravatar.com icons. leave default value */
+$usersArray = array(
+	'dev'      => 'dev@domain.com',
+	'admin'    => 'admin@domain.com',
+	'default'  => 'djshdsjkhd@dkjshjsh.com',
+);
+
+
+
+
+/*
+   Planned Maintenance template in `planned_templates` table:
+      - 'name': template name (visible in planned tab)
+      - 'host': maintenance command for host:
+          - ${host} will be prompt before activation to add host
+          - if you don't want to add host: leave empty or *
+      - 'service': maintenance command for service:
+          - ${service} will be prompt before activation to add service
+          - if you don't want to add service: leave empty or *
+      - 'status': maintenance command for status information:
+          - ${status} will be prompt before activation to add information status
+          - if you don't want to add status: leave empty or *
+      - 'time': is Maintenance Time (minutes):
+          - if value 0 then will be prompt before activation to add Maintenance Time (minutes)
+      - 'comment': is Comment:
+          - if value '' then will be prompt before activation to add Comment
+      - 'normal': show planned in Normal tab
+      - 'server': name from $serversList
+*/
+
+
+
 

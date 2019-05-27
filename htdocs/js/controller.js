@@ -10,9 +10,13 @@ if (!localStorage.getItem('currentGroup')) {
 if (!localStorage.getItem('canceledReloads')) {
 	localStorage.setItem('canceledReloads', '0');
 }
+if (!localStorage.getItem('currentServerTab')) {
+    localStorage.setItem('currentServerTab', '');
+}
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
+    tmpServer = localStorage.getItem('currentServerTab'),
 	tmpGroup  = localStorage.getItem('currentGroup');
 	
 localStorage.clear();
@@ -20,6 +24,7 @@ localStorage.setItem('currentTabNew', tmpTab);
 localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
 localStorage.setItem('canceledReloads', '0');
+localStorage.setItem('currentServerTab', tmpServer);
 
 lastTime = (new Date()).getTime();
 globalTime = 0;
@@ -32,6 +37,8 @@ Search = {}
 	Search.currentTab         = localStorage.getItem('currentTabNew');
 	Search.currentGroup       = localStorage.getItem('currentGroup');
 	Search.currentReload      = localStorage.getItem('currentReloadNew');
+    Search.currentServerTab   = localStorage.getItem('currentServerTab');
+    Search.serverTabsList     = '';
 	Search.reloadCustomText   = 'Refresh: Custom';
 	Search.autoRefresh        = true;
 	Search.backgroundReload   = true;
@@ -61,21 +68,23 @@ Search = {}
 		'planned'       : [[2,'desc'],[4,'desc']],
 	};
 	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
-    Search.changeNagiosComment = function(url, comment) {
-        var matches = comment.match(/[A-Z]{2,4}-\d+/);
+    Search.changeNagiosComment = function(comment) {
+        var replacedText, replacePattern1, replacePattern2;
 
-        if (matches && url) {
-            var link = url.replace('$2', matches[0]).replace('$1', matches[0]);
-            comment = comment.replace(matches[0], link);
-        }
-        return comment;
+        replacePattern1 = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+        replacedText = comment.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+
+        replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+        replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+
+        return replacedText;
     }
 	Search.allDataTable       = $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
         'ajax': {
-            url: 'json_new.php?filter=' + Search.currentTab + Search.additionalFile,
+            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile,
             dataFilter: function(data){
                 var tabsArray = ['normal', 'acked', 'sched'];
 
@@ -283,7 +292,6 @@ Search = {}
 				$('#groupByService').text(json.additional.groupByService);
 				$('#groupByHost').text(json.additional.groupByHost);
 				$('#refreshArray').text(json.additional.refreshArray);
-                $('#nagiosCommentUrl').html(json.additional.nagiosCommentUrl);
 
                 Planned.getPlanned();
 
@@ -430,7 +438,7 @@ Search.filterDataTable = function(val, startReload) {
     }
 
     $('#mainTable tbody td.status_information .likeTable .planned.text span').each(function() {
-        $(this).html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), $(this).text()));
+        $(this).html(Search.changeNagiosComment($(this).text()));
     });
 
     $(".ui-tooltip").remove();
@@ -441,6 +449,7 @@ Search.filterDataTable = function(val, startReload) {
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
+    Search.drawServerTabs();
 	Search.extension();
 	Search.emptyHosts();
 
@@ -682,6 +691,23 @@ Search.addDialogJs = function() {
 			}
 		]
 	});
+}
+Search.drawServerTabs = function() {
+    if (Search.ajaxData.tabCurrent != Search.currentServerTab || Search.serverTabsList != Search.ajaxData.tabsList) {
+        Search.currentServerTab = Search.ajaxData.tabCurrent;
+        Search.serverTabsList   = Search.ajaxData.tabsList;
+
+        localStorage.setItem('currentServerTab', Search.currentServerTab);
+
+        var tabs = Search.ajaxData.tabsList.split(',');
+
+        $("#tabs ul").html("");
+
+        for (var i = 0; i < tabs.length; i++) {
+            var active = (tabs[i] == Search.currentServerTab) ? ' class="active"' : '';
+            $("#tabs ul").append('<li'+ active +'>'+ tabs[i] +'</li>');
+        }
+    }
 }
 
 
@@ -992,13 +1018,13 @@ Search.prepareSendData = function (key) {
         $.ajax({
             url:    'post.php',
             method: 'POST',
-            data:   { data: schedulesRequest, 'type': 'downtime' },
+            data:   { data: schedulesRequest, 'type': 'downtime', server: Search.currentServerTab },
         })
         .always(function() {
             $.ajax({
                 url:    'post.php',
                 method: 'POST',
-                data:   { data: requestData, type: 'scheduleItTime' },
+                data:   { data: requestData, type: 'scheduleItTime', server: Search.currentServerTab },
             })
             .fail(function(jqXHR, textStatus) {
                 alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
@@ -1013,7 +1039,7 @@ Search.prepareSendData = function (key) {
         $.ajax({
             url:    'post.php',
             method: 'POST',
-            data:   { data: requestData, type: Search.whatWeChangeObject[key].type },
+            data:   { data: requestData, type: Search.whatWeChangeObject[key].type, server: Search.currentServerTab },
         })
         .fail(function(jqXHR, textStatus) {
             alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
@@ -1027,7 +1053,7 @@ Search.prepareSendData = function (key) {
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
-			data:   { data: requestData, type: Search.whatWeChangeObject[key].type },
+			data:   { data: requestData, type: Search.whatWeChangeObject[key].type, server: Search.currentServerTab },
 		})
 		.fail(function(jqXHR, textStatus) {
 			if (jqXHR.responseText == 'offline') {
@@ -1752,7 +1778,7 @@ Search.infoRowCounter = function() {
 }
 
 Search.getNewData = function() {
-	Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+	Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
 		Search.resetAgo();
         Planned.showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
@@ -1766,28 +1792,26 @@ Search.returnCommentText = function(text) {
 }
 
 Search.returnComments = function(modal, key) {
-	if (Search.ajaxData.commentsSelect) {
-        $.ajax({
-			url:    'comments.php',
-			method: 'GET',
-			data:   { host: Search.whatWeChangeObject[key].host, service: Search.whatWeChangeObject[key].service },
-		})
-		.success(function(data) {
-			if (data.length) {
-				var html  = '<select name="select-comment-list">';
-					html += '<option value=""></option>';
+    $.ajax({
+        url:    'comments.php?server='+ Search.currentServerTab,
+        method: 'GET',
+        data:   { host: Search.whatWeChangeObject[key].host, service: Search.whatWeChangeObject[key].service },
+    })
+        .success(function(data) {
+            if (data.length) {
+                var html  = '<select name="select-comment-list">';
+                html += '<option value=""></option>';
 
-				for (var i = 0; i < data.length; i++) {
-					html += '<option value="'+ encodeURIComponent(data[i].name) +'">'+ data[i].name +' - '+ moment(data[i].date, 'YYYY-MM-DD HH:mm:ss').fromNow() +'</option>';
-				}
+                for (var i = 0; i < data.length; i++) {
+                    html += '<option value="'+ encodeURIComponent(data[i].name) +'">'+ data[i].name +' - '+ moment(data[i].date, 'YYYY-MM-DD HH:mm:ss').fromNow() +'</option>';
+                }
 
-				html += '</select>';
+                html += '</select>';
 
-				$(modal + ' .select-comment').show();
-				$(modal + ' .select-comment').html(html);
-			}
-		});
-    }
+                $(modal + ' .select-comment').show();
+                $(modal + ' .select-comment').html(html);
+            }
+        });
 }
 Search.addToAgo = function() {
 	Search.lastUpdateAgo++;
@@ -1901,7 +1925,7 @@ Search.init = function() {
 
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 
-		Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
@@ -1912,7 +1936,7 @@ Search.init = function() {
 		if (Search.searchValue != $(this).val()) {
 			Search.searchValue = val;
 
-			Search.allDataTable.search(Search.searchValue).ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function () {
+			Search.allDataTable.search(Search.searchValue).ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function () {
 				Search.resetAgo();
 				Planned.showHidePlanned();
 
@@ -2352,7 +2376,7 @@ Search.init = function() {
 		$.ajax({
 			url:    'post.php',
 			method: 'POST',
-			data:   { data: request, 'type': 'downtime' },
+			data:   { data: request, 'type': 'downtime', server: Search.currentServerTab },
 		})
 		.fail(function(jqXHR, textStatus) {
 			console.log( "Request failed: " + textStatus + ' - ' + jqXHR );
@@ -2521,6 +2545,16 @@ Search.init = function() {
 		$('td.status_information').css('width', '200px');
 		setTimeout(function() { $('td.status_information').removeAttr('style') });
 	});
+    $(document).on('click', '#tabs ul li:not(.active)', function() {
+        Search.currentServerTab = $(this).text();
+
+        localStorage.setItem('currentServerTab', Search.currentServerTab);
+
+        $("#tabs ul li.active").removeClass('active');
+        $(this).addClass('active');
+
+        Search.getNewData();
+    });
 }
 
 function getParameterByName (name) {
@@ -2535,13 +2569,13 @@ $.stopPendingAjax = (function() {
 	var id = 0, Q = {};
 
 	$(document).ajaxSend(function(e, jqx, settings){
-		if (settings.url != 'planned.php' && settings.url != 'post.php') {
+		if (!settings.url.startsWith('planned.php') && settings.url != 'post.php') {
             jqx._id = ++id;
 			Q[jqx._id] = jqx;
         }
 	});
 	$(document).ajaxComplete(function(e, jqx, settings){
-		if (settings.url != 'planned.php' && settings.url != 'post.php') {
+		if (!settings.url.startsWith('planned.php') && settings.url != 'post.php') {
 			delete Q[jqx._id];
 		}
 	});
@@ -2721,7 +2755,7 @@ Planned = {
         Planned.showHidePlanned();
 
         $.ajax({
-            url:    'planned.php',
+            url:    'planned.php?server=' + Search.currentServerTab,
             method: 'GET',
         })
         .always(function(data) {
@@ -2752,7 +2786,7 @@ Planned = {
                         '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
                         '			class="save-planned"' +
                         '		>Delete</button>',
-                    comment = Search.changeNagiosComment($('#nagiosCommentUrl').html(), value['comment']);
+                    comment = Search.changeNagiosComment(value['comment']);
 
                 $('#planned-list').append(
                 '<tr>' +
@@ -2868,7 +2902,7 @@ Planned = {
             clearTimeout(Planned.plannedTimer);
 
             $.ajax({
-                url:    'planned.php',
+                url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
                 data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, status: Planned.plannedData.status, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal },
             })
@@ -2910,7 +2944,7 @@ Planned = {
             Search.stopReloads();
 
             $.ajax({
-                url:    'planned.php',
+                url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
                 data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal },
             })
@@ -2935,7 +2969,7 @@ Planned = {
             Search.stopReloads();
 
             $.ajax({
-                url:    'planned.php',
+                url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
                 data:   { text: 'comment', line: command, comment: comment },
             })
@@ -2947,7 +2981,7 @@ Planned = {
                     Search.startReloads();
 
                     $('#mainTable tbody td.status_information .likeTable .planned .edit_planned_comment[data-command="'+ encodeURIComponent(command) +'"]').each(function() {
-                        $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment($('#nagiosCommentUrl').html(), comment));
+                        $(this).closest('ul').find('.planned.text p').show().find('span').html(Search.changeNagiosComment(comment));
                     });
                 });
         }
@@ -2984,7 +3018,7 @@ Planned = {
 
             if ((host || service || status) && comment && time > 0) {
                 $.ajax({
-                    url: 'planned.php',
+                    url: 'planned.php?server=' + Search.currentServerTab,
                     method: 'POST',
                     data: {host: host, service: service, status: status, comment: comment, time: time, line: 'new', user: user, normal: normal },
                 })
@@ -3069,7 +3103,7 @@ Planned = {
                 $(this).attr('disabled', 'disabled');
 
                 $.ajax({
-                    url:    'planned.php',
+                    url:    'planned.php?server=' + Search.currentServerTab,
                     method: 'POST',
                     data:   { text: 'delete', time: 1, line: decodeURIComponent(li.find('button').attr('data-id')), user: $('#userName').text() },
                 })
@@ -3846,7 +3880,7 @@ Grouping = {
                 localStorage.setItem('currentGroup', data.item.value);
                 Search.currentGroup = localStorage.getItem('currentGroup');
 
-                Search.allDataTable.ajax.url('json_new.php?filter=' + Search.currentTab + Search.additionalFile).load(function() {
+                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
                     Search.resetAgo();
                     Planned.showHidePlanned();
                 }).order(Search.orderBy[Search.currentTab]);

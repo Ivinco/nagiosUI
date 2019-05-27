@@ -11,28 +11,12 @@ class planned
     public $user;
     public $file;
     public $normal;
-    public $templates;
-    public $nagiosPipe;
-    public $usersArray;
-    public $nagiosCommentUrl;
-    private $plannedInsertActionsToDb;
+    public $server;
 
     function __construct()
     {
-        global $plannedUrl;
-        global $plannedTemplates;
-        global $nagiosPipe;
-        global $usersArray;
-        global $nagiosCommentUrl;
-        global $plannedInsertActionsToDb;
-
-        $this->file             = $plannedUrl;
-        $this->templates        = $plannedTemplates;
-        $this->nagiosPipe       = $nagiosPipe;
-        $this->usersArray       = $usersArray;
-        $this->nagiosCommentUrl = $nagiosCommentUrl;
-        $this->plannedInsertActionsToDb = $plannedInsertActionsToDb;
         $this->actions          = new actions;
+        $this->db               = new db;
     }
 
     public function verifyPostData() {
@@ -43,153 +27,69 @@ class planned
         return false;
     }
     public function addData() {
-        $json = $this->returnPlanned();
-
-        if ($this->line == 'new' && is_array($json)) {
+        if ($this->line == 'new') {
             $end = (time() + $this->time * 60);
 
-            $json[] = [
-                'host'    => $this->host,
-                'service' => $this->service,
-                'status'  => $this->status,
-                'comment' => $this->comment,
-                'time'    => $this->time,
-                'end'     => $end,
-                'date'    => date('Y-m-d H:i:s', $end),
-                'user'    => $this->user,
-                'normal'  => $this->normal,
-            ];
-
-            $this->writePlanned($json);
+            $this->db->addNewPlanned($this->host, $this->service, $this->status, $this->comment, $this->time, $end, date('Y-m-d H:i:s', $end), $this->user, $this->normal, $this->server);
             $this->logToDb($this->host, $this->service, $this->status, date('Y-m-d H:i:s', $end), $this->user, $this->comment, true);
         }
     }
     private function logToDb($host, $service, $status, $till, $author, $comment, $add)
     {
-        if ($this->plannedInsertActionsToDb) {
-            $text = [];
-            $command = $this->plannedInsertActionsToDb;
+        $text = [];
 
-            if ($host) {
-                $text[] = 'host: ' . $host;
-            }
-
-            if ($service) {
-                $text[] = 'service: ' . $service;
-            }
-
-            if ($status) {
-                $text[] = 'status information: ' . $status;
-            }
-
-            if ($till) {
-                $text[] = 'till: ' . $till;
-            }
-
-            if ($comment) {
-                $text[] = 'comment: ' . $comment;
-            }
-
-            $text = implode(', ', $text);
-            $text = $author . ': ' . (($add) ? 'added' : 'removed' ) . ' planned downtime on ' . $text;
-            $command = str_replace('__logged__', date('Y-m-d H:i:s'), $command);
-            $command = str_replace('__host__', $host, $command);
-            $command = str_replace('__service__', $service, $command);
-            $command = str_replace('__author__', $author, $command);
-            $command = str_replace('__comment__', $text, $command);
-
-            exec($command, $output);
+        if ($host) {
+            $text[] = 'host: ' . $host;
         }
+
+        if ($service) {
+            $text[] = 'service: ' . $service;
+        }
+
+        if ($status) {
+            $text[] = 'status information: ' . $status;
+        }
+
+        if ($till) {
+            $text[] = 'till: ' . $till;
+        }
+
+        if ($comment) {
+            $text[] = 'comment: ' . $comment;
+        }
+
+        $text = implode(', ', $text);
+        $text = $author . ': ' . (($add) ? 'added' : 'removed' ) . ' planned downtime on ' . $text;
+
+        $data = [
+            'host' => $host,
+            'service' => $service,
+            'author' => $author,
+            'comment' => $text,
+        ];
+
+        $this->db->logAction($data, 'planned', $this->server);
     }
-    public function returnPlanned() {
-        $data = file_get_contents($this->file);
-
-        if ($data) {
-            $data = @json_decode($data, true);
-
-            if (null !== $data && is_array($data)) {
-                return $data;
-            } else {
-                return [];
-            }
-        }
-
-        return false;
-    }
-    private function writePlanned($data) {
-        $data  = @json_encode($data);
-        $count = 5;
-
-        if ($data) {
-            while ($count > 0) {
-                if (file_put_contents($this->file, $data, LOCK_EX) !== false) {
-                    if ($data == file_get_contents($this->file)) {
-                        $count = 0;
-                    }
-                }
-
-                $count--;
-            }
-        }
+    public function returnPlannedCount() {
+        return count($this->db->returnPlanned($this->server));
     }
     public function recheckData() {
-        $json = $this->returnPlanned();
+        $this->db->deleteOldPlanned($this->server);
+        $json = $this->db->returnPlanned($this->server);
+        $templates = $this->db->plannedTemplatesList($this->server);
 
-        $results = [];
-
-        if (is_array($json)) {
-            foreach ($json as $record) {
-                if ($record['end'] > time()) {
-                    $results[] = $record;
-                }
-            }
-
-            $this->writePlanned($results);
-        }
-
-        print_r(json_encode(['file' => $results, 'templates' => $this->templates], true));
+        print_r(json_encode(['file' => $json, 'templates' => $templates], true));
     }
     public function editData($id) {
-        $json    = $this->returnPlanned();
-        $results = [];
-
-        if (is_array($json)) {
-            foreach ($json as $key => $record) {
-                if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $id) {
-                    $record['host']    = $this->host;
-                    $record['service'] = $this->service;
-                    $record['status']  = $this->status;
-                    $record['comment'] = $this->comment;
-                    $record['normal']  = $this->normal;
-                }
-
-                $results[] = $record;
-            }
-
-            $this->writePlanned($results);
-        }
+        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->server);
     }
     public function removeData() {
-        $json    = $this->returnPlanned();
-        $results = [];
-        $delete  = null;
+        $record = $this->db->returnPlannedRecord($this->line, $this->server);
+        $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
+        $this->db->removePlanned($this->line, $this->server);
+        $this->removePlannedMaintenance($this->line);
 
-        if (is_array($json)) {
-            foreach ($json as $key => $record) {
-                if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) != $this->line) {
-                    $results[] = $record;
-                }
 
-                if ($record['end'] > time() && ($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
-                    $delete = $this->line;
-
-                    $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
-                }
-            }
-
-            $this->removePlannedMaintenance($delete);
-            $this->writePlanned($results);
-        }
     }
     public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId) {
         $return = [];
@@ -248,7 +148,7 @@ class planned
         return [implode('<br /><br />', $comments), implode(',', $downtimes)];
     }
     public function formatScheduledComment($comment, $author, $time) {
-        $return  = preg_replace('/(#(\d+))/', $this->nagiosCommentUrl, $comment);
+        $return  = $this->parseUrls($comment);
         $return  = "'{$return}' by {$author}";
         $return .= ($time) ? '<br />added: '. date('M j H:i', intval($time)) : '';
 
@@ -266,7 +166,8 @@ class planned
         return '';
     }
     public function findPlannedRecord($host, $service, $status) {
-        $planned = $this->returnPlanned();
+        $planned = $this->db->returnPlanned($this->server);
+        $usersArray = $this->db->usersList($this->server);
         $return  = [];
 
         if (!is_array($planned)) {
@@ -290,7 +191,7 @@ class planned
                             $return[] = [
                                 'type'    => $type,
                                 'author'  => $plan['user'],
-                                'email'   => $this->usersArray[$plan['user']],
+                                'email'   => $usersArray[$plan['user']],
                                 'comment' => $plan['comment'],
                                 'date'    => ($type == 'old') ? $plan['list'][$host][$service][$status] : time(),
                                 'normal'  => $plan['normal'],
@@ -307,7 +208,7 @@ class planned
         return $return;
     }
     private function setPlanned($host, $service, $status, $hostOrService) {
-        $planned = $this->returnPlanned();
+        $planned = $this->db->returnPlanned($this->server);
         $return  = $this->findPlannedRecord($host, $service, $status);
 
         if ($return) {
@@ -336,10 +237,11 @@ class planned
                         }
 
                         $results[$plannedKey]['list'][$host][$service][$status] = time() + 10;
+
+                        $this->db->editPlannedList($results[$plannedKey]['list'], $host, $service, $status, $this->server);
                     }
                 }
 
-                $this->writePlanned($results);
                 $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService);
 
                 return $return['author'];
@@ -360,6 +262,7 @@ class planned
     }
     private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService) {
         $this->actions->setType('scheduleItTime');
+        $this->actions->setServer($this->server);
         $this->actions->runActions([[
             'start_time' => time(),
             'end_time'   => $end,
@@ -373,44 +276,13 @@ class planned
 
         return true;
     }
-    public function unAckForPlanned($host, $service, $hostOrService) {
-        $this->actions->setType('unAcknowledgeIt');
-        $this->actions->runActions([[
-            'host'    => $host,
-            'service' => $service,
-            'isHost'  => $hostOrService,
-        ]]);
-
-        return true;
-    }
-    public function returnPlannedComment($host, $service, $status) {
-        $return = $this->findPlannedRecord($host, $service, $status);
-
-        if ($return) {
-            $return = end($return);
-            return [$return['command'], $return['comment']];
-        }
-
-        return '';
-    }
     public function changeComment() {
-        $json    = $this->returnPlanned();
-        $results = [];
-
-        if (is_array($json)) {
-            foreach ($json as $key => $record) {
-                if (($record['host'] . '___' . $record['service'] . '___' . $record['status']) == $this->line) {
-                    $record['comment'] = $this->comment;
-                }
-
-                $results[] = $record;
-            }
-
-            $this->writePlanned($results);
-        }
+        $this->db->editPlannedComment($this->line, $this->comment, $this->server);
     }
     public function removePlannedMaintenance($delete) {
-        $xml             = new xml;
+        $xml = new xml;
+        $xml->setCurrentTab($this->server);
+
         $delete          = explode('___', $delete);
         $hostCommand     = $this->returnPlannedPattern($delete[0]);
         $serviceCommand  = $this->returnPlannedPattern($delete[1]);
@@ -455,6 +327,7 @@ class planned
     private function removeSchedulePlanned($downtimeId) {
         if ($downtimeId != 4) {
             $this->actions->setType('downtime');
+            $this->actions->setServer($this->server);
             $this->actions->runActions([[
                 'down_id' => $downtimeId,
                 'isHost'  => 'service',
@@ -471,5 +344,12 @@ class planned
     }
     private function pregMatchStatus($commandStatus, $status) {
         return preg_match("/$commandStatus/iu", " " . $status . " ");
+    }
+
+    private function parseUrls($string) {
+        $url = '@(http(s)?)?(://)?(([a-zA-Z])([-\w]+\.)+([^\s\.]+[^\s]*)+[^,.\s])@';
+        $string = preg_replace($url, '<a href="http$2://$4" target="_blank" title="$0">$0</a>', $string);
+
+        return $string;
     }
 }

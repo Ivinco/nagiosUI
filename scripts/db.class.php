@@ -1,0 +1,485 @@
+<?php
+
+class db
+{
+    public $mysql;
+
+    function __construct()
+    {
+        global $database;
+
+        $this->database = $database;
+
+        $this->connect();
+        $this->createTables();
+    }
+
+    private function connect()
+    {
+        $this->mysql = new mysqli($this->database['host'], $this->database['user'], $this->database['pass'], '', $this->database['port']);
+
+        if ($this->mysql->connect_errno) {
+            printf("Connect failed: %s\n", $this->mysql->connect_error);
+            exit();
+        }
+
+        if (!$this->mysql->select_db($this->database['db'])) {
+            if (!$this->mysql->query("CREATE DATABASE IF NOT EXISTS ". $this->database['db'])) {
+                echo "CREATE DATABASE IF NOT EXISTS ". $this->database['db'];
+                echo "Couldn't create database (". $this->database['db'] ."): " . $this->mysql->error;
+            }
+
+            $this->mysql->select_db($this->database['db']);
+        }
+    }
+    private function createTables()
+    {
+        $this->nagios_external_commands_log = $this->database['prefix'] . "nagios_external_commands_log";
+        $nagios_external_commands_log = "
+            CREATE TABLE IF NOT EXISTS `". $this->nagios_external_commands_log ."` (
+                `logged`  TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `host`    VARCHAR(255) NOT NULL,
+                `service` VARCHAR(255) NOT NULL,
+                `command` ENUM('ack', 'sched', 're-check', 'planned') DEFAULT NULL,
+                `author`  VARCHAR(255) NOT NULL,
+                `comment` VARCHAR(255) NOT NULL,
+                `server`  VARCHAR(255) NOT NULL
+            )
+        ";
+        if ($this->mysql->query($nagios_external_commands_log) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->planned_log = $this->database['prefix'] . "planned_log";
+        $planned_log = "
+            CREATE TABLE IF NOT EXISTS `". $this->planned_log ."` (
+                `logged`  TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `host`    VARCHAR(255)  NOT NULL,
+                `service` VARCHAR(255)  NOT NULL,
+                `status`  VARCHAR(255)  NOT NULL,
+                `comment` VARCHAR(1000) NOT NULL,
+                `time`    INT           NOT NULL,
+                `end`     INT           NOT NULL,
+                `date`    VARCHAR(255)  NOT NULL,
+                `user`    VARCHAR(255)  NOT NULL,
+                `normal`  INT           NOT NULL,
+                `list`    TEXT          NOT NULL,
+                `server`  VARCHAR(255)  NOT NULL
+            )
+        ";
+        if ($this->mysql->query($planned_log) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->planned_templates = $this->database['prefix'] . "planned_templates";
+        $planned_templates = "
+            CREATE TABLE IF NOT EXISTS `". $this->planned_templates ."` (
+                `name`    VARCHAR(255) NOT NULL,
+                `host`    VARCHAR(255) NOT NULL,
+                `service` VARCHAR(255) NOT NULL,
+                `status`  VARCHAR(255) NOT NULL,
+                `time`    INT          NOT NULL,
+                `comment` VARCHAR(255) NOT NULL,
+                `normal`  INT          NOT NULL,
+                `server`  VARCHAR(255) NOT NULL
+            )
+        ";
+        if ($this->mysql->query($planned_templates) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->users_list = $this->database['prefix'] . "users_list";
+        $users_list = "
+            CREATE TABLE IF NOT EXISTS `". $this->users_list ."` (
+                `name`   VARCHAR(255) NOT NULL,
+                `email`  VARCHAR(255) NOT NULL,
+                `server` VARCHAR(255) NOT NULL
+            )
+        ";
+        if ($this->mysql->query($users_list) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->notes_urls = $this->database['prefix'] . "notes_urls";
+        $notes_urls = "
+            CREATE TABLE IF NOT EXISTS `". $this->notes_urls ."` (
+                `service_or_host` VARCHAR(255) NOT NULL,
+                `url`          VARCHAR(255) NOT NULL,
+                `server`       VARCHAR(255) NOT NULL
+            )
+        ";
+        if ($this->mysql->query($notes_urls) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+    }
+    public function logAction($data, $command, $server) {
+        $host    = (isset($data['host']))    ? $data['host']    : '';
+        $service = (isset($data['service'])) ? $data['service'] : '';
+        $author  = (isset($data['author']))  ? $data['author']  : '';
+        $comment = (isset($data['comment'])) ? $data['comment'] : '';
+
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $author  = $this->mysql->real_escape_string($author);
+        $comment = $this->mysql->real_escape_string($comment);
+        $command = $this->mysql->real_escape_string($command);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            INSERT INTO `{$this->nagios_external_commands_log}`
+                (`logged`, `host`, `service`, `command`, `author`, `comment`, `server`) 
+            VALUES 
+                (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$command}', '{$author}', '{$comment}', '{$server}')
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            echo "Error saving data: " . $this->mysql->error;
+        }
+    }
+
+    public function returnPlanned($server) {
+        $time = time();
+        $server = $this->mysql->real_escape_string($server);
+        $sql = "SELECT * FROM `{$this->planned_log}` WHERE `server` = '{$server}' AND`end` > {$time}";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $row['list'] = json_decode($row['list'], true);
+
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+    public function deleteOldPlanned($server) {
+        $time = time();
+        $server = $this->mysql->real_escape_string($server);
+
+        $this->mysql->query("DELETE FROM `{$this->planned_log}` WHERE `server` = '{$server}' AND `end` < {$time}");
+    }
+    public function addNewPlanned($host, $service, $status, $comment, $time, $end, $date, $user, $normal, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $status  = $this->mysql->real_escape_string($status);
+        $comment = $this->mysql->real_escape_string($comment);
+        $time    = $this->mysql->real_escape_string($time);
+        $end     = $this->mysql->real_escape_string($end);
+        $date    = $this->mysql->real_escape_string($date);
+        $user    = $this->mysql->real_escape_string($user);
+        $normal  = $this->mysql->real_escape_string($normal);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            INSERT INTO `{$this->planned_log}`
+                (`logged`, `host`, `service`, `status`, `comment`, `time`, `end`, `date`, `user`, `normal`, `list`, `server`) 
+            VALUES 
+                (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$status}', '{$comment}', {$time}, {$end}, '{$date}', '{$user}', {$normal}, '', '{$server}')
+        ";
+
+        $this->mysql->query($sql);
+    }
+    public function editPlanned($id, $host, $service, $status, $comment, $normal, $server) {
+        $id = explode('___', $id);
+
+        $oldHost    = $this->mysql->real_escape_string($id[0]);
+        $oldService = $this->mysql->real_escape_string($id[1]);
+        $oldStatus  = $this->mysql->real_escape_string($id[2]);
+
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $status  = $this->mysql->real_escape_string($status);
+        $comment = $this->mysql->real_escape_string($comment);
+        $normal  = $this->mysql->real_escape_string($normal);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            UPDATE
+                `{$this->planned_log}`
+            SET 
+                `host`    = '{$host}',
+                `service` = '{$service}',
+                `status`  = '{$status}',
+                `comment` = '{$comment}',
+                `normal`  = '{$normal}'
+            WHERE
+                `host` = '{$oldHost}'
+              AND
+                `service` = '{$oldService}'
+              AND
+                `status` = '{$oldStatus}'
+              AND
+                `server` = '{$server}'
+        ";
+
+        $this->mysql->query($sql);
+    }
+    public function editPlannedComment($id, $comment, $server) {
+        $id = explode('___', $id);
+
+        $host    = $this->mysql->real_escape_string($id[0]);
+        $service = $this->mysql->real_escape_string($id[1]);
+        $status  = $this->mysql->real_escape_string($id[2]);
+        $comment = $this->mysql->real_escape_string($comment);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            UPDATE
+                `{$this->planned_log}`
+            SET 
+                `comment` = '{$comment}'
+            WHERE
+                `host` = '{$host}'
+              AND
+                `service` = '{$service}'
+              AND
+                `status` = '{$status}'
+              AND
+                `server` = '{$server}'
+        ";
+
+        $this->mysql->query($sql);
+    }
+    public function editPlannedList($list, $host, $service, $status, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $status  = $this->mysql->real_escape_string($status);
+        $list    = $this->mysql->real_escape_string(json_encode($list));
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            UPDATE
+                `{$this->planned_log}`
+            SET 
+                `list` = '{$list}'
+            WHERE
+                `host` = '{$host}'
+              AND
+                `service` = '{$service}'
+              AND
+                `status` = '{$status}'
+              AND
+                `server` = '{$server}'
+        ";
+
+        $this->mysql->query($sql);
+    }
+    public function removePlanned($id, $server) {
+        $id = explode('___', $id);
+
+        $host    = $this->mysql->real_escape_string($id[0]);
+        $service = $this->mysql->real_escape_string($id[1]);
+        $status  = $this->mysql->real_escape_string($id[2]);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            DELETE FROM 
+                `{$this->planned_log}` 
+            WHERE 
+                `host` = '{$host}'
+              AND
+                `service` = '{$service}'
+              AND
+                `status` = '{$status}'
+              AND
+                `server` = '{$server}'
+        ";
+
+        $this->mysql->query($sql);
+    }
+    public function returnPlannedRecord($id, $server) {
+        $id = explode('___', $id);
+
+        $host    = $this->mysql->real_escape_string($id[0]);
+        $service = $this->mysql->real_escape_string($id[1]);
+        $status  = $this->mysql->real_escape_string($id[2]);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                * 
+            FROM 
+                `{$this->planned_log}` 
+            WHERE 
+                `host` = '{$host}'
+              AND
+                `service` = '{$service}'
+              AND
+                `status` = '{$status}'
+              AND
+                `server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+        $row = $result->fetch_assoc();
+
+        return $row;
+    }
+
+    public function plannedTemplatesList($server) {
+        $server = $this->mysql->real_escape_string($server);
+        $sql = "SELECT * FROM `{$this->planned_templates}` WHERE `server` = '{$server}'";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+
+    public function usersList($server) {
+        $server = $this->mysql->real_escape_string($server);
+        $sql = "SELECT * FROM `{$this->users_list}` WHERE `server` = '{$server}'";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[$row['name']] = $row['email'];
+        }
+
+        return $list;
+    }
+
+    public function returnComments($host, $service, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $server  = $this->mysql->real_escape_string($server);
+
+        if ($host && $service) {
+            $where = " `host` = '{$host}' AND `service` = '{$service}'";
+        } else if ($host) {
+            $where = " `host` = '{$host}' ";
+        } else {
+            $where = " `service` = '{$service}' ";
+        }
+
+        $sql = "
+            SELECT 
+                `comment`, max(`logged`) `last_seen`
+            FROM 
+                `{$this->nagios_external_commands_log}`
+            WHERE
+                `comment` != 'temp'
+              AND
+                `server` = '{$server}'
+              AND 
+                {$where}
+            GROUP BY
+                `comment`
+            ORDER BY
+                `last_seen` DESC
+            LIMIT 10
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[] = [
+                'name' => $row['comment'],
+                'date' => $row['last_seen'],
+            ];
+        }
+
+        return $list;
+    }
+
+    public function lastActionsList()
+    {
+        $sql = "
+            SELECT 
+                *
+            FROM 
+                `{$this->nagios_external_commands_log}`
+            WHERE
+                `command` IN ('sched', 'ack')
+              AND 
+                `logged` > date_sub(now(), INTERVAL 30 MINUTE)
+              AND 
+                `comment` NOT LIKE '(planned)%'
+            ORDER BY
+                `logged` ASC
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[] = [
+                'logged'  => trim($row['logged']),
+                'host'    => trim($row['host']),
+                'service' => trim($row['service']),
+                'command' => trim($row['command']),
+                'author'  => trim($row['author']),
+                'comment' => trim($row['comment']),
+                'server'  => trim($row['server']),
+            ];
+        }
+
+        return $list;
+    }
+    public function plannedActionsList()
+    {
+        $sql = "
+            SELECT 
+                *
+            FROM 
+                `{$this->nagios_external_commands_log}`
+            WHERE
+                `command` = 'planned'
+              AND 
+                `logged` > date_sub(now(), INTERVAL 30 MINUTE)
+            ORDER BY
+                `logged` ASC
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[] = [
+                'logged'  => trim($row['logged']),
+                'host'    => trim($row['host']),
+                'service' => trim($row['service']),
+                'command' => trim($row['command']),
+                'author'  => trim($row['author']),
+                'comment' => trim($row['comment']),
+                'server'  => trim($row['server']),
+            ];
+        }
+
+        return $list;
+    }
+
+    public function notesUrls($server) {
+        $server = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                *
+            FROM 
+                `{$this->notes_urls}`
+            WHERE
+                `server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[$row['service_or_host']] = $row['url'];
+        }
+
+        return $list;
+    }
+}

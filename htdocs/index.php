@@ -71,6 +71,10 @@
 	<h1>No data to draw table. <a href="json_new.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>.</h1>
 </div>
 <div id="infoHolder" style="display: none;">
+    <div id="tabs">
+        <ul>
+        </ul>
+    </div>
 	<form>
 		<div id="refreshTime">
 			<select name="files" id="refreshTimeSelect">
@@ -197,7 +201,6 @@
 	<div id="nagiosConfigFile"></div>
 	<div id="nagiosPostFile"></div>
 	<div id="nagiosFullListUrl"></div>
-    <div id="nagiosCommentUrl"></div>
 	<div id="updateHash"></div>
 	<div id="groupByService"></div>
 	<div id="groupByHost"></div>
