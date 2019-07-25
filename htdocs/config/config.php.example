@@ -108,33 +108,6 @@ $longAlertsConfig = array(
     'remember_notification_for' => 30*60,
 );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// reikia parasyt kad saugom duomenis DB
-/* user name/email array for gravatar.com icons. leave default value */
-$usersArray = array(
-	'dev'      => 'dev@domain.com',
-	'admin'    => 'admin@domain.com',
-	'default'  => 'djshdsjkhd@dkjshjsh.com',
-);
-
-
-
-
 /*
    Planned Maintenance template in `planned_templates` table:
       - 'name': template name (visible in planned tab)
