@@ -280,6 +280,8 @@ Search = {}
 			Search.countRecords();
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
+            $("#tabs ul li.active .spinner").remove();
+            $('#mainTable').show();
 		},
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
@@ -395,7 +397,7 @@ Search.startReloads = function() {
     globalReload = true;
 }
 Search.getContent = function() {
-    if (Search.backgroundReload && !Search.startedGetData) {
+    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash) {
         Search.startedGetData = true;
         $.ajax({
             type:    'GET',
@@ -406,6 +408,7 @@ Search.getContent = function() {
                 Search.stopReloads();
                 Search.updateHash = data;
                 Search.allDataTable.ajax.reload();
+                Search.startedGetData = true;
                 setTimeout(function () {
                     Search.startReloads();
                 }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
@@ -424,6 +427,7 @@ Search.getContent = function() {
 }
 Search.autoReloadData = function() {
 	if (Search.autoRefresh) {
+        $.stopPendingAjax.abortAll(stop);
 		Search.resetAgo();
 		Search.stopReloads();
 		Search.allDataTable.ajax.reload();
@@ -467,6 +471,10 @@ Search.filterDataTable = function(val, startReload) {
 	if (startReload) {
 		Search.startReloads();
 	}
+
+    Search.startedGetData = false;
+    Search.backgroundReload = true;
+    Search.getContent();
 }
 Search.recheckIcons = function() {
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
@@ -640,7 +648,7 @@ Search.addDialogJs = function() {
 						}
 						$('#sched_permanent').prop("checked", false);
 		},
-		close:    function() { Search.tempShowButtons(lastKeyValue); $('body').css("overflow", "auto"); },
+		close:    function() { Search.tempShowButtons(lastKeyValue); $('body').css("overflow", "auto"); Search.startedGetData = false; Search.backgroundReload = true; Search.getContent(); },
 		create:   function() {
 			$(this).closest('.ui-dialog').on('keydown', function(ev) {
 			    if (ev.keyCode === $.ui.keyCode.ESCAPE) {
@@ -672,7 +680,7 @@ Search.addDialogJs = function() {
 		modal:    true,
 		width:    windowWidth,
 		position: { my: "center center", at: "center top+200"},
-		close:    function() { Search.tempShowButtons(lastKeyValue); $('body').css("overflow", "auto"); },
+		close:    function() { Search.tempShowButtons(lastKeyValue); $('body').css("overflow", "auto"); Search.startedGetData = false; Search.backgroundReload = true; Search.getContent(); },
 		open:	  function() {
 					$('body').css("overflow", "hidden");
 					$('#ack_comment_extension').val((Search.editComment && Search.editCommentText) ? Search.editCommentText : '').focus();
@@ -1778,6 +1786,8 @@ Search.infoRowCounter = function() {
 }
 
 Search.getNewData = function() {
+    Search.stopReloads();
+    Search.startedGetData = true;
 	Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
 		Search.resetAgo();
         Planned.showHidePlanned();
@@ -1870,6 +1880,7 @@ function checkSelectedText() {
 }
 
 Search.init = function() {
+    Search.startedGetData = true;
 	Search.startAgo();
 
 	$(document).mousedown(function() {
@@ -2546,12 +2557,16 @@ Search.init = function() {
 		setTimeout(function() { $('td.status_information').removeAttr('style') });
 	});
     $(document).on('click', '#tabs ul li:not(.active)', function() {
+    	//<div class="spinner">Loading...</div>
         Search.currentServerTab = $(this).text();
 
         localStorage.setItem('currentServerTab', Search.currentServerTab);
 
         $("#tabs ul li.active").removeClass('active');
-        $(this).addClass('active');
+        $(this).addClass('active').append('<div class="spinner"></div>');
+        $('#mainTable').hide();
+        $('.dataTables_info').text('');
+
 
         Search.getNewData();
     });

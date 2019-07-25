@@ -81,7 +81,7 @@ class xml
         if ($isHash) {
             $this->prepareDataToXml();
 
-            if ($this->memcacheEnabled && $this->memcache->get("nagiosUI_{$this->memcacheName}_verify") != md5($this->verificateCheck)) {
+            if ($this->memcacheEnabled && $this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify") != md5($this->verificateCheck)) {
                 $this->addDataToMemcache();
             }
 
@@ -102,14 +102,14 @@ class xml
         }
 
         if ($this->memcacheEnabled) {
-            if (!$this->memcache->get("nagiosUI_{$this->memcacheName}_data") || !$this->memcache->get("nagiosUI_{$this->memcacheName}_verify")) {
+            if (!$this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data") || !$this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify")) {
                 $this->prepareDataToXml();
                 $this->addDataToMemcache();
             }
 
             $this->stopMemcacheCheck();
 
-            return unserialize($this->memcache->get("nagiosUI_{$this->memcacheName}_data"));
+            return unserialize($this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data"));
         }
 
         $this->prepareDataToXml();
@@ -134,13 +134,13 @@ class xml
     private function stopMemcacheCheck()
     {
         if ($this->memcacheEnabled) {
-            $this->memcache->delete("nagiosUI_{$this->memcacheName}_check");
+            $this->memcache->delete("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check");
         }
     }
     private function startMemcacheCheck()
     {
         if ($this->memcacheEnabled) {
-            $this->memcache->set("nagiosUI_{$this->memcacheName}_check", "started", 0, 10);
+            $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check", "started", 0, 10);
         }
     }
     private function prepareDataToXml()
@@ -152,9 +152,9 @@ class xml
     }
     private function addDataToMemcache()
     {
-        $this->memcache->set("nagiosUI_{$this->memcacheName}_verify", md5($this->verificateCheck), 0, 120);
-        $this->memcache->set("nagiosUI_{$this->memcacheName}_data", serialize($this->generateXml()), 0, 120);
-        $this->memcache->delete("nagiosUI_{$this->memcacheName}_check");
+        $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify", md5($this->verificateCheck), 0, 120);
+        $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data", serialize($this->generateXml()), 0, 120);
+        $this->memcache->delete("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check");
     }
     private function generateXml()
     {
@@ -338,7 +338,7 @@ class xml
     {
         $item = $this->hosts[$host][$service];
 
-        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $service;
+        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $service . $this->currentTab;
         $this->verificateCheck .= $item['comments']['ackLastTemp'] . $item['attempt'] . $item['notesUrl'] . $item['acked'];
         $this->verificateCheck .= $item['scheduled'] . $item['comments']['downtime_id'] . $item['comments']['ackLastAuthor'];
         $this->verificateCheck .= $item['plugin_output'] . $item['comments']['schedComment'] . $item['last_check_date'];
