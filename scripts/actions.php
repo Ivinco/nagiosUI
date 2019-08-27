@@ -20,11 +20,6 @@ class actions
             $this->returnError('type not in array', 404);
         }
 
-        if (!isset($_REQUEST['server']) || !$_REQUEST['server'] || !isset($this->serversList[$_REQUEST['server']])) {
-            $this->returnError('server must be set', 404);
-        }
-
-        $this->setServer($_REQUEST['server']);
         $this->setType($_REQUEST['type']);
     }
     private function returnError($text, $code)
@@ -45,6 +40,8 @@ class actions
     public function runActions($data)
     {
         foreach ($data as $post) {
+            $this->server = $post['tab'];
+
             if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
                 $this->unAcknowledgeProblem($post);
                 $this->acknowledgeProblem($post);

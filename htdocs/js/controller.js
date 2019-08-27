@@ -11,7 +11,7 @@ if (!localStorage.getItem('canceledReloads')) {
 	localStorage.setItem('canceledReloads', '0');
 }
 if (!localStorage.getItem('currentServerTab')) {
-    localStorage.setItem('currentServerTab', '');
+    localStorage.setItem('currentServerTab', 'All');
 }
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
@@ -110,7 +110,7 @@ Search = {}
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a data-host="'+ data.host +'" href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
+					return '<a data-tab="'+ data.tab +'" data-host="'+ data.host +'" href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
 				},
 			},
             {
@@ -402,7 +402,7 @@ Search.getContent = function() {
         $.ajax({
             type:    'GET',
             url:     'update.php',
-            data:    {'hash' : Search.updateHash},
+            data:    {'hash' : Search.updateHash, 'server_tab': Search.currentServerTab},
             success: function(data){
                 Search.resetAgo();
                 Search.stopReloads();
@@ -713,7 +713,7 @@ Search.drawServerTabs = function() {
 
         for (var i = 0; i < tabs.length; i++) {
             var active = (tabs[i] == Search.currentServerTab) ? ' class="active"' : '';
-            $("#tabs ul").append('<li'+ active +'>'+ tabs[i] +'</li>');
+            $("#tabs ul").append('<li'+ active +' data-server-tab-name="'+ tabs[i] +'">'+ tabs[i] +'<span data-server-tab="'+ tabs[i] +'"></span></li>');
         }
     }
 }
@@ -772,8 +772,9 @@ Search.tempHideButtons = function (key) {
                     start       = item[i].full.comment.start,
                     end         = item[i].full.comment.end,
                     duration    = item[i].full.comment.duration;
+                var tab = item[i].full.host.tab;
 
-                returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+                returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
             }
         }
 
@@ -797,25 +798,26 @@ Search.tempHideButtons = function (key) {
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
+                var tab = row.find('.host a').attr('data-tab');
 
 				if (Search.whatWeChangeObject[key].host && Search.whatWeChangeObject[key].service) {
 					if (host == Search.whatWeChangeObject[key].host && service == Search.whatWeChangeObject[key].service) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else if (Search.whatWeChangeObject[key].host) {
 					if (host == Search.whatWeChangeObject[key].host) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else if (Search.whatWeChangeObject[key].service) {
 					if (service == Search.whatWeChangeObject[key].service) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else {
 					Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 				}
 			}
 		});
@@ -890,25 +892,26 @@ Search.tempHideButtons = function (key) {
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
+                var tab = row.find('.host a').attr('data-tab');
 
 				if (Search.whatWeChangeObject[key].host && Search.whatWeChangeObject[key].service) {
 					if (host == Search.whatWeChangeObject[key].host && service == Search.whatWeChangeObject[key].service) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else if (Search.whatWeChangeObject[key].host) {
 					if (host == Search.whatWeChangeObject[key].host) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else if (Search.whatWeChangeObject[key].service) {
 					if (service == Search.whatWeChangeObject[key].service) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				} else {
 					Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+					returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 				}
 			}
 		});
@@ -925,11 +928,12 @@ Search.tempHideButtons = function (key) {
 					start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
 					end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
 					duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
+                var tab = row.find('.host a').attr('data-tab');
 
 				if (Search.whatWeChangeObject[key].host && Search.whatWeChangeObject[key].service) {
 					if (host == Search.whatWeChangeObject[key].host && service == Search.whatWeChangeObject[key].service) {
 						Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
+						returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
 					}
 				}
 			});
@@ -950,6 +954,7 @@ Search.prepareSendData = function (key) {
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
 				'isHost':      $(this)[0].isHost,
+                'tab':         $(this)[0].tab,
 			});
 		}
 		else if (Search.whatWeChangeObject[key].type == 'quickAck') {
@@ -959,6 +964,7 @@ Search.prepareSendData = function (key) {
 				'com_data':    'temp',
 				'author':      Search.currentUser,
 				'isHost':      $(this)[0].isHost,
+                'tab':         $(this)[0].tab,
 			});
 		}
 		else if (Search.whatWeChangeObject[key].type == 'quickUnAck' || Search.whatWeChangeObject[key].type == 'unAck' || Search.whatWeChangeObject[key].type == 'unAcknowledgeIt') {
@@ -966,6 +972,7 @@ Search.prepareSendData = function (key) {
 				'host':        $(this)[0].host,
 				'service':     $(this)[0].service,
 				'isHost':      $(this)[0].isHost,
+                'tab':         $(this)[0].tab,
 			});
 		}
 		else if (Search.whatWeChangeObject[key].type == 'acknowledgeIt') {
@@ -975,18 +982,21 @@ Search.prepareSendData = function (key) {
 				'com_data':    $('input[name="ack_comment_extension"]').val(),
 				'author':      Search.currentUser,
 				'isHost':      $(this)[0].isHost,
+                'tab':         $(this)[0].tab,
 			});
 		}
 		else if (Search.whatWeChangeObject[key].type == 'scheduleIt') {
 			if (Search.editComment) {
                 var start    = $(this)[0].start,
 					end      = $(this)[0].end,
-					duration = $(this)[0].duration;
+					duration = $(this)[0].duration,
+                    tab      = $(this)[0].tab;
             } else {
 				var currentServerDate = $('#lastUpdated').html().replace(/UTC|EDT|C?EST|GMT/gi, ''),
 					duration          = parseInt($('#timeShift').html(),10),
 					start             = new Date(currentServerDate).format('mm-dd-yyyy HH:MM:ss'),
-					end               = new Date(currentServerDate).addHours(duration).format('mm-dd-yyyy HH:MM:ss');
+					end               = new Date(currentServerDate).addHours(duration).format('mm-dd-yyyy HH:MM:ss'),
+                    tab               = $(this)[0].tab;
 			}
 
 			requestData.push({
@@ -999,6 +1009,7 @@ Search.prepareSendData = function (key) {
 				'author':      Search.currentUser,
 				'isHost':      $(this)[0].isHost,
 				'downId':      $(this)[0].downId,
+                'tab':         $(this)[0].tab,
 			});
 		}
 	});
@@ -1867,6 +1878,19 @@ Search.checkResizedIcons = function() {
     $('.service .list-unack-icon').closest('li').toggle(Search.currentTab != 'acked');
 }
 
+Search.getCounts = function() {
+    $.ajax({
+        url:    'counts.php',
+        method: 'GET',
+    }).always(function(data) {
+        for (var key in data) {
+            $(document).find('[data-server-tab="'+ key +'"]').text(' ('+ data[key] +')');
+        }
+
+        setTimeout(function(){ Search.getCounts(); }, 30000);
+    });
+}
+
 function checkSelectedText() {
 	clearTimeout(selectTimer);
 
@@ -1882,6 +1906,7 @@ function checkSelectedText() {
 Search.init = function() {
     Search.startedGetData = true;
 	Search.startAgo();
+    setTimeout(function(){ Search.getCounts(); }, 3000);
 
 	$(document).mousedown(function() {
 		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
@@ -1969,6 +1994,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'recheckIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -1980,6 +2006,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'recheckIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -1992,6 +2019,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'quickAck',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -2003,6 +2031,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'quickAck',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2016,6 +2045,7 @@ Search.init = function() {
             var key = Search.changeWhatWeChangeObject({
                 'type':    'quickUnAck',
                 'what':    'this',
+                'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
                 'host':    $(this).closest('tr').find('.host').text(),
                 'service': $(this).closest('tr').find('.service ul li:first').text(),
                 'key': $(this).closest('tr').attr('data-group'),
@@ -2028,6 +2058,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'quickUnAck',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2040,6 +2071,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'unAck',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -2051,6 +2083,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'unAck',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2063,6 +2096,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'unAcknowledgeIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2073,6 +2107,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'unAcknowledgeIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -2086,6 +2121,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'acknowledgeIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -2100,6 +2136,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'acknowledgeIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
             'key': $(this).closest('tr').attr('data-group'),
@@ -2116,6 +2153,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'acknowledgeIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2128,6 +2166,7 @@ Search.init = function() {
         var key = Search.changeWhatWeChangeObject({
             'type':    'acknowledgeIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2150,6 +2189,7 @@ Search.init = function() {
         var key     = Search.changeWhatWeChangeObject({
             'type':    'scheduleIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
         });
@@ -2163,6 +2203,7 @@ Search.init = function() {
         var key     = Search.changeWhatWeChangeObject({
             'type':    'scheduleIt',
             'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
             'host':    $(this).closest('tr').find('.host').text(),
             'service': $(this).closest('tr').find('.service ul li:first').text(),
         });
@@ -2178,6 +2219,7 @@ Search.init = function() {
         var key     = Search.changeWhatWeChangeObject({
             'type':    'scheduleIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2190,6 +2232,7 @@ Search.init = function() {
         var key     = Search.changeWhatWeChangeObject({
             'type':    'scheduleIt',
             'what':    'all',
+            'tab':     '',
             'host':    '',
             'service': '',
         });
@@ -2302,14 +2345,15 @@ Search.init = function() {
 			
 			$('#mainTable tr').each(function() {
 				var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
-					isHost  = $(this).find('.host a').attr('data-host');
+					isHost  = $(this).find('.host a').attr('data-host'),
+                    tab     = $(this).closest('tr').find('.host a').attr('data-tab');
 					
 				if (down_id) {
 					down_id = down_id.split(',');
 					
                     for (var a = 0; a < down_id.length; a++) {
 						if (ids.indexOf(down_id[a]) === -1) {
-							request.push({ 'down_id': down_id[a], 'isHost': isHost });
+							request.push({ 'down_id': down_id[a], 'isHost': isHost, 'tab': tab });
 							ids.push(down_id[a]);
 						}
 					}
@@ -2330,14 +2374,15 @@ Search.init = function() {
 					
 					for (var i = 0; i < headerRows.length; i++) {
 						var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
-							isHost  = headerRows[i].find('.host a').attr('data-host');
+							isHost  = headerRows[i].find('.host a').attr('data-host'),
+                            tab     = headerRows[i].find('.host [data-tab]').attr('data-tab');
 							
 						if (down_id) {
                             down_id = down_id.split(',');
 							
 							for (var b = 0; b < down_id.length; b++) {
 								if (ids.indexOf(down_id[b]) === -1) {
-									request.push({ 'down_id': down_id[b], 'isHost': isHost });
+									request.push({ 'down_id': down_id[b], 'isHost': isHost, 'tab': tab });
 									ids.push(down_id[b]);
 								}
 							}
@@ -2364,14 +2409,15 @@ Search.init = function() {
 			var rows     = button.closest('tr'),
 				down_id  = rows.find('.service .unScheduleIt').attr('data-id'),
 				isHost   = rows.find('.host a').attr('data-host'),
-				hasGroup = rows.attr('data-group');
+				hasGroup = rows.attr('data-group'),
+                tab      = rows.find('.host [data-tab]').attr('data-tab');
 					
 			if (down_id) {
                 down_id = down_id.split(',');
 				
 				for (var i = 0; i < down_id.length; i++) {
 					if (ids.indexOf(down_id[i]) === -1) {
-						request.push({ 'down_id': down_id[i], 'isHost': isHost });
+						request.push({ 'down_id': down_id[i], 'isHost': isHost, 'tab': tab });
 						ids.push(down_id[i]);
 					}
 				}
@@ -2557,8 +2603,7 @@ Search.init = function() {
 		setTimeout(function() { $('td.status_information').removeAttr('style') });
 	});
     $(document).on('click', '#tabs ul li:not(.active)', function() {
-    	//<div class="spinner">Loading...</div>
-        Search.currentServerTab = $(this).text();
+        Search.currentServerTab = $(this).attr('data-server-tab-name');
 
         localStorage.setItem('currentServerTab', Search.currentServerTab);
 
@@ -2584,13 +2629,13 @@ $.stopPendingAjax = (function() {
 	var id = 0, Q = {};
 
 	$(document).ajaxSend(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && settings.url != 'post.php') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php') {
             jqx._id = ++id;
 			Q[jqx._id] = jqx;
         }
 	});
 	$(document).ajaxComplete(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && settings.url != 'post.php') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php') {
 			delete Q[jqx._id];
 		}
 	});
@@ -3424,6 +3469,7 @@ Grouping = {
 
             if (this.hostsCount[data[i].host.name] !== undefined) {
                 var host  = data[i].host.name,
+                    tab   = data[i].host.tab,
                     count = this.hostsCount[data[i].host.name],
                     key   = host + '|||' + count;
 
@@ -3437,6 +3483,7 @@ Grouping = {
                     this.listGroups[key].data.host    = host;
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'host';
+                    this.listGroups[key].data.tab     = tab;
                 }
 
                 this.listGroups[key].children.push(data[i]);
@@ -3445,6 +3492,7 @@ Grouping = {
 
             if (this.servicesCount[data[i].service.name] !== undefined) {
                 var service = data[i].service.name,
+                    tab     = data[i].host.tab,
                     count   = this.servicesCount[data[i].service.name],
                     key     = count + '|||' + service;
 
@@ -3458,6 +3506,7 @@ Grouping = {
                     this.listGroups[key].data.host    = count;
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'service';
+                    this.listGroups[key].data.tab     = tab;
                 }
 
                 this.listGroups[key].children.push(data[i]);
@@ -3731,7 +3780,7 @@ Grouping = {
                 result += '<tr data-service="'+ item.service.original +'" role="row" class="even" data-group="'+ key +'" data-group-type="child">';
 
                 //host
-                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-host="'+ item.host.host +'" href="'+ item.host.url +'" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
+                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="'+ item.host.url +'" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
 
                 //service
                 var unAck = (item.service.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
@@ -3862,13 +3911,14 @@ Grouping = {
 
         for (var i = 0; i < this.listGroups[key].children.length; i++) {
             var down_id = this.listGroups[key].children[i].full.service.downId;
+            var tab     = this.listGroups[key].children[i].full.host.tab;
 
             if (down_id) {
                 down_id = down_id.split(',');
 
                 for (var a = 0; a < down_id.length; a++) {
                     if (ids.indexOf(down_id[a]) === -1) {
-                        requests.push({ 'down_id': down_id[a], 'isHost': this.listGroups[key].children[i].isHost });
+                        requests.push({ 'down_id': down_id[a], 'isHost': this.listGroups[key].children[i].isHost, 'tab': tab });
                         ids.push(down_id[a]);
                     }
                 }
@@ -3909,6 +3959,7 @@ Grouping = {
                     'type':    'quickAck',
                     'what':    'group',
                     'host':    (host    == parseInt(host))    ? '' : host,
+                    'tab' : '',
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
                 });
@@ -3923,6 +3974,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'quickUnAck',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -3938,6 +3990,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'recheckIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -3953,6 +4006,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'unAck',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -3968,6 +4022,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'unAcknowledgeIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -3983,6 +4038,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'acknowledgeIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -4001,6 +4057,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'acknowledgeIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -4020,6 +4077,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'scheduleIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),
@@ -4038,6 +4096,7 @@ Grouping = {
                 key     = Search.changeWhatWeChangeObject({
                     'type':    'scheduleIt',
                     'what':    'group',
+                    'tab' : '',
                     'host':    (host    == parseInt(host))    ? '' : host,
                     'service': (service == parseInt(service)) ? '' : service,
                     'key': $(this).closest('tr').attr('data-group'),

@@ -12,6 +12,7 @@ $counter = 0;
 
 include_once __DIR__ . '/../scripts/init.php';
 $xml = new xml;
+$xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
 
 while (!connection_aborted() and connection_status() == CONNECTION_NORMAL) {
     if ($counter > 120) {

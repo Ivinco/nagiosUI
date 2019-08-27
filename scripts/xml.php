@@ -7,7 +7,10 @@ class xml
         global $serversList;
 
         $this->serversList = $serversList;
-        $this->currentTab = '';
+        $this->currentTab = 'All';
+        $this->errorTabs = [];
+        $this->memcacheFullName = '';
+        $this->hosts = [];
 
         global $memcacheEnabled;
         global $memcacheHost;
@@ -46,9 +49,9 @@ class xml
         $this->backendStatus = '';
     }
 
-    public function setCurrentTab($tab)
+    public function setCurrentTab($tab = '')
     {
-        if ($tab && isset($tab)) {
+        if ($tab) {
             $this->currentTab = $tab;
         }
     }
@@ -56,40 +59,36 @@ class xml
     {
         return $this->currentTab;
     }
-    private function setFirstTab()
+    private function verifyTab()
     {
-        if (!$this->currentTab) {
-            if (count($this->serversList)) {
-                $servers = array_keys($this->serversList);
-                sort($servers);
-
-                $this->setCurrentTab($servers[0]);
-            } else {
-                http_response_code(404);
-                die('Please add at least one server to config.');
-            }
+        if (!isset($this->serversList) || !count($this->serversList)) {
+            http_response_code(404);
+            die('Please add at least one server to config.');
+        }
+    }
+    private function setmemcacheFullName() {
+        if ($this->memcacheEnabled) {
+            $this->memcacheFullName = "nagiosUI_{$this->memcacheName}_{$this->currentTab}";
         }
     }
 
     public function returnXml($isHash, $xmlFile)
     {
-        $this->setFirstTab();
+        $this->verifyTab();
+        $this->setmemcacheFullName();
 
-
-        $this->startMemcacheCheck();
-
-        if ($isHash) {
+        if ($isHash && !$this->memcacheEnabled) {
             $this->prepareDataToXml();
-
-            if ($this->memcacheEnabled && $this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify") != md5($this->verificateCheck)) {
-                $this->addDataToMemcache();
-            }
-
-            $this->stopMemcacheCheck();
 
             return md5($this->verificateCheck);
         }
 
+        if ($isHash && $this->memcacheEnabled) {
+            $this->prepareDataToXml();
+            $this->addDataToMemcache();
+
+            return md5($this->verificateCheck);
+        }
 
         if ($xmlFile) {
             $this->stopMemcacheCheck();
@@ -102,14 +101,12 @@ class xml
         }
 
         if ($this->memcacheEnabled) {
-            if (!$this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data") || !$this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify")) {
+            if (!$this->memcache->get("{$this->memcacheFullName}_data") || !$this->memcache->get("{$this->memcacheFullName}_verify")) {
                 $this->prepareDataToXml();
                 $this->addDataToMemcache();
             }
 
-            $this->stopMemcacheCheck();
-
-            return unserialize($this->memcache->get("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data"));
+            return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
         }
 
         $this->prepareDataToXml();
@@ -134,27 +131,43 @@ class xml
     private function stopMemcacheCheck()
     {
         if ($this->memcacheEnabled) {
-            $this->memcache->delete("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check");
+            $this->memcache->delete("{$this->memcacheFullName}_check");
         }
     }
     private function startMemcacheCheck()
     {
         if ($this->memcacheEnabled) {
-            $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check", "started", 0, 10);
+            $this->memcache->set("{$this->memcacheFullName}_check", "started", 0, 10);
         }
     }
     private function prepareDataToXml()
     {
-        $this->otherFiles();
-        $this->getStatusFile();
-        $this->prepareHosts();
-        $this->prepareOtherData();
+        $this->currentTabList = [];
+
+        if ($this->currentTab == 'All') {
+            foreach ($this->serversList as $key => $value) {
+                $this->currentTabList[] = $key;
+            }
+        } else {
+            $this->currentTabList[] = $this->currentTab;
+        }
+
+        foreach ($this->currentTabList as $this->currentTabTmp) {
+            $this->verifyNagiosApi();
+
+            if (!in_array($this->currentTabTmp, $this->errorTabs)) {
+                $this->otherFiles();
+                $this->getStatusFile();
+                $this->prepareHosts();
+                $this->prepareOtherData();
+            }
+        }
     }
     private function addDataToMemcache()
     {
-        $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_verify", md5($this->verificateCheck), 0, 120);
-        $this->memcache->set("nagiosUI_{$this->memcacheName}_{$this->currentTab}_data", serialize($this->generateXml()), 0, 120);
-        $this->memcache->delete("nagiosUI_{$this->memcacheName}_{$this->currentTab}_check");
+        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 60);
+        $this->memcache->set("{$this->memcacheFullName}_data", serialize($this->generateXml()), 0, 60);
+        $this->memcache->delete("{$this->memcacheFullName}_check");
     }
     private function generateXml()
     {
@@ -167,9 +180,9 @@ class xml
                 $xmlContent .= '
 	<alert state="' .           $this->parseToXML($attrs['state']) . '" origState="' . $this->parseToXML($attrs['origState']) . '">
 		<host>' .               $this->parseToXML($host)                            . '</host>
-		<host-url>' .           $this->parseToXML($this->hostUrl($attrs['full_host_name'])) . '</host-url>
+		<host-url>' .           $this->parseToXML($attrs['full_host_name'])         . '</host-url>
 		<service>' .            $this->parseToXML($service)                         . '</service>
-		<service-url>' .        $this->parseToXML($this->serviceUrl($attrs['full_host_name'], $service)) . '</service-url>
+		<service-url>' .        $this->parseToXML($attrs['full_service_name']) . '</service-url>
 		<notes_url>' .          $this->parseToXML($attrs['notesUrl'])               . '</notes_url>
 		<status>' .             $this->parseToXML($attrs['state'])                  . '</status>
 		<origState>' .          $this->parseToXML($attrs['origState'])              . '</origState>
@@ -197,6 +210,7 @@ class xml
 		<sched_duration>' .     $this->parseToXML($comments['schedDuration'])       . '</sched_duration>
 		<pending>' .            $this->parseToXML($attrs['pending'])                . '</pending>
 		<next_check>' .         $this->parseToXML($attrs['next_check'])             . '</next_check>
+		<tab>' .                $this->parseToXML($attrs['tab'])                    . '</tab>
 	</alert>';
             }
         }
@@ -204,7 +218,7 @@ class xml
         $xmlContent .= '
 	<hash>'.                 md5($this->verificateCheck)                        .'</hash>
 	<nagios-config-file>json_new.php?returndate=1</nagios-config-file>
-	<nagios-full-list-url>'. $this->parseToXML($this->serversList[$this->currentTab]['fullHostUrl']) .'</nagios-full-list-url>
+	<nagios-full-list-url>'. $this->parseToXML($this->serversList[$this->currentTabTmp]['fullHostUrl']) .'</nagios-full-list-url>
 	<group-by-service>'.     $this->parseToXML($this->groupByService)           .'</group-by-service>
 	<group-by-host>'.        $this->parseToXML($this->groupByHost)              .'</group-by-host>
 	<refresh-array>'.        $this->parseToXML($this->returnRefreshArray())     .'</refresh-array>
@@ -262,7 +276,7 @@ class xml
             } else if (explode(' by ', $lastComment)[0] == explode(' by ', $value)[0]) {
                 if ($key != 4) {
                     $this->actions->setType('downtime');
-                    $this->actions->setServer($this->currentTab);
+                    $this->actions->setServer($this->currentTabTmp);
 
                     $request = [
                         'host'    => $host,
@@ -283,7 +297,7 @@ class xml
     }
     private function otherFiles()
     {
-        $this->notesUrls = $this->db->notesUrls($this->currentTab);
+        $this->notesUrls = $this->db->notesUrls($this->currentTabTmp);
     }
     private function verifyMatchService($host, $service, $state, $scheduled, $last_status_change, $active_checks_enabled)
     {
@@ -338,7 +352,7 @@ class xml
     {
         $item = $this->hosts[$host][$service];
 
-        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $service . $this->currentTab;
+        $this->verificateCheck .= $host . $service . $item['state'] . $item['origState'] . $service . $this->currentTabTmp;
         $this->verificateCheck .= $item['comments']['ackLastTemp'] . $item['attempt'] . $item['notesUrl'] . $item['acked'];
         $this->verificateCheck .= $item['scheduled'] . $item['comments']['downtime_id'] . $item['comments']['ackLastAuthor'];
         $this->verificateCheck .= $item['plugin_output'] . $item['comments']['schedComment'] . $item['last_check_date'];
@@ -357,7 +371,7 @@ class xml
         return $xmlStr;
     }
     private function hostUrl($host) {
-        return str_replace('___host___', $host, $this->serversList[$this->currentTab]['hostUrl']);
+        return str_replace('___host___', $host, $this->serversList[$this->currentTabTmp]['hostUrl']);
     }
     private function serviceUrl($host, $service) {
         $service = str_replace('+', ' ', urlencode($this->parseToXML($service)));
@@ -366,7 +380,7 @@ class xml
             return $this->hostUrl($host);
         }
 
-        return str_replace('___host___', $host, str_replace('___service___', $service, $this->serversList[$this->currentTab]['serviceUrl']));
+        return str_replace('___host___', $host, str_replace('___service___', $service, $this->serversList[$this->currentTabTmp]['serviceUrl']));
     }
     private function returnRefreshArray()
     {
@@ -402,12 +416,36 @@ class xml
             die('Status file not found.');
         }
     }
-    private function curlRequest($url)
+    private function verifyNagiosApi()
     {
-        $path = $this->serversList[$this->currentTab]['url'] . $url;
+        $path = $this->serversList[$this->currentTabTmp]['url'] . '/status';
 
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_PORT, $this->serversList[$this->currentTab]['port']);
+        curl_setopt($curl, CURLOPT_PORT,           $this->serversList[$this->currentTabTmp]['port']);
+        curl_setopt($curl, CURLOPT_URL,            $path);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 1);
+
+        curl_exec($curl);
+
+        if (curl_errno($curl)) {
+            $error_msg = curl_error($curl);
+
+            if ($error_msg == 'connect() timed out!' || $error_msg == 'couldn\'t connect to host') {
+                $this->errorTabs[] = $this->currentTabTmp;
+            }
+        }
+
+        curl_close($curl);
+    }
+    private function curlRequest($url)
+    {
+        $path = $this->serversList[$this->currentTabTmp]['url'] . $url;
+
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_PORT, $this->serversList[$this->currentTabTmp]['port']);
         curl_setopt($curl, CURLOPT_URL,            $path);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -420,13 +458,6 @@ class xml
     }
     private function prepareHosts()
     {
-        if (!count($this->statusFile['content'])) {
-            http_response_code(404);
-            die;
-        }
-
-        $this->hosts = [];
-
         foreach ($this->statusFile['content'] as $host => $data) {
             $this->addHostToList($host, $data);
         }
@@ -449,9 +480,11 @@ class xml
                 'last_check'         => (int)$data['last_check'],
                 'active_enabled'     => 0,
                 'next_check'         => 0,
-                'full_host_name'     => $host,
+                'full_host_name'     => $this->hostUrl($host),
+                'full_service_name'  => $this->serviceUrl($host, $service),
                 'check_command'      => $service,
                 'comments'           => $this->returnCommentData($data, $service, $host),
+                'tab'                => $this->currentTabTmp,
             );
         }
 
@@ -476,9 +509,11 @@ class xml
                 'last_check'         => (int)$data['last_check'],
                 'active_enabled'     => (int)$data['active_checks_enabled'],
                 'next_check'         => 0,
-                'full_host_name'     => $host,
+                'full_host_name'     => $this->hostUrl($host),
+                'full_service_name'  => $this->serviceUrl($host, $service),
                 'check_command'      => $service,
                 'comments'           => $this->returnCommentData($data, $service, $host),
+                'tab'                => $this->currentTabTmp,
             );
         }
 

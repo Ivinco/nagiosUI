@@ -49,6 +49,10 @@ class json
     }
 
     private function formatJson() {
+        if (!isset($this->fullData['alert'])) {
+            return;
+        }
+
         foreach ($this->fullData['alert'] as $item) {
             $acked           = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
             $ackComment      = (!is_array($item['ack_comment']))          ? $item['ack_comment']          : implode(' ', $item['ack_comment']);
@@ -75,6 +79,7 @@ class json
             $schedEnd        = (!is_array($item['sched_end']))            ? $item['sched_end']            : implode(' ', $item['sched_end']);
             $schedDuration   = (!is_array($item['sched_duration']))       ? $item['sched_duration']       : implode(' ', $item['sched_duration']);
             $pending         = (!is_array($item['pending']))              ? $item['pending']              : implode(' ', $item['pending']);
+            $tab             = (!is_array($item['tab']))                  ? $item['tab']                  : implode(' ', $item['tab']);
             $pending         = intval($pending);
             $nextCheck       = (!is_array($item['next_check']))           ? $item['next_check']           : implode(' ', $item['next_check']);
             $nextCheck       = intval($nextCheck);
@@ -131,6 +136,7 @@ class json
                     'name'  => $host,
                     'url'   => $hostUrl,
                     'host'  => $hostOrService,
+                    'tab'   => $tab,
                 ),
                 'service'   => array(
                     'name'  => $service,
@@ -453,6 +459,6 @@ class json
         sort($servers);
         $servers = implode(',', $servers);
 
-        return $servers;
+        return 'All,'. $servers;
     }
 }
