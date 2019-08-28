@@ -5,7 +5,6 @@ include_once __DIR__ . '/../scripts/init.php';
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
-$memcacheEnabled = false;
 $_GET['filter'] = 'normal';
 $result = [
     'All' => 0

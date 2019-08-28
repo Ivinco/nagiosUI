@@ -11,6 +11,7 @@ class xml
         $this->errorTabs = [];
         $this->memcacheFullName = '';
         $this->hosts = [];
+        $this->getDataFromMemcache = true;
 
         global $memcacheEnabled;
         global $memcacheHost;
@@ -77,22 +78,7 @@ class xml
         $this->verifyTab();
         $this->setmemcacheFullName();
 
-        if ($isHash && !$this->memcacheEnabled) {
-            $this->prepareDataToXml();
-
-            return md5($this->verificateCheck);
-        }
-
-        if ($isHash && $this->memcacheEnabled) {
-            $this->prepareDataToXml();
-            $this->addDataToMemcache();
-
-            return md5($this->verificateCheck);
-        }
-
         if ($xmlFile) {
-            $this->stopMemcacheCheck();
-
             if ($file = $this->verifyXmlArchive()) {
                 return file_get_contents($file);
             }
@@ -100,18 +86,28 @@ class xml
             $this->dieXmlArchiveNotFound();
         }
 
-        if ($this->memcacheEnabled) {
-            if (!$this->memcache->get("{$this->memcacheFullName}_data") || !$this->memcache->get("{$this->memcacheFullName}_verify")) {
-                $this->prepareDataToXml();
-                $this->addDataToMemcache();
-            }
+        if (!$this->getDataFromMemcache) {
+            $this->prepareDataToXml();
+            $this->addDataToMemcache();
 
-            return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
+            return;
         }
 
-        $this->prepareDataToXml();
+        if (!$this->memcacheEnabled || ($this->memcacheEnabled && !$this->memcache->get("{$this->memcacheFullName}_data"))) {
+            $this->prepareDataToXml();
 
-        return $this->generateXml();
+            if ($isHash) {
+                return md5($this->verificateCheck);
+            }
+
+            return $this->generateXml();
+        }
+
+        if ($isHash) {
+            return $this->memcache->get("{$this->memcacheFullName}_verify");
+        }
+
+        return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
     }
     public function dieXmlArchiveNotFound()
     {
@@ -127,18 +123,6 @@ class xml
         }
 
         return false;
-    }
-    private function stopMemcacheCheck()
-    {
-        if ($this->memcacheEnabled) {
-            $this->memcache->delete("{$this->memcacheFullName}_check");
-        }
-    }
-    private function startMemcacheCheck()
-    {
-        if ($this->memcacheEnabled) {
-            $this->memcache->set("{$this->memcacheFullName}_check", "started", 0, 10);
-        }
     }
     private function prepareDataToXml()
     {
@@ -165,9 +149,8 @@ class xml
     }
     private function addDataToMemcache()
     {
-        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 60);
-        $this->memcache->set("{$this->memcacheFullName}_data", serialize($this->generateXml()), 0, 60);
-        $this->memcache->delete("{$this->memcacheFullName}_check");
+        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 120);
+        $this->memcache->set("{$this->memcacheFullName}_data", serialize($this->generateXml()), 0, 120);
     }
     private function generateXml()
     {
@@ -235,7 +218,7 @@ class xml
             foreach ($services as $service => $attrs) {
                 $comments = $this->hosts[$host][$service]['comments'];
 
-                $this->hosts[$host][$service]['state']           = $this->statesArray[$attrs['state']];
+                $this->hosts[$host][$service]['state']           = !is_integer($attrs['state']) ? $attrs['state'] : $this->statesArray[$attrs['state']];
                 $this->hosts[$host][$service]['origState']       = '';
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;

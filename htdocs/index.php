@@ -68,7 +68,7 @@
 </div>
 
 <div id="noData" style="display: none;">
-	<h1>No data to draw table. <a href="json_new.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>.</h1>
+    <h1>No data to draw table. <a href="json_new.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>. <span id="clearLocalStorage" style="cursor: pointer;">Clear 'localStorage'</span></h1>
 </div>
 <div id="infoHolder" style="display: none;">
     <div id="tabs">
@@ -217,6 +217,11 @@
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
     <script>
         $(document).ready(function() {
+            $(document).on('click', '#clearLocalStorage', function () {
+                localStorage.clear();
+                location.reload();
+            });
+
             Search.init();
             Planned.init();
             Grouping.init();
