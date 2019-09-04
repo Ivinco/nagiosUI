@@ -67,6 +67,7 @@ copy
 copy
 }
 
+#mainTable .abb,                #mainTable .abb-th                { width:  12px !important; overflow: hidden; text-align: center; }
 #mainTable .host,               #mainTable .host-th               { width:  87px !important; word-break: break-all; }
 #mainTable .service,            #mainTable .service-th            { width: 327px !important; word-break: break-all; }
 #mainTable .status,             #mainTable .status-th             { width:  66px !important; white-space: nowrap; }
@@ -76,7 +77,7 @@ copy
 #mainTable .status_information, #mainTable .status_information-th { width:  auto !important; }
 #mainTable .more,               #mainTable .more-th               { width:  19px !important; white-space: nowrap; padding: 0; display: none; text-align: center; }
 #mainTable .comment                                               { width: 267px !important; display: table-cell; position: relative; }
-#mainTable td.host { background-color: rgb(219, 219, 219); }
+#mainTable td.host, #mainTable td.abb { background-color: rgb(219, 219, 219); }
 #mainTable td.status_information { word-break: break-all; }
 #mainTable .comment span { display: block; word-break: break-all; }
 #mainTable .status .downtime_id { color: #fff; cursor: pointer; text-shadow: 0px 0px 4px rgba(0, 0, 0, 1); }
@@ -84,6 +85,7 @@ copy
 #mainTable .more button { width: 19px; height: 19px; padding: 0 4px 4px 4px; }
 #mainTable .more-info-icon { display: none; width: 19px; height: 19px; background: url('../images/all_icons.png') no-repeat -133px 0; margin: 12px 3px 0 0; padding: 0; cursor: pointer; }
 #mainTable .more-comment-icon { display: none; width: 19px; height: 19px; background: url('../images/all_icons.png') no-repeat -190px 0; margin: 12px 3px 0 0; padding: 0; cursor: pointer; }
+#mainTable td.abb span { font-weight: bold; font-size: 15px; }
 
 #mainTable .group-list { cursor: pointer; }
 #mainTable .group-list > td { border-top: 1px solid #000; }
@@ -206,6 +208,7 @@ table.dataTable thead .no-border-th {
 #planned-maintenance label { font-weight: bold; line-height: 32px; }
 #planned-maintenance button { font-size: 15px; line-height: 20px; margin-top: 12px; }
 #planned-maintenance input { font-size: 15px; border: 1px solid #ccc; outline: none; }
+#planned-maintenance select { background: #fff; width: 172px; font-size: 15px; border: 1px solid #ccc; outline: none; }
 #planned-maintenance .holder { display: inline-block; width: 45%; vertical-align: top; float: left; }
 #planned-maintenance .holder > strong { line-height: 32px; }
 #planned-maintenance .holder ul { list-style: none; margin: 0; padding: 0; }

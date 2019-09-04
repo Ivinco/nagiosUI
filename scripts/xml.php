@@ -17,13 +17,11 @@ class xml
         global $memcacheHost;
         global $memcachePort;
         global $memcacheName;
-        global $xmlArchive;
 
         $this->memcacheEnabled          = $memcacheEnabled;
         $this->memcacheHost             = $memcacheHost;
         $this->memcachePort             = $memcachePort;
         $this->memcacheName             = $memcacheName;
-        $this->xmlArchive               = $xmlArchive;
         $this->groupByService           = 2;
         $this->groupByHost              = 11;
         $this->refreshArray             = [
@@ -79,8 +77,8 @@ class xml
         $this->setmemcacheFullName();
 
         if ($xmlFile) {
-            if ($file = $this->verifyXmlArchive()) {
-                return file_get_contents($file);
+            if ($this->verifyXmlArchive()) {
+                return $this->db->getXmlHistory($_GET['file'], $this->currentTab);
             }
 
             $this->dieXmlArchiveNotFound();
@@ -109,6 +107,7 @@ class xml
 
         return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
     }
+
     public function dieXmlArchiveNotFound()
     {
         http_response_code(404);
@@ -116,10 +115,8 @@ class xml
     }
     public function verifyXmlArchive()
     {
-        $files = glob($this->xmlArchive . $_GET['file'] . "*.log");
-
-        if (isset($files[0]) && $files[0]) {
-            return $files[0];
+        if ($this->currentTab && $this->db->getXmlHistory($_GET['file'], $this->currentTab)) {
+            return true;
         }
 
         return false;
@@ -149,8 +146,12 @@ class xml
     }
     private function addDataToMemcache()
     {
-        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 120);
-        $this->memcache->set("{$this->memcacheFullName}_data", serialize($this->generateXml()), 0, 120);
+        $data = serialize($this->generateXml());
+        $date = date('Ymd_Hi');
+        $this->db->setXmlHistory($date, $this->currentTab, $data);
+
+        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 1200);
+        $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 1200);
     }
     private function generateXml()
     {
@@ -470,6 +471,26 @@ class xml
                 'tab'                => $this->currentTabTmp,
             );
         }
+
+        $service = 'FULL HOSTS LIST';
+        $this->hosts[$host][$service] = array(
+            'state'              => (int)$data['current_state'],
+            'origState'          => '',
+            'acked'              => (int)$data['problem_has_been_acknowledged'],
+            'scheduled'          => (int)$data['scheduled_downtime_depth'],
+            'last_status_change' => (int)$data['last_state_change'],
+            'plugin_output'      => $data['plugin_output'],
+            'attempts'           => (int)$data['current_attempt'],
+            'max_attempts'       => (int)$data['max_attempts'],
+            'last_check'         => (int)$data['last_check'],
+            'active_enabled'     => 0,
+            'next_check'         => 0,
+            'full_host_name'     => $this->hostUrl($host),
+            'full_service_name'  => $this->serviceUrl($host, $service),
+            'check_command'      => $service,
+            'comments'           => $this->returnCommentData($data, $service, $host),
+            'tab'                => $this->currentTabTmp,
+        );
 
         $this->checkBackendStatus((int)$data['last_check']);
 

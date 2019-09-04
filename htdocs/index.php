@@ -21,6 +21,7 @@
 
     if (isset($_GET['file']) && trim($_GET['file'])) {
         $xml = new xml;
+        $xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
 
         if (!$xml->verifyXmlArchive()) {
             $xml->dieXmlArchiveNotFound();
@@ -48,6 +49,12 @@
 <?php
     }
 ?>
+    <script>
+        url = new URL(window.location.href);
+        if (url.searchParams.get('server_tab')) {
+            localStorage.setItem('currentServerTab', url.searchParams.get('server_tab'));
+        }
+    </script
 </head>
 <body>
 <div id="loading" style="display: block; float: left;">
@@ -113,7 +120,11 @@
 				<span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
             <input type="radio" id="hosts" name="radio"/>
-			<label for="hosts" id="hosts-label">Hosts</label>
+            <label for="hosts" id="hosts-label">
+                <span class="top-hosts-icon"></span>
+                <span class="small-hide">&#160;Hosts</span>
+                <span class="xs-hide">&#160;(<em></em>)</span>
+            </label>
 			<input type="radio" id="planned" name="radio"/>
 			<label for="planned" id="planned-label">
 				<span class="top-planned-icon"></span>
@@ -126,6 +137,7 @@
     <table id="mainTable">
         <thead>
             <tr>
+              <th class="abb-th"></th>
               <th class="host-th">Host</th>
               <th class="service-th">Service</th>
               <th class="status-th">Status</th>
@@ -150,6 +162,8 @@
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
             <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
+            <label for="maintenance-server">Server</label><br />
+            <select id="maintenance-server" name="maintenance-server"></select><br />
             <input type="checkbox" name="maintenance-normal" id="maintenance-normal" checked="checked" />
             <label for="maintenance-normal">Visible in Normal</label><br />
 			<button id="planned-save">Save</button>
@@ -179,6 +193,7 @@
                         <th>Comment</th>
                         <th>Created by</th>
                         <th>Show in normal</th>
+                        <th>Server</th>
                         <th></th>
                         <th></th>
                     </tr>

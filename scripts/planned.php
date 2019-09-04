@@ -12,11 +12,15 @@ class planned
     public $file;
     public $normal;
     public $server;
+    public $xserver;
 
     function __construct()
     {
-        $this->actions          = new actions;
-        $this->db               = new db;
+        global $serversList;
+
+        $this->serversList = $serversList;
+        $this->actions     = new actions;
+        $this->db          = new db;
     }
 
     public function verifyPostData() {
@@ -29,8 +33,9 @@ class planned
     public function addData() {
         if ($this->line == 'new') {
             $end = (time() + $this->time * 60);
+            $server = ($this->xserver) ? $this->xserver : $this->server;
 
-            $this->db->addNewPlanned($this->host, $this->service, $this->status, $this->comment, $this->time, $end, date('Y-m-d H:i:s', $end), $this->user, $this->normal, $this->server);
+            $this->db->addNewPlanned($this->host, $this->service, $this->status, $this->comment, $this->time, $end, date('Y-m-d H:i:s', $end), $this->user, $this->normal, $server);
             $this->logToDb($this->host, $this->service, $this->status, date('Y-m-d H:i:s', $end), $this->user, $this->comment, true);
         }
     }
@@ -77,19 +82,22 @@ class planned
         $this->db->deleteOldPlanned($this->server);
         $json = $this->db->returnPlanned($this->server);
         $templates = $this->db->plannedTemplatesList($this->server);
+        $serversList = array_keys($this->serversList);
+        $serversList[] = 'All';
 
-        print_r(json_encode(['file' => $json, 'templates' => $templates], true));
+        sort($serversList);
+
+        print_r(json_encode(['file' => $json, 'templates' => $templates, 'servers' => implode(',', $serversList)], true));
     }
     public function editData($id) {
-        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->server);
+        $server = explode('___', $id);
+        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $server[3]);
     }
     public function removeData() {
         $record = $this->db->returnPlannedRecord($this->line, $this->server);
         $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
         $this->db->removePlanned($this->line, $this->server);
         $this->removePlannedMaintenance($this->line);
-
-
     }
     public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId) {
         $return = [];
@@ -280,9 +288,6 @@ class planned
         $this->db->editPlannedComment($this->line, $this->comment, $this->server);
     }
     public function removePlannedMaintenance($delete) {
-        $xml = new xml;
-        $xml->setCurrentTab($this->server);
-
         $delete          = explode('___', $delete);
         $hostCommand     = $this->returnPlannedPattern($delete[0]);
         $serviceCommand  = $this->returnPlannedPattern($delete[1]);
@@ -290,31 +295,39 @@ class planned
         $hostCommands    = explode(',', $hostCommand);
         $serviceCommands = explode(',', $serviceCommand);
         $statusCommands  = explode(',', $statusCommand);
-        $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, false))),TRUE);
+        $serversList     = ($delete[3] == 'All') ? array_keys($this->serversList) : [$delete[3]];
 
-        if (isset($array['alert']['host'])) {
-            $array['alert'] = [$array['alert']];
-        }
+        foreach ($serversList as $server) {
+            $this->server = $server;
+            $xml = new xml;
+            $xml->setCurrentTab($this->server);
 
-        foreach ($array['alert'] as $item) {
-            $host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
-            $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
-            $status     = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
-            $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
-            $schComment = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
+            $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, false))),TRUE);
 
-            list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
+            if (isset($array['alert']['host'])) {
+                $array['alert'] = [$array['alert']];
+            }
 
-            $downtimeId = explode(',', $downtimeId);
+            foreach ($array['alert'] as $item) {
+                $host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
+                $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+                $status     = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
+                $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
+                $schComment = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
 
-            if (isset($downtimeId[0]) && $downtimeId[0]) {
-                foreach ($downtimeId as $downtime) {
-                    if ($downtime != 4) {
-                        foreach ($hostCommands as $commandHost) {
-                            foreach ($serviceCommands as $commandService) {
-                                foreach ($statusCommands as $commandStatus) {
-                                    if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                        $this->removeSchedulePlanned($downtime);
+                list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
+
+                $downtimeId = explode(',', $downtimeId);
+
+                if (isset($downtimeId[0]) && $downtimeId[0]) {
+                    foreach ($downtimeId as $downtime) {
+                        if ($downtime != 4) {
+                            foreach ($hostCommands as $commandHost) {
+                                foreach ($serviceCommands as $commandService) {
+                                    foreach ($statusCommands as $commandStatus) {
+                                        if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
+                                            $this->removeSchedulePlanned($downtime);
+                                        }
                                     }
                                 }
                             }

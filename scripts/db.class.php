@@ -96,10 +96,31 @@ class db
             CREATE TABLE IF NOT EXISTS `". $this->users_list ."` (
                 `name`   VARCHAR(255) NOT NULL,
                 `email`  VARCHAR(255) NOT NULL,
-                `server` VARCHAR(255) NOT NULL
+                `server` VARCHAR(255) NOT NULL,
+                `full_access` TINYINT DEFAULT 0 NOT NULL
             )
         ";
         if ($this->mysql->query($users_list) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+        $users_list_alter = "
+            ALTER TABLE
+                {$this->users_list}
+            ADD
+                `full_access` TINYINT DEFAULT 0 NOT NULL;
+        ";
+        $this->mysql->query($users_list_alter);
+
+        $this->access_list = $this->database['prefix'] . "access_list";
+        $access_list = "
+            CREATE TABLE IF NOT EXISTS `". $this->access_list ."` (
+                `user`    VARCHAR(255) NOT NULL,
+                `service` VARCHAR(255) NOT NULL,
+                `server`  VARCHAR(255) NOT NULL
+            )
+        ";
+        if ($this->mysql->query($access_list) !== true) {
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
@@ -113,6 +134,19 @@ class db
             )
         ";
         if ($this->mysql->query($notes_urls) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->xml_history = $this->database['prefix'] . "xml_history";
+        $xml_history = "
+            CREATE TABLE IF NOT EXISTS `". $this->xml_history ."` (
+                `date`   VARCHAR(255) NOT NULL,
+                `server` VARCHAR(255) NOT NULL,
+                `data`   LONGTEXT NOT NULL
+            )
+        ";
+        if ($this->mysql->query($xml_history) !== true) {
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
@@ -143,13 +177,18 @@ class db
     }
 
     public function returnPlanned($server) {
+        $list = [];
         $time = time();
         $server = $this->mysql->real_escape_string($server);
-        $sql = "SELECT * FROM `{$this->planned_log}` WHERE `server` = '{$server}' AND`end` > {$time}";
+        $serversQuery = '';
 
+        if ($server != 'All') {
+            $serversQuery = "  AND `server` IN ('{$server}', 'All')";
+        }
+
+        $sql = "SELECT * FROM `{$this->planned_log}` WHERE `end` > {$time}{$serversQuery}";
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
-        $list = [];
         while ($row = $result->fetch_assoc()){
             $row['list'] = json_decode($row['list'], true);
 
@@ -276,7 +315,7 @@ class db
         $host    = $this->mysql->real_escape_string($id[0]);
         $service = $this->mysql->real_escape_string($id[1]);
         $status  = $this->mysql->real_escape_string($id[2]);
-        $server  = $this->mysql->real_escape_string($server);
+        $server  = $this->mysql->real_escape_string($id[3]);
 
         $sql = "
             DELETE FROM 
@@ -299,7 +338,7 @@ class db
         $host    = $this->mysql->real_escape_string($id[0]);
         $service = $this->mysql->real_escape_string($id[1]);
         $status  = $this->mysql->real_escape_string($id[2]);
-        $server  = $this->mysql->real_escape_string($server);
+        $server  = $this->mysql->real_escape_string($id[3]);
 
         $sql = "
             SELECT 
@@ -324,11 +363,16 @@ class db
 
     public function plannedTemplatesList($server) {
         $server = $this->mysql->real_escape_string($server);
-        $sql = "SELECT * FROM `{$this->planned_templates}` WHERE `server` = '{$server}'";
+        $list = [];
+        $serversQuery = '';
 
+        if ($server != 'All') {
+            $serversQuery = " WHERE `server` IN ('{$server}', 'All')";
+        }
+
+        $sql = "SELECT * FROM `{$this->planned_templates}`{$serversQuery}";
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
-        $list = [];
         while ($row = $result->fetch_assoc()){
             $list[] = $row;
         }
@@ -478,6 +522,88 @@ class db
         $list = [];
         while ($row = $result->fetch_assoc()){
             $list[$row['service_or_host']] = $row['url'];
+        }
+
+        return $list;
+    }
+
+    public function setXmlHistory($date, $server, $data)
+    {
+        $sql = "
+            INSERT INTO `{$this->xml_history}`
+                (`date`, `server`, `data`) 
+            VALUES 
+                ('{$date}', '{$server}', '{$data}')
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            echo "Error: " . $this->mysql->error;
+        }
+    }
+    public function getXmlHistory($date, $server)
+    {
+        $date = $this->mysql->real_escape_string($date);
+        $server = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                data
+            FROM 
+                `{$this->xml_history}`
+            WHERE
+                    `server` = '{$server}'
+                AND
+                    `date` = '{$date}'
+            LIMIT 1
+        ";
+
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+        $row = $result->fetch_assoc();
+
+        if ($row) {
+            return unserialize($row['data']);
+        }
+
+        return;
+    }
+
+    public function getSuperUsers($server) {
+        $server = $this->mysql->real_escape_string($server);
+        $list = [];
+        $serversQuery = '';
+
+        if ($server != 'All') {
+            $serversQuery = " AND `server` IN ('{$server}')";
+        }
+
+        $sql = "SELECT `name` FROM {$this->users_list} WHERE `full_access` = 1 {$serversQuery}";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row['name'];
+        }
+
+        return $list;
+    }
+    public function getAccessList($server) {
+        $server = $this->mysql->real_escape_string($server);
+        $list = [];
+        $serversQuery = '';
+
+        if ($server != 'All') {
+            $serversQuery = " WHERE `server` IN ('{$server}')";
+        }
+
+        $sql = "SELECT `user`,`service` FROM {$this->access_list} {$serversQuery}";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            if (!isset($list[$row['user']])) {
+                $list[$row['user']] = [];
+            }
+            $list[$row['user']][] = $row['service'];
         }
 
         return $list;

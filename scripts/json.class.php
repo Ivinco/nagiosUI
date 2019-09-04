@@ -11,7 +11,7 @@ class json
         global $infoRecordMark;
 
         $this->xml         = new xml;
-        $this->ac          = new accessControl;
+        $this->ac          = new accessControl((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
         $this->plannedData = new planned;
 
         $this->xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
@@ -131,7 +131,15 @@ class json
                 $statusInfo = $infoRecord['status'];
             }
 
+            if ($service == 'FULL HOSTS LIST') {
+                $returnType = '__hosts__';
+            }
+
             $this->returnJson[] = array(
+                'abbreviation' => array(
+                    'name'  => $tab,
+                    'abb'   => mb_substr($tab, 0, 1, "UTF-8"),
+                ),
                 'host'      => array(
                     'name'  => $host,
                     'url'   => $hostUrl,
@@ -202,6 +210,7 @@ class json
             'groupByHost'       => $this->fullData['group-by-host'],
             'refreshArray'      => $this->fullData['refresh-array'],
             'normal'            => 0,
+            'hosts'             => 0,
             'acked'             => 0,
             'sched'             => 0,
             'EMERGENCY'         => 0,
@@ -262,6 +271,10 @@ class json
                     $this->additional['sched']++;
                 }
 
+                if (strpos($fullText, '__hosts__') !== false) {
+                    $this->additional['hosts']++;
+                }
+
                 if (strpos($fullText, 'EMERGENCY') !== false) {
                     $this->additional['EMERGENCY']++;
                 }
@@ -301,7 +314,7 @@ class json
     }
     private function orderRecords() {
         if (!isset($_GET['order']) || !is_array($_GET['order'])) {
-            $_GET['order'] = [['column' => 2, 'dir' => 'desc'], ['column' => 4, 'dir' => 'desc']];
+            $_GET['order'] = [['column' => 3, 'dir' => 'desc'], ['column' => 5, 'dir' => 'desc']];
         }
 
         if (count($_GET['order']) == 1) {
@@ -310,9 +323,15 @@ class json
             array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $this->returnJson);
         }
 
-        if (count($_GET['order']) > 1) {
-            $first  = $this->returnOrder($this->returnJson, 0);
-            $second = $this->returnOrder($this->returnJson, 1);
+        if (count($_GET['order']) == 2) {
+            $first  = $this->returnOrder($this->returnJson, 1);
+
+            array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), $this->returnJson);
+        }
+
+        if (count($_GET['order']) > 2) {
+            $first  = $this->returnOrder($this->returnJson, 1);
+            $second = $this->returnOrder($this->returnJson, 2);
 
             array_multisort($first, (($_GET['order'][0]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), SORT_NATURAL | SORT_FLAG_CASE,
                 $second, (($_GET['order'][1]['dir'] == 'asc') ? SORT_ASC : SORT_DESC), SORT_NATURAL | SORT_FLAG_CASE,
@@ -420,17 +439,17 @@ class json
         $return = [];
 
         foreach ($data as $key => $row) {
-            if ($_GET['order'][$order]['column'] == 0) {
+            if ($_GET['order'][$order]['column'] == 1) {
                 $return[$key] = $row['host']['name'];
-            } else if ($_GET['order'][$order]['column'] == 1) {
-                $return[$key] = $row['service']['name'];
             } else if ($_GET['order'][$order]['column'] == 2) {
-                $return[$key] = intval($row['status']['order']);
+                $return[$key] = $row['service']['name'];
             } else if ($_GET['order'][$order]['column'] == 3) {
-                $return[$key] = intval($row['last']['order']);
+                $return[$key] = intval($row['status']['order']);
             } else if ($_GET['order'][$order]['column'] == 4) {
-                $return[$key] = intval($row['duration']['order']);
+                $return[$key] = intval($row['last']['order']);
             } else if ($_GET['order'][$order]['column'] == 5) {
+                $return[$key] = intval($row['duration']['order']);
+            } else if ($_GET['order'][$order]['column'] == 6) {
                 $return[$key] = $row['info'];
             } else {
                 $return[$key] = $row['comment']['ack'];
@@ -442,13 +461,13 @@ class json
 
     private function returnFilter() {
         $filter = (isset($_GET['filter'])) ? $_GET['filter'] : '';
-        $filter = ($filter && in_array($filter, ['EMERGENCY', 'normal', 'acked', 'sched'])) ? $filter : 'normal';
+        $filter = ($filter && in_array($filter, ['EMERGENCY', 'normal', 'acked', 'sched', 'hosts'])) ? $filter : 'normal';
         $filter = ($filter == 'EMERGENCY') ? $filter : ('__'. $filter .'__');
 
         return $filter;
     }
     private function returnSearch() {
-        $search = (isset($_GET['search']) && isset($_GET['search']['value'])) ? $_GET['search']['value'] : '';
+        $search = (isset($_GET['xsearch']) && $_GET['xsearch']) ? $_GET['xsearch'] : '';
         $search = (trim($search)) ? trim($search) : '';
 
         return $search;

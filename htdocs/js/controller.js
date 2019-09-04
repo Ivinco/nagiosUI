@@ -14,10 +14,15 @@ if (!localStorage.getItem('currentServerTab')) {
     localStorage.setItem('currentServerTab', 'All');
 }
 
+if (!localStorage.getItem('searchValue')) {
+    localStorage.setItem('searchValue', '');
+}
+
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
     tmpServer = localStorage.getItem('currentServerTab'),
-	tmpGroup  = localStorage.getItem('currentGroup');
+	tmpGroup  = localStorage.getItem('currentGroup'),
+	tmpsearchValue = localStorage.getItem('searchValue');
 	
 localStorage.clear();
 localStorage.setItem('currentTabNew', tmpTab);
@@ -25,6 +30,7 @@ localStorage.setItem('currentReloadNew', tmpReload);
 localStorage.setItem('currentGroup', tmpGroup);
 localStorage.setItem('canceledReloads', '0');
 localStorage.setItem('currentServerTab', tmpServer);
+localStorage.setItem('searchValue', tmpsearchValue);
 
 lastTime = (new Date()).getTime();
 globalTime = 0;
@@ -51,7 +57,6 @@ Search = {}
 	Search.ackButtonId        = 'acknowledgeIt_button';
 	Search.unackButtonId      = 'unAck_button';
 	Search.sdButtonId         = 'scheduleIt_button';
-	Search.searchValue        = '';
 	Search.commentsDate       = '';
 	Search.lastUpdateAgo      = 0;
 	Search.editComment        = false;
@@ -60,13 +65,14 @@ Search = {}
 	Search.submitDialogButton = true;
 	Search.plannedTimer       = null;
 	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
-	Search.orderBy = {
-		'normal'        : [[2,'desc'],[4,'desc']],
-		'acked'         : [[1, 'asc'],[0, 'asc']],
-		'sched'         : [[1, 'asc'],[0, 'asc']],
-		'EMERGENCY'     : [[2,'desc'],[4,'desc']],
-		'planned'       : [[2,'desc'],[4,'desc']],
-	};
+    Search.orderBy = {
+        'normal'        : [[3,'desc'],[5,'desc']],
+        'acked'         : [[2, 'asc'],[1, 'asc']],
+        'sched'         : [[2, 'asc'],[1, 'asc']],
+        'hosts'         : [[1,'asc']],
+        'EMERGENCY'     : [[3,'desc'],[5,'desc']],
+        'planned'       : [[3,'desc'],[5,'desc']],
+    };
 	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
     Search.changeNagiosComment = function(comment) {
         var replacedText, replacePattern1, replacePattern2;
@@ -84,7 +90,7 @@ Search = {}
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
         'ajax': {
-            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile,
+            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue'),
             dataFilter: function(data){
                 var tabsArray = ['normal', 'acked', 'sched'];
 
@@ -106,6 +112,13 @@ Search = {}
 		'processing':  false,
         'serverSide':  true,
 		'columns':     [
+            {
+                data:      'abbreviation',
+                className: 'abb',
+                render: function (data, type, full, meta) {
+                    return '<span title="'+ data.name +'">'+ data.abb +'</span>';
+                },
+            },
             {
 				data:      'host',
 				className: 'host',
@@ -245,7 +258,7 @@ Search = {}
 				render: function () {
 					return '<button class="button-more">></button>';
 				},
-			}
+			},
         ],
 		'createdRow': function(row, data, index) {
 			if (data.state) {
@@ -271,12 +284,12 @@ Search = {}
 			}
         },
 		"drawCallback": function( settings ) {
-            var colspan = (Search.currentTab == 'normal') ? 6 : 7;
+            var colspan = (Search.currentTab == 'normal' || Search.currentTab == 'hosts') ? 6 : 7;
 
             Grouping.drawGrouping();
             $('#mainTable tbody .dataTables_empty').attr('colspan', colspan);
 
-			Search.filterDataTable($('#mainTable_filter input').val());
+			Search.filterDataTable(localStorage.getItem('searchValue'));
 			Search.countRecords();
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
@@ -448,8 +461,6 @@ Search.filterDataTable = function(val, startReload) {
     $(".ui-tooltip").remove();
     $("span[title]").tooltip({ track: true });
 
-	var value = (val) ? val : '';
-
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
@@ -464,6 +475,8 @@ Search.filterDataTable = function(val, startReload) {
 	} else {
 		$('.comment').hide();
 	}
+
+    $('.service').toggle(Search.currentTab != 'hosts');
 
 	Search.recheckIcons();
 	Search.drawTinycon();
@@ -527,7 +540,7 @@ Search.emptyHosts = function () {
     });
 }
 Search.extension = function () {
-	if ($(document).find('#mainTable_filter input').val() && Search.tableLength && !$('#ext_search').length) {
+	if (localStorage.getItem('searchValue') && Search.tableLength && !$('#ext_search').length) {
 		$('#mainTable_filter').after('<div id="ext_search"></div>');
 		$('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
 		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="https://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
@@ -540,7 +553,7 @@ Search.extension = function () {
 	Search.extensionVisibility();
 }
 Search.extensionVisibility = function () {
-	if ($(document).find('#mainTable_filter input').val() && Search.tableLength) {
+	if (localStorage.getItem('searchValue') && Search.tableLength) {
 		$(Search.filterButtons).show();
 
 		var subRowsBlue    = $('#mainTable tbody tr .host.blue-text').length,
@@ -1776,6 +1789,7 @@ Search.countRecords = function() {
     $('#radio label[for="normal"] em').text(Search.ajaxData.normal);
     $('#radio label[for="acked"] em').text(Search.ajaxData.acked);
     $('#radio label[for="sched"] em').text(Search.ajaxData.sched);
+    $('#radio label[for="hosts"] em').text(Search.ajaxData.hosts);
     $('#radio label[for="EMERGENCY"] em').text(Search.ajaxData.EMERGENCY);
     $('#radio label[for="planned"] em').text(Search.ajaxData.planned);
 	Search.infoRowCounter();
@@ -1799,8 +1813,9 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
     Search.stopReloads();
     Search.startedGetData = true;
-	Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
-		Search.resetAgo();
+    Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+        Search.resetAgo();
+        Planned.getPlanned();
         Planned.showHidePlanned();
     }).order(Search.orderBy[Search.currentTab]);
 }
@@ -1948,7 +1963,7 @@ Search.init = function() {
         $('#sched_comment_extension, #ack_comment_extension').val(decodeURIComponent($('[name="select-comment-list"]').val()));
     });
 
-	$('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
+	$('#normal, #acked, #sched, #EMERGENCY, #hosts').on('click', function() {
 		if (Search.currentTab == $(this).attr('id')) {
 		    location.reload();
 		    return false;
@@ -1961,33 +1976,29 @@ Search.init = function() {
 
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 
-		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
 	});
-	$('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
-		var val = $(this).val();
+    $('#mainTable_filter input').unbind().bind('propertychange keyup input paste keydown', function(e) {
+        var val = $(this).val();
 
-		if (Search.searchValue != $(this).val()) {
-			Search.searchValue = val;
+        if (localStorage.getItem('searchValue') != val) {
+            localStorage.setItem('searchValue', val);
+            Search.stopReloads();
 
-			Search.allDataTable.search(Search.searchValue).ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function () {
-				Search.resetAgo();
-				Planned.showHidePlanned();
+            Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
+                Search.resetAgo();
+                Planned.showHidePlanned();
 
-				setTimeout(function(){
-					Planned.showHidePlanned();
-				}, 400);
-			});
+                setTimeout(function(){
+                    Planned.showHidePlanned();
+                }, 400);
+            });
         }
-
-
-        if (e.keyCode && e.keyCode == 13) {
-			window.location.href = Search.addParameterToUrl('search', val);
-		}
     });
-	$('#mainTable_filter input').val(Search.getParameterByName('search')).trigger('keyup').focus();
+    $('#mainTable_filter input').val(localStorage.getItem('searchValue')).focus();
 
 
     $('#mainTable').on('click', '.recheckIt', function () {
@@ -2281,7 +2292,6 @@ Search.init = function() {
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 		Search.emptyHosts();
 	});
-	$('#hosts').on("click", function() { window.open($('#nagiosFullListUrl').text().replace('&amp;', '&'), '_blank'); });
 	$('img').error(function() { $(this).attr('src', 'images/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
 	Date.prototype.addHours = function(h)         { this.setHours(this.getHours()+h); return this; }
@@ -2801,6 +2811,7 @@ dateFormat.i18n = {
 
 Planned = {
     plannedData: {},
+    plannedServersList: '',
     plannedTimer: null,
     showHidePlanned: function() {
         if (Search.currentTab == 'planned') {
@@ -2828,22 +2839,34 @@ Planned = {
         $('#planned-list').closest('table').toggle(data.file.length > 0);
         $('#planned-templates-list').closest('div').toggle(data.templates && data.templates.length > 0);
 
+        if (this.plannedServersList != data.servers) {
+            this.plannedServersList = data.servers;
+            $('#maintenance-server').html('');
+
+            var servers = this.plannedServersList.split(',');
+
+            for (var i = 0; i < servers.length; i++) {
+                $('#maintenance-server').append('<option value="'+ servers[i] +'">'+ servers[i] +'</option>');
+            }
+        }
+
         if (data.file.length > 0) {
             $.each(data.file, function( index, value ) {
                 value['status'] = (value['status']) ? value['status'] : '';
 
                 var normal  = (parseInt(value['normal'])) ? 'yes' : 'no',
                     editBtn = ' <button ' +
-                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'___'+ value['server'] +'" ' +
                         '			data-host="'+ encodeURIComponent(value['host']) +'" ' +
                         '			data-service="'+ encodeURIComponent(value['service']) +'" ' +
                         '			data-status="'+ encodeURIComponent(value['status']) +'" ' +
                         '			data-comment="'+ encodeURIComponent(value['comment']) +'" ' +
                         '			data-normal="'+ encodeURIComponent(parseInt(value['normal'])) +'" ' +
+                        '			data-server="'+ encodeURIComponent(value['server']) +'" ' +
                         '			class="edit-planned"' +
                         '		>Edit</button>',
                     button  = ' <button ' +
-                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'" ' +
+                        '			data-id="'+ encodeURIComponent(value['host'] + '___' + value['service'] + '___' + value['status']) +'___'+ value['server'] +'" ' +
                         '			class="save-planned"' +
                         '		>Delete</button>',
                     comment = Search.changeNagiosComment(value['comment']);
@@ -2857,6 +2880,7 @@ Planned = {
                     '<td>'+ comment          +'</td>' +
                     '<td>'+ value['user']    +'</td>' +
                     '<td>'+ normal           +'</td>' +
+                    '<td>'+ value['server']  +'</td>' +
                     '<td>'+ editBtn          +'</td>' +
                     '<td>'+ button           +'</td>' +
                 '</tr>');
@@ -2870,9 +2894,10 @@ Planned = {
                     status  = (value['status'] && value['status'] != '*')                 ? ('<strong> Status information: </strong>' + value['status']) : '',
                     time    = (parseInt(value['time']) && parseInt(value['time']) > 0)    ? ('<strong> Time: </strong>'               + value['time'])    : '',
                     comment = (value['comment'])                                          ? ('<strong> Comment: </strong>'            + value['comment']) : '',
+                    server  = (value['server'])                                           ? ('<strong> Server: </strong>'             + value['server']) : '',
                     normal  = (parseInt(value['normal']))                                 ? ('<strong> Show in Normal</strong>')                          : '';
 
-                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service + status +')'+ time + comment + normal +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-service="'+ encodeURIComponent(value['service']) +'" data-status="'+ encodeURIComponent(value['status']) +'" data-normal="'+ encodeURIComponent(value['normal']) +'" class="add-from-planned-template" style="margin-top: 0;">Use</button></li>');
+                $('#planned-templates-list').append('<li><small><strong>' + value['name'] + '</strong> ('+ host + service + status + server +')'+ time + comment + normal +'</small> <button data-time="'+ value['time'] +'" data-comment="'+ encodeURIComponent(value['comment']) +'" data-host="'+ encodeURIComponent(value['host']) +'" data-server="'+ encodeURIComponent(value['server']) +'" data-service="'+ encodeURIComponent(value['service']) +'" data-status="'+ encodeURIComponent(value['status']) +'" data-normal="'+ encodeURIComponent(value['normal']) +'" class="add-from-planned-template" style="margin-top: 0;">Use</button></li>');
             });
         }
     },
@@ -2881,6 +2906,7 @@ Planned = {
             host            = $('#planned_host').val(),
             service         = $('#planned_service').val(),
             status          = $('#planned_status').val(),
+            server          = $('#planned_server').val(),
             requiredHost    = parseInt($('#planned_host').attr('data-required')),
             requiredService = parseInt($('#planned_service').attr('data-required')),
             requiredStatus  = parseInt($('#planned_status').attr('data-required'));
@@ -2925,6 +2951,14 @@ Planned = {
                 $('#planned_comment').css('border-color', 'red');
             }
         }
+        if ($('#planned_server').length) {
+            $('#planned_server').css('border-color', '#aaa');
+
+            if (!$('#planned_server').val()) {
+                error++;
+                $('#planned_server').css('border-color', 'red');
+            }
+        }
 
         if (!error) {
             if ($('#planned_host').length) {
@@ -2959,12 +2993,16 @@ Planned = {
                 Planned.plannedData.comment = $('#planned_comment').val();
             }
 
+            if ($('#planned_server').length) {
+                Planned.plannedData.server = $('#planned_server').val();
+            }
+
             clearTimeout(Planned.plannedTimer);
 
             $.ajax({
                 url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
-                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, status: Planned.plannedData.status, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal },
+                data:   { host: Planned.plannedData.host, service: Planned.plannedData.service, status: Planned.plannedData.status, time: Planned.plannedData.time, comment: Planned.plannedData.comment, line: 'new', user: $('#userName').text(), normal: Planned.plannedData.normal, xserver: Planned.plannedData.server },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -2981,6 +3019,7 @@ Planned = {
             service = $('#edit_planned_service').val(),
             status  = $('#edit_planned_status').val(),
             comment = $('#edit_planned_comment').val(),
+            server  = $('#edit_planned_server').val(),
             normal  = +$('#edit_planned_normal').prop('checked'),
             user    = $('#userName').text();
 
@@ -3006,7 +3045,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
-                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal },
+                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal, server: server },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3074,13 +3113,14 @@ Planned = {
                 time    = parseInt($('#maintenance-time').val()),
                 comment = $('#maintenance-comment').val(),
                 user    = $('#userName').text(),
-                normal  = +$('#maintenance-normal').prop('checked');
+                normal  = +$('#maintenance-normal').prop('checked'),
+                server  = $('#maintenance-server').val();
 
             if ((host || service || status) && comment && time > 0) {
                 $.ajax({
                     url: 'planned.php?server=' + Search.currentServerTab,
                     method: 'POST',
-                    data: {host: host, service: service, status: status, comment: comment, time: time, line: 'new', user: user, normal: normal },
+                    data: {host: host, service: service, status: status, comment: comment, time: time, line: 'new', user: user, normal: normal, xserver: server },
                 })
                     .always(function (data) {
                         $('#maintenance-host, #maintenance-service, #maintenance-status, #maintenance-time, #maintenance-comment').val('');
@@ -3111,8 +3151,22 @@ Planned = {
                 id      = decodeURIComponent(values.attr('data-id')),
                 comment = decodeURIComponent(values.attr('data-comment')).replace(/"/g, '&quot;'),
                 normal  = parseInt(decodeURIComponent(values.attr('data-normal'))),
+                server  = decodeURIComponent(values.attr('data-server')),
                 checked = (normal) ? ' checked="checked"' : '',
-                html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Status information:</strong> '+ status +' <strong>Comment:</strong> '+ comment +'</p>';
+                html    = '<p style="font-size: 12px;"><strong>Host:</strong> '+ host +' <strong>Service:</strong> '+ service +' <strong>Status information:</strong> '+ status +' <strong>Comment:</strong> '+ comment +' <strong>Server:</strong> '+ server +' </p>';
+
+            var serversList = '';
+            var servers = Planned.plannedServersList.split(',');
+
+            for (var i = 0; i < servers.length; i++) {
+                var checkedServer = '';
+
+                if (servers[i] == server) {
+                    checkedServer = ' selected="selected"';
+                }
+
+                serversList += '<option value="'+ servers[i] +'" '+ checkedServer +'>'+ servers[i] +'</option>';
+            }
 
             html+= '<table style="width: 100%">';
             html+= '<tr>';
@@ -3130,6 +3184,10 @@ Planned = {
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
             html+= '<td><input type="text" name="edit_planned_comment" id="edit_planned_comment" class="text ui-widget-content" value="'+ comment +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Server</td>';
+            html+= '<td><select name="edit_planned_server" id="edit_planned_server" class="text ui-widget-content" style="width: 100%; font-size: 14px;">'+ serversList +'</select></td>';
             html+= '</tr>';
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Visible in Normal</td>';
@@ -3177,12 +3235,14 @@ Planned = {
         $(document).on('click', '.add-from-planned-template', function() {
             var host          = decodeURIComponent($(this).attr('data-host')),
                 service       = decodeURIComponent($(this).attr('data-service')),
+                server        = decodeURIComponent($(this).attr('data-server')),
                 status        = decodeURIComponent($(this).attr('data-status'));
 
             Planned.plannedData = {
                 host:          host,
                 service:       service,
                 status:        status,
+                server:        server,
                 time:          parseInt($(this).attr('data-time')),
                 comment:       decodeURIComponent($(this).attr('data-comment')),
                 changeHost:    (host.indexOf('${host}') > -1)       ? 1 : 0,
@@ -3208,6 +3268,7 @@ Planned = {
                     title+= (Planned.plannedData.service) ? ('<strong> Service:</strong> '            + Planned.plannedData.service) : '';
                     title+= (Planned.plannedData.status)  ? ('<strong> Status Information:</strong> ' + Planned.plannedData.status)  : '';
                     title+= (Planned.plannedData.comment) ? ('<strong> Comment:</strong> '            + Planned.plannedData.comment) : '';
+                    title+= '<strong> Server:</strong> ';
                     title+= (Planned.plannedData.time)    ? ('<strong> Time:</strong> '               + Planned.plannedData.time)    : '';
 
                 var html = '<p style="font-size: 12px;">'+ title +'</p>';
@@ -3248,6 +3309,24 @@ Planned = {
                     html+= '<td><input type="text" name="planned_comment" id="planned_comment" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
                     html+= '</tr>';
                 }
+
+                var serversList = '';
+                var servers = Planned.plannedServersList.split(',');
+
+                for (var i = 0; i < servers.length; i++) {
+                    var checkedServer = '';
+
+                    if (servers[i] == Planned.plannedData.server) {
+                        checkedServer = ' selected="selected"';
+                    }
+
+                    serversList += '<option value="'+ servers[i] +'" '+ checkedServer +'>'+ servers[i] +'</option>';
+                }
+
+                html+= '<tr>';
+                html+= '<td style="font-size: 13px; white-space: nowrap;">Server</td>';
+                html+= '<td><select name="planned_server" id="planned_server" class="text ui-widget-content" style="width: 100%; font-size: 14px;">'+ serversList +'</select></td>';
+                html+= '</tr>';
 
                 html+= '</table>';
 
@@ -3359,7 +3438,7 @@ Grouping = {
         this.prepareParents();
         this.checkQuickAckIcons();
 
-        Search.filterDataTable($('#mainTable_filter input').val());
+        Search.filterDataTable(localStorage.getItem('searchValue'));
     },
     checkQuickAckIcons: function() {
         var count = 0,
@@ -3484,6 +3563,8 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'host';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
+                    this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
 
                 this.listGroups[key].children.push(data[i]);
@@ -3507,6 +3588,8 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'service';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
+                    this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
 
                 this.listGroups[key].children.push(data[i]);
@@ -3521,6 +3604,7 @@ Grouping = {
     drawGrouping: function() {
         this.sortParents();
         this.sortChildren();
+        this.setAbbreviation();
         this.prepareParents();
         this.checkQuickAckIcons();
 
@@ -3528,6 +3612,23 @@ Grouping = {
             $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .status_information').text(Grouping.returnStatusInformation(key));
             $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .comment .likeTable .ack.text').html(Grouping.returnComments(key));
             $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .comment .likeTable .sched.text').html(Grouping.returnComments(key));
+        }
+    },
+    setAbbreviation: function() {
+        for (var key in this.listGroups) {
+            var abbreviations = 0,
+                childrens = this.listGroups[key].children.length;
+
+            for (var i = 0; i < childrens; i++) {
+                if (this.listGroups[key].data.abbreviation_name == this.listGroups[key].children[i].full.abbreviation.name) {
+                    abbreviations++;
+                }
+            }
+
+            if (abbreviations != childrens) {
+                this.listGroups[key].data.abbreviation_name = '';
+                this.listGroups[key].data.abbreviation_abb = '';
+            }
         }
     },
     sortParents: function() {
@@ -3732,6 +3833,7 @@ Grouping = {
 
         return '' +
             '<tr class="group-list group-list-bottom" data-group="' + groupNameSmall + '" data-group-type="parent">' +
+            '	<td class="abb" title="'+ rowData.abbreviation_name +'"><span>'+ rowData.abbreviation_abb +'</span></td>' +
             '	<td class="host'+ mainGreyClass + subRowsClass +'"'+ css +'><span data-host="'+ rowData.isHost +'">' + hostValue + '</span><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>' +
             '	<td class="service '+ trClass + mainGreyClass + subRowsClass +'"'+ css +'>' +
             '		<div class="likeTable">' +
@@ -3778,6 +3880,7 @@ Grouping = {
                 prevHost = item.host.name;
 
                 result += '<tr data-service="'+ item.service.original +'" role="row" class="even" data-group="'+ key +'" data-group-type="child">';
+                result += '<td class="abb"><span title="'+ item.abbreviation.name +'">'+ item.abbreviation.abb +'</span></td>';
 
                 //host
                 result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="'+ item.host.url +'" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
@@ -3945,7 +4048,7 @@ Grouping = {
                 localStorage.setItem('currentGroup', data.item.value);
                 Search.currentGroup = localStorage.getItem('currentGroup');
 
-                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile).load(function() {
+                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
                     Search.resetAgo();
                     Planned.showHidePlanned();
                 }).order(Search.orderBy[Search.currentTab]);

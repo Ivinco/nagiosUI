@@ -7,6 +7,7 @@ include_once __DIR__ . '/../scripts/init.php';
 
 $planned = new planned;
 $planned->server = (isset($_GET['server']) && $_GET['server']) ? $_GET['server'] : '';
+$planned->serverTmp = (isset($_GET['server']) && $_GET['server']) ? $_GET['server'] : '';
 
 if (!empty($_POST)) {
     $planned->host    = (isset($_POST['host'])) ? str_replace("\"", "&quot;", trim($_POST['host'])) : '';
@@ -17,6 +18,7 @@ if (!empty($_POST)) {
     $planned->line    = (isset($_POST['line'])) ? trim($_POST['line']) : '';
     $planned->user    = (isset($_POST['user'])) ? trim($_POST['user']) : '';
     $planned->normal  = (isset($_POST['normal']) && $_POST['normal']) ? 1 : 0;
+    $planned->xserver = (isset($_POST['xserver']) && $_POST['xserver']) ? trim($_POST['xserver']) : '';
 
     $action = (isset($_POST['text'])) ? trim($_POST['text']) : '';
     $old    = (isset($_POST['old'])) ? trim($_POST['old']) : '';
@@ -39,6 +41,7 @@ if (!empty($_POST)) {
     }
 }
 
+$planned->server = $planned->serverTmp;
 $planned->recheckData();
 http_response_code(200);
 
