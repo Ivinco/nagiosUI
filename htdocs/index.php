@@ -75,7 +75,7 @@
 </div>
 
 <div id="noData" style="display: none;">
-    <h1>No data to draw table. <a href="json_new.php" target="_blank">JSON</a>, <a href="xml.php" target="_blank">XML</a>. <span id="clearLocalStorage" style="cursor: pointer;">Clear 'localStorage'</span></h1>
+    <h1>Render error: Can't get data for server. You can try clear 'localStorage' by clicking: <span id="clearLocalStorage" style="cursor: pointer; text-decoration: underline;">here</span></h1>
 </div>
 <div id="infoHolder" style="display: none;">
     <div id="tabs">
