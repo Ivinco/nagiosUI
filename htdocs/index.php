@@ -223,6 +223,9 @@
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
 	<div id="plannedDialog" title="Planned Templates"></div>
+    <div id="noData1" style="display: none;">
+        <h1>Render error: Can't get data for server. You can try clear 'localStorage' by clicking: <span id="clearLocalStorage" style="cursor: pointer; text-decoration: underline;">here</span> or select another server.</h1>
+    </div>
 </div>
 
     <script src="js/jquery-2.1.4.min.js"></script>
@@ -238,8 +241,11 @@
             });
 
             Search.init();
-            Planned.init();
             Grouping.init();
+
+            if (!getParameterByName('file')) {
+                Planned.init();
+            }
         });
     </script>
 </body>

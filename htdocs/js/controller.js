@@ -284,6 +284,7 @@ Search = {}
 			}
         },
 		"drawCallback": function( settings ) {
+            showNoData();
             var colspan = (Search.currentTab == 'normal' || Search.currentTab == 'hosts') ? 6 : 7;
 
             Grouping.drawGrouping();
@@ -410,7 +411,7 @@ Search.startReloads = function() {
     globalReload = true;
 }
 Search.getContent = function() {
-    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash) {
+    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash && !Search.additionalFile) {
         Search.startedGetData = true;
         $.ajax({
             type:    'GET',
@@ -1894,16 +1895,18 @@ Search.checkResizedIcons = function() {
 }
 
 Search.getCounts = function() {
-    $.ajax({
-        url:    'counts.php',
-        method: 'GET',
-    }).always(function(data) {
-        for (var key in data) {
-            $(document).find('[data-server-tab="'+ key +'"]').text(' ('+ data[key] +')');
-        }
+    if (!Search.additionalFile) {
+        $.ajax({
+            url:    'counts.php',
+            method: 'GET',
+        }).always(function(data) {
+            for (var key in data) {
+                $(document).find('[data-server-tab="'+ key +'"]').text(' ('+ data[key] +')');
+            }
 
-        setTimeout(function(){ Search.getCounts(); }, 30000);
-    });
+            setTimeout(function(){ Search.getCounts(); }, 30000);
+        });
+    }
 }
 
 function checkSelectedText() {
@@ -2674,13 +2677,32 @@ $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
 });
 $.fn.dataTable.ext.errMode = 'none';
 
+showNoDataBlock = false;
 $('#mainTable').on('error.dt', function(e, settings, techNote, message) {
-	if (techNote == 7) {
-		Search.startReloads();
-		$('#loading, #infoHolder').hide();
-		$('#noData').show();
+    if (techNote == 7) {
+        Search.startReloads();
+        if (Search.firstLoad) {
+            $('#loading, #infoHolder').hide();
+            $('#noData').show();
+            showNoDataBlock = true;
+        } else {
+            hideNoData();
+            showNoDataBlock = true;
+        }
     }
 })
+
+function hideNoData() {
+    $('#loading, #refreshTime, #normalGrouping, #radio, #mainTable_wrapper').hide();
+    $('#updatedAgo').closest('p').hide();
+    $('#noData1').show();
+}
+function showNoData() {
+    $('#refreshTime, #normalGrouping, #radio, #mainTable_wrapper').show();
+    $('#updatedAgo').closest('p').show();
+    $('#noData1').hide();
+    showNoDataBlock = false;
+}
 
 function getSelectedText() {
     if (window.getSelection) {
@@ -2819,20 +2841,24 @@ Planned = {
             $('#mainTable_wrapper').hide();
         } else {
             $('#planned-maintenance').hide();
-            $('#mainTable_wrapper').show();
+            if (!showNoDataBlock) {
+                $('#mainTable_wrapper').show();
+            }
         }
     },
     getPlanned: function() {
-        Planned.showHidePlanned();
+        if (!Search.additionalFile) {
+            Planned.showHidePlanned();
 
-        $.ajax({
-            url:    'planned.php?server=' + Search.currentServerTab,
-            method: 'GET',
-        })
-        .always(function(data) {
-            Planned.drawPlanned(data);
-            Planned.plannedTimer = setTimeout(function(){ Planned.getPlanned() }, 30000);
-        });
+            $.ajax({
+                url:    'planned.php?server=' + Search.currentServerTab,
+                method: 'GET',
+            })
+                .always(function(data) {
+                    Planned.drawPlanned(data);
+                    Planned.plannedTimer = setTimeout(function(){ Planned.getPlanned() }, 30000);
+                });
+        }
     },
     drawPlanned: function(data) {
         $('#planned-list, #planned-templates-list').html('');
