@@ -2695,12 +2695,12 @@ $('#mainTable').on('error.dt', function(e, settings, techNote, message) {
 function hideNoData() {
     $('#loading, #refreshTime, #normalGrouping, #radio, #mainTable_wrapper').hide();
     $('#updatedAgo').closest('p').hide();
-    $('#noData1').show();
+    $('#noDataServer').show();
 }
 function showNoData() {
     $('#refreshTime, #normalGrouping, #radio, #mainTable_wrapper').show();
     $('#updatedAgo').closest('p').show();
-    $('#noData1').hide();
+    $('#noDataServer').hide();
     showNoDataBlock = false;
 }
 

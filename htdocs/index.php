@@ -77,7 +77,7 @@
 <div id="noData" style="display: none;">
     <h2>Server error occurred: Can't get data for rendering. You can try to:</h2>
     <ol>
-        <li style="font-size: 13px;">reload page</li>
+        <li style="font-size: 13px;"><span id="reloadPage" style="cursor: pointer; text-decoration: underline;  font-size: 13px;">reload page</span></li>
         <li style="font-size: 13px;">clear 'localStorage' by clicking: <span id="clearLocalStorage" style="cursor: pointer; text-decoration: underline;  font-size: 13px;">here</span> (it will delete 'localStorage' only for this site)</li>
         <li style="font-size: 13px;">report issue in <a href="https://github.com/Ivinco/nagiosUI/issues" target="_blank" style="font-size: 13px;">github.com</a></li>
     </ol>
@@ -228,12 +228,12 @@
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
 	<div id="plannedDialog" title="Planned Templates"></div>
-    <div id="noData1" style="display: none;">
+    <div id="noDataServer" style="display: none;">
         <h2>Server error occurred: Can't get data for rendering. You can try to:</h2>
         <ol>
             <li style="font-size: 13px;">select another server</li>
-            <li style="font-size: 13px;">reload page</li>
-            <li style="font-size: 13px;">clear 'localStorage' by clicking: <span id="clearLocalStorage" style="cursor: pointer; text-decoration: underline;  font-size: 13px;">here</span> (it will delete 'localStorage' only for this site)</li>
+            <li style="font-size: 13px;"><span id="reloadPageServer" style="cursor: pointer; text-decoration: underline;  font-size: 13px;">reload page</span></li>
+            <li style="font-size: 13px;">clear 'localStorage' by clicking: <span id="clearLocalStorageServer" style="cursor: pointer; text-decoration: underline;  font-size: 13px;">here</span> (it will delete 'localStorage' only for this site)</li>
             <li style="font-size: 13px;">report issue in <a href="https://github.com/Ivinco/nagiosUI/issues" target="_blank" style="font-size: 13px;">github.com</a></li>
         </ol>
     </div>
@@ -246,8 +246,12 @@
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
     <script>
         $(document).ready(function() {
-            $(document).on('click', '#clearLocalStorage', function () {
+            $(document).on('click', '#clearLocalStorage, #clearLocalStorageServer', function () {
                 localStorage.clear();
+                location.reload();
+            });
+
+            $(document).on('click', '#reloadPage, #reloadPageServer', function () {
                 location.reload();
             });
 
