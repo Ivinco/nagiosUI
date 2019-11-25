@@ -59,12 +59,6 @@ $infoRecordMark = [
 ];
 
 
-
-/* nagios xml output path */
-$xmlArchive               = '/domain/log/nagios_xml_output/';
-
-
-
 /* Memcache Host */
 $memcacheHost = 'localhost';
 

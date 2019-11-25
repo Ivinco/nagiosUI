@@ -24,8 +24,6 @@ ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
 $json = new json;
-
-
 echo json_encode(array('data' => $json->returnJson, 'additional' => $json->additional));
 
 http_response_code(200);

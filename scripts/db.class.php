@@ -138,15 +138,35 @@ class db
             exit();
         }
 
-        $this->xml_history = $this->database['prefix'] . "xml_history";
-        $xml_history = "
-            CREATE TABLE IF NOT EXISTS `". $this->xml_history ."` (
-                `date`   VARCHAR(255) NOT NULL,
-                `server` VARCHAR(255) NOT NULL,
-                `data`   LONGTEXT NOT NULL
+        $this->checks = $this->database['prefix'] . "checks";
+        $checks = "
+            CREATE TABLE IF NOT EXISTS `". $this->checks ."` (
+                `id`      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `server`  VARCHAR(255) NOT NULL,
+                `host`    VARCHAR(255) NOT NULL,
+                `service` VARCHAR(255) NOT NULL,
+                PRIMARY KEY (`id`)
             )
         ";
-        if ($this->mysql->query($xml_history) !== true) {
+        if ($this->mysql->query($checks) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+
+        $this->history = $this->database['prefix'] . "history";
+        $history = "
+            CREATE TABLE IF NOT EXISTS `". $this->history ."` (
+                `date`     DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `check_id` INT UNSIGNED NOT NULL,
+                `severity` ENUM('unhandled','quick_acked','acked','sched','planned_downtime') NOT NULL,
+                `state`    ENUM('ok','warning','critical','unknown') NOT NULL,
+                `user`     VARCHAR(255),
+                `comment`  TEXT,
+                `output`   VARCHAR(255) NOT NULL,
+                PRIMARY KEY (`date`, `check_id`)
+            )
+        ";
+        if ($this->mysql->query($history) !== true) {
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
@@ -527,47 +547,6 @@ class db
         return $list;
     }
 
-    public function setXmlHistory($date, $server, $data)
-    {
-        $sql = "
-            INSERT INTO `{$this->xml_history}`
-                (`date`, `server`, `data`) 
-            VALUES 
-                ('{$date}', '{$server}', '{$data}')
-        ";
-
-        if ($this->mysql->query($sql) !== true) {
-            echo "Error: " . $this->mysql->error;
-        }
-    }
-    public function getXmlHistory($date, $server)
-    {
-        $date = $this->mysql->real_escape_string($date);
-        $server = $this->mysql->real_escape_string($server);
-
-        $sql = "
-            SELECT 
-                data
-            FROM 
-                `{$this->xml_history}`
-            WHERE
-                    `server` = '{$server}'
-                AND
-                    `date` = '{$date}'
-            LIMIT 1
-        ";
-
-
-        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
-        $row = $result->fetch_assoc();
-
-        if ($row) {
-            return unserialize($row['data']);
-        }
-
-        return;
-    }
-
     public function getSuperUsers($server) {
         $server = $this->mysql->real_escape_string($server);
         $list = [];
@@ -605,6 +584,207 @@ class db
             }
             $list[$row['user']][] = $row['service'];
         }
+
+        return $list;
+    }
+
+    public function historyGetChecks($server)
+    {
+        $server = $this->mysql->real_escape_string($server);
+        $sql = "SELECT * FROM `{$this->checks}` WHERE `server` = '{$server}'";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [
+            'ids'    => [],
+            'checks' => [],
+        ];
+        while ($row = $result->fetch_assoc()){
+            $list['ids'][] = $row['id'];
+            $list['checks'][$row['host']][$row['service']] = $row['id'];
+        }
+
+        return $list;
+    }
+    public function historyAddCheck($host, $service, $server)
+    {
+        $server  = $this->mysql->real_escape_string($server);
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+
+        $sql = "
+            INSERT INTO `{$this->checks}`
+                (`server`, `host`, `service`) 
+            VALUES 
+                ('{$server}', '{$host}', '{$service}')
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            echo "Error: " . $this->mysql->error;
+        }
+
+        return $this->mysql->insert_id;
+    }
+    public function historyAddHistory($checkId, $severity, $state, $user, $comment, $output)
+    {
+        $checkId  = $this->mysql->real_escape_string($checkId);
+        $severity = $this->mysql->real_escape_string($severity);
+        $state    = $this->mysql->real_escape_string($state);
+        $user     = $this->mysql->real_escape_string($user);
+        $user     = ($user) ? "'$user'" : "NULL";
+        $comment  = $this->mysql->real_escape_string($comment);
+        $comment  = ($comment) ? "'$comment'" : "NULL";
+        $output   = $this->mysql->real_escape_string($output);
+
+        $sql = "
+            INSERT INTO 
+                `{$this->history}` (`date`, `check_id`, `severity`, `state`, `user`, `comment`, `output`) 
+            VALUES 
+                (NOW(), {$checkId}, '{$severity}', '{$state}', {$user}, {$comment}, '{$output}')
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            echo "Error: " . $this->mysql->error;
+        }
+    }
+    public function historyGetUnfinishedAlerts($server)
+    {
+        $server = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                `history1`.*, `checks`.`server`, `checks`.`host`, `checks`.`service`
+            FROM 
+                `{$this->history}` AS `history1`
+            JOIN
+                  (SELECT MAX(`date`) `date`, `check_id` FROM `{$this->history}` GROUP BY `check_id`) AS `history2`
+                ON
+                  `history1`.`date` = `history2`.`date` AND `history1`.`check_id` = `history2`.`check_id`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history1`.`check_id` = `checks`.`id`
+            WHERE
+                  `history1`.`state` != 'ok'
+                AND
+                  `checks`.`server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[$row['host']][$row['service']] = $row;
+        }
+
+        return $list;
+    }
+
+    public function historyGetUnfinishedAlertsWithDate($server, $dateTo)
+    {
+        $server = $this->mysql->real_escape_string($server);
+        $dateTo = $this->mysql->real_escape_string($dateTo);
+
+        if ($dateTo) {
+            $dateTo = "WHERE `date` < '{$dateTo}'";
+        }
+
+        $sql = "
+            SELECT 
+                `history1`.*, `checks`.`server`, `checks`.`host`, `checks`.`service`
+            FROM 
+                `{$this->history}` AS `history1`
+            JOIN
+                  (SELECT MAX(`date`) `date`, `check_id` FROM `{$this->history}` {$dateTo} GROUP BY `check_id`) AS `history2`
+                ON
+                  `history1`.`date` = `history2`.`date` AND `history1`.`check_id` = `history2`.`check_id`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history1`.`check_id` = `checks`.`id`
+            WHERE
+                  `history1`.`state` != 'ok'
+                AND
+                  `checks`.`server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [
+            'unhandled'        => [],
+            'quick_acked'      => [],
+            'acked'            => [],
+            'sched'            => [],
+            'planned_downtime' => [],
+        ];
+
+        while ($row = $result->fetch_assoc()){
+            $list[$row['severity']][] = $row;
+        }
+
+        return $list;
+    }
+    public function historyGetUnfinishedAlertsWithPeriod($server, $dateFrom, $dateTo)
+    {
+        $server   = $this->mysql->real_escape_string($server);
+        $dateTo   = $this->mysql->real_escape_string($dateTo);
+        $dateFrom = $this->mysql->real_escape_string($dateFrom);
+
+        if ($dateTo) {
+            $dateTo = "AND `history`.`date` < '{$dateTo}'";
+        }
+
+        $sql = "
+            SELECT 
+                `history1`.*, `checks`.`server`, `checks`.`host`, `checks`.`service`
+            FROM 
+                `{$this->history}` AS `history1`
+            JOIN
+                  (SELECT MAX(`date`) `date`, `check_id` FROM `{$this->history}` WHERE `date` < '{$dateFrom}' GROUP BY `check_id`) AS `history2`
+                ON
+                  `history1`.`date` = `history2`.`date` AND `history1`.`check_id` = `history2`.`check_id`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history1`.`check_id` = `checks`.`id`
+            WHERE
+                  `history1`.`state` != 'ok'
+                AND
+                  (`history1`.`severity` = 'unhandled' OR `history1`.`severity` = 'quick_acked')
+                AND
+                  `checks`.`server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+        $list = [];
+
+        while ($row = $result->fetch_assoc()){
+            $list[$row['check_id'].$row['date']] = $row;
+        }
+
+        $sql = "
+            SELECT 
+                `history`.*, `checks`.`server`, `checks`.`host`, `checks`.`service`
+            FROM 
+                `{$this->history}` AS `history`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history`.`check_id` = `checks`.`id`
+            WHERE
+                  `checks`.`server` = '{$server}'
+                AND
+                  `history`.`date` > '{$dateFrom}'
+                {$dateTo}
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[$row['check_id'].$row['date']] = $row;
+        }
+
+        ksort($list);
+        $list = array_values($list);
 
         return $list;
     }

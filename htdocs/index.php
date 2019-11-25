@@ -18,15 +18,6 @@
 
     $userName   = $_SESSION["currentUser"];
     $userAvatar = $_SESSION["currentAvatar"];
-
-    if (isset($_GET['file']) && trim($_GET['file'])) {
-        $xml = new xml;
-        $xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
-
-        if (!$xml->verifyXmlArchive()) {
-            $xml->dieXmlArchiveNotFound();
-        }
-    }
 ?><html>
 <head>
     <title>Current Network Status</title>
@@ -35,20 +26,6 @@
 	<link rel="stylesheet" href="css/jquery-ui.min.css"/>
 	<link rel="stylesheet" href="css/datatables.min.css" />
 	<link rel="stylesheet" href="css/custom.css?v=<?php echo $rev; ?>" />
-<?php
-    if (isset($_GET['file']) && $_GET['file']) {
-?>
-        <style>
-            #mainTable .service .likeTable ul li:not(:first-child) { display: none !important; }
-            #mainTable .service .likeTable ul li:first-child { height: 19px; }
-            #planned, #planned-label { display: none !important; }
-            .edit_acknowledgeGroup, .edit_scheduleGroup, .edit_acknowledgeIt, .edit_scheduleIt, .edit_planned_comment { display: none !important; }
-            #quickAck_button, #quickUnAck_button, #acknowledgeIt_button, #scheduleIt_button, #recheckIt_button, #edit_acknowledge, #edit_scheduled { display: none !important; }
-            #planned-maintenance { display: none !important; }
-        </style>
-<?php
-    }
-?>
     <script>
         url = new URL(window.location.href);
         if (url.searchParams.get('server_tab')) {
@@ -136,6 +113,12 @@
 				<span class="small-hide">&#160;Schedule a downtime</span>
                 <span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
+            <input type="radio" id="history" name="radio"/>
+            <label for="history" id="history-label">
+                <span class="top-history-icon"></span>
+                <span class="small-hide">&#160;History</span>
+                <span class="xs-hide">&#160;</span>
+            </label>
         </div>
     </form>
 	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
@@ -238,11 +221,43 @@
         </ol>
     </div>
 </div>
+<div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px;">
+    <div class="historyHeading" style="padding-bottom: 20px;">
+        <form style="border-bottom: 1px solid #c5c5c5; margin: 0 0 15px 0; padding-bottom: 10px;">
+            <div id="history-radio">
+                <input type="radio" id="history-alerts" name="history-alerts">
+                <label for="history-alerts">Alerts</label>
+
+                <input type="radio" id="history-history" name="history-history" checked="checked">
+                <label for="history-history">History</label>
+            </div>
+        </form>
+
+        <table cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <td>Date from: </td>
+                <td><input type="text" name="history_date_from" id="history_date_from" class="text"></td>
+                <td>&nbsp;&nbsp;&nbsp;</td>
+                <td>Date to: </td>
+                <td><input type="text" name="history_date_to" id="history_date_to" class="text"></td>
+                <td>&nbsp;&nbsp;&nbsp;</td>
+                <td><input type="button" value="filter" id="history_filter" style="font-size: 13px; padding: 2px 10px; cursor: pointer;"></td>
+                <td>&nbsp;&nbsp;&nbsp;</td>
+                <td><input type="button" value="clear dates" id="history_filter_reset" style="font-size: 13px; padding: 2px 10px; cursor: pointer;"></td>
+            </tr>
+            <tr>
+                <td colspan="9"><small><i>If it's needed to see history use only 'Date to'.</i></small></td>
+            </tr>
+        </table>
+    </div>
+    <div class="historyText"></div>
+</div>
 
     <script src="js/jquery-2.1.4.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
+    <script src="js/datetimepicker.min.js"></script>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
     <script>
         $(document).ready(function() {
@@ -255,11 +270,12 @@
                 location.reload();
             });
 
-            Search.init();
-            Grouping.init();
-
-            if (!getParameterByName('file')) {
+            if (!getParameterByName('history')) {
+                Search.init();
+                Grouping.init();
                 Planned.init();
+            } else {
+                History.init();
             }
         });
     </script>

@@ -13,7 +13,6 @@ if (!localStorage.getItem('canceledReloads')) {
 if (!localStorage.getItem('currentServerTab')) {
     localStorage.setItem('currentServerTab', 'All');
 }
-
 if (!localStorage.getItem('searchValue')) {
     localStorage.setItem('searchValue', '');
 }
@@ -37,60 +36,60 @@ globalTime = 0;
 globalReload = true;
 
 Search = {}
-	Search.whatWeChangeObject = [{}];
-	Search.whatWeChangeDataObject = [{}];
-	Search.hideMoreArray      = [];
-	Search.currentTab         = localStorage.getItem('currentTabNew');
-	Search.currentGroup       = localStorage.getItem('currentGroup');
-	Search.currentReload      = localStorage.getItem('currentReloadNew');
-    Search.currentServerTab   = localStorage.getItem('currentServerTab');
-    Search.serverTabsList     = '';
-	Search.reloadCustomText   = 'Refresh: Custom';
-	Search.autoRefresh        = true;
-	Search.backgroundReload   = true;
-	Search.firstLoad          = true;
-	Search.tableLength        = 0;
-	Search.doneTypingInterval = 0;
-	Search.recheckButtonId    = 'recheckIt_button';
-	Search.quickAckButtonId   = 'quickAck_button';
-	Search.quickUnAckButtonId = 'quickUnAck_button';
-	Search.ackButtonId        = 'acknowledgeIt_button';
-	Search.unackButtonId      = 'unAck_button';
-	Search.sdButtonId         = 'scheduleIt_button';
-	Search.commentsDate       = '';
-	Search.lastUpdateAgo      = 0;
-	Search.editComment        = false;
-	Search.startedGetData     = false;
-	Search.editCommentText    = '';
-	Search.submitDialogButton = true;
-	Search.plannedTimer       = null;
-	Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
-    Search.orderBy = {
-        'normal'        : [[3,'desc'],[5,'desc']],
-        'acked'         : [[2, 'asc'],[1, 'asc']],
-        'sched'         : [[2, 'asc'],[1, 'asc']],
-        'hosts'         : [[1,'asc']],
-        'EMERGENCY'     : [[3,'desc'],[5,'desc']],
-        'planned'       : [[3,'desc'],[5,'desc']],
-    };
-	Search.additionalFile     = (getParameterByName('file')) ? '&file=' + getParameterByName('file') : '';
-    Search.changeNagiosComment = function(comment) {
-        var replacedText, replacePattern1, replacePattern2;
 
-        replacePattern1 = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-        replacedText = comment.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+Search.whatWeChangeObject      = [{}];
+Search.whatWeChangeDataObject  = [{}];
+Search.hideMoreArray           = [];
+Search.currentTab              = localStorage.getItem('currentTabNew');
+Search.currentGroup            = localStorage.getItem('currentGroup');
+Search.currentReload           = localStorage.getItem('currentReloadNew');
+Search.currentServerTab        = localStorage.getItem('currentServerTab');
+Search.serverTabsList          = '';
+Search.reloadCustomText        = 'Refresh: Custom';
+Search.autoRefresh             = true;
+Search.backgroundReload        = true;
+Search.firstLoad               = true;
+Search.tableLength             = 0;
+Search.doneTypingInterval      = 0;
+Search.recheckButtonId         = 'recheckIt_button';
+Search.quickAckButtonId        = 'quickAck_button';
+Search.quickUnAckButtonId      = 'quickUnAck_button';
+Search.ackButtonId             = 'acknowledgeIt_button';
+Search.unackButtonId      = 'unAck_button';
+Search.sdButtonId         = 'scheduleIt_button';
+Search.commentsDate       = '';
+Search.lastUpdateAgo      = 0;
+Search.editComment        = false;
+Search.startedGetData     = false;
+Search.editCommentText    = '';
+Search.submitDialogButton = true;
+Search.plannedTimer       = null;
+Search.filterButtons      = '#'+ Search.recheckButtonId +', #'+ Search.ackButtonId +', #'+ Search.sdButtonId +', #'+ Search.quickAckButtonId +', #'+ Search.quickUnAckButtonId +', #'+ Search.unackButtonId + ', #unScheduleIt_button, #unAcknowledgeIt_button';
+Search.orderBy = {
+    'normal'        : [[3,'desc'],[5,'desc']],
+    'acked'         : [[2, 'asc'],[1, 'asc']],
+    'sched'         : [[2, 'asc'],[1, 'asc']],
+    'hosts'         : [[1,'asc']],
+    'EMERGENCY'     : [[3,'desc'],[5,'desc']],
+    'planned'       : [[3,'desc'],[5,'desc']],
+};
+Search.changeNagiosComment = function(comment) {
+    var replacedText, replacePattern1, replacePattern2;
 
-        replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-        replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+    replacePattern1 = /(\b(https?):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    replacedText = comment.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
 
-        return replacedText;
-    }
-	Search.allDataTable       = $('#mainTable').DataTable({
+    replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+    replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+
+    return replacedText;
+}
+Search.allDataTable       = (getParameterByName('history')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
         'ajax': {
-            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue'),
+            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue'),
             dataFilter: function(data){
                 var tabsArray = ['normal', 'acked', 'sched'];
 
@@ -278,10 +277,6 @@ Search = {}
 			}
 
 			$(row).attr('data-service', data.service.original);
-
-			if (Search.currentTab == 'normal' && Search.additionalFile) {
-				$(row).find('td.service .likeTable li img.icons.quickUnAck').closest('li').attr('style', 'display: list-item !important');
-			}
         },
 		"drawCallback": function( settings ) {
             showNoData();
@@ -383,7 +378,7 @@ Search = {}
 				Search.startReloads();
 			}
 
-			Search.filterDataTable();
+            Search.filterDataTable();
 		}
 	});
 
@@ -411,7 +406,7 @@ Search.startReloads = function() {
     globalReload = true;
 }
 Search.getContent = function() {
-    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash && !Search.additionalFile) {
+    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash) {
         Search.startedGetData = true;
         $.ajax({
             type:    'GET',
@@ -1814,7 +1809,7 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
     Search.stopReloads();
     Search.startedGetData = true;
-    Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+    Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
         Search.resetAgo();
         Planned.getPlanned();
         Planned.showHidePlanned();
@@ -1895,18 +1890,16 @@ Search.checkResizedIcons = function() {
 }
 
 Search.getCounts = function() {
-    if (!Search.additionalFile) {
-        $.ajax({
-            url:    'counts.php',
-            method: 'GET',
-        }).always(function(data) {
-            for (var key in data) {
-                $(document).find('[data-server-tab="'+ key +'"]').text(' ('+ data[key] +')');
-            }
+    $.ajax({
+        url:    'counts.php',
+        method: 'GET',
+    }).always(function(data) {
+        for (var key in data) {
+            $(document).find('[data-server-tab="'+ key +'"]').text(' ('+ data[key] +')');
+        }
 
-            setTimeout(function(){ Search.getCounts(); }, 30000);
-        });
-    }
+        setTimeout(function(){ Search.getCounts(); }, 30000);
+    });
 }
 
 function checkSelectedText() {
@@ -1979,7 +1972,7 @@ Search.init = function() {
 
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 
-		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
@@ -1991,7 +1984,7 @@ Search.init = function() {
             localStorage.setItem('searchValue', val);
             Search.stopReloads();
 
-            Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
+            Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
                 Search.resetAgo();
                 Planned.showHidePlanned();
 
@@ -2055,18 +2048,16 @@ Search.init = function() {
 
 
     $('#mainTable').on('click', '.quickUnAck', function () {
-        if (!Search.additionalFile) {
-            var key = Search.changeWhatWeChangeObject({
-                'type':    'quickUnAck',
-                'what':    'this',
-                'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
-                'host':    $(this).closest('tr').find('.host').text(),
-                'service': $(this).closest('tr').find('.service ul li:first').text(),
-                'key': $(this).closest('tr').attr('data-group'),
-            });
+        var key = Search.changeWhatWeChangeObject({
+            'type':    'quickUnAck',
+            'what':    'this',
+            'tab':     $(this).closest('tr').find('.host a').attr('data-tab'),
+            'host':    $(this).closest('tr').find('.host').text(),
+            'service': $(this).closest('tr').find('.service ul li:first').text(),
+            'key': $(this).closest('tr').attr('data-group'),
+        });
 
-            $.when(Search.tempHideButtons(key)).then(function(){Search.prepareSendData(key)});
-        }
+        $.when(Search.tempHideButtons(key)).then(function(){Search.prepareSendData(key)});
     });
     $(document).on('click', '#'+ Search.quickUnAckButtonId, function () {
         var key = Search.changeWhatWeChangeObject({
@@ -2609,8 +2600,6 @@ Search.init = function() {
 		lastTime = currentTime;
 	}, 2000);
 	
-	$.getScript('js/datetimepicker.min.js');
-	
 	$(document).on('copy', function(e) {
 		$('td.status_information').css('width', '200px');
 		setTimeout(function() { $('td.status_information').removeAttr('style') });
@@ -2627,6 +2616,10 @@ Search.init = function() {
 
 
         Search.getNewData();
+    });
+
+    $('#history').on('click', function() {
+        window.location = window.location.href.split('?')[0] + "?history=1";
     });
 }
 
@@ -2847,18 +2840,16 @@ Planned = {
         }
     },
     getPlanned: function() {
-        if (!Search.additionalFile) {
-            Planned.showHidePlanned();
+        Planned.showHidePlanned();
 
-            $.ajax({
-                url:    'planned.php?server=' + Search.currentServerTab,
-                method: 'GET',
-            })
-                .always(function(data) {
-                    Planned.drawPlanned(data);
-                    Planned.plannedTimer = setTimeout(function(){ Planned.getPlanned() }, 30000);
-                });
-        }
+        $.ajax({
+            url:    'planned.php?server=' + Search.currentServerTab,
+            method: 'GET',
+        })
+            .always(function(data) {
+                Planned.drawPlanned(data);
+                Planned.plannedTimer = setTimeout(function(){ Planned.getPlanned() }, 30000);
+            });
     },
     drawPlanned: function(data) {
         $('#planned-list, #planned-templates-list').html('');
@@ -3919,8 +3910,7 @@ Grouping = {
                     qAck  = (item.service.qAck && !pAuth)  ? '<span class="list-qack-icon icons quickAck" alt="Quick Acknowledge" title="Quick Acknowledge"></span></li>' : '',
                     qUAck = (item.service.qUAck && !pAuth) ? '<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ item.service.qUAck +'?size=20" width="19" height="19" alt="'+ item.service.qAuth +' unack" title="'+ item.service.qAuth +' unack" />' : '',
                     ack   = '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-                    sched = (item.service.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ item.service.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '',
-                    sarchiveShowQuickAckIcon = (Search.currentTab == 'normal' && Search.additionalFile) ? ' style="display: list-item !important"' : '';
+                    sched = (item.service.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ item.service.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
                 result += '<td class="service '+ item.state + colorClass +'">';
                 if (item.service.pending) {
@@ -3939,7 +3929,7 @@ Grouping = {
                         '	<ul>' +
                         '		<li><a href="'+ item.service.url +'" class="service-name">'+ item.service.name +'</a></li>' +
                         notes  +
-                        '		<li '+ sarchiveShowQuickAckIcon +'>'  +
+                        '		<li>'  +
                         qAck  +
                         qUAck +
                         pAuth +
@@ -4074,7 +4064,7 @@ Grouping = {
                 localStorage.setItem('currentGroup', data.item.value);
                 Search.currentGroup = localStorage.getItem('currentGroup');
 
-                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + Search.additionalFile + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
                     Search.resetAgo();
                     Planned.showHidePlanned();
                 }).order(Search.orderBy[Search.currentTab]);
@@ -4242,3 +4232,219 @@ Grouping = {
         });
     }
 };
+History = {
+    date_to: "",
+    date_from: "",
+    init: function() {
+        $('#history-radio').buttonset();
+        this.drawDatePickers();
+
+        if (this.date_to && this.date_from) {
+            this.getPeriodData();
+        } else if (this.date_to) {
+            this.getHistoryData();
+        } else {
+            $('#loading').hide();
+            $('#historyContent').show();
+        }
+
+        $('#history_filter').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?history=1&date_to=" + History.returnMysqlDate(History.date_to) + "&date_from=" + History.returnMysqlDate(History.date_from);
+        });
+        $('#history_filter_reset').on('click', function() {
+            $('#history_date_from').datetimepicker('reset');
+            $('#history_date_to').datetimepicker('reset');
+            History.date_to = "";
+            History.date_from = "";
+        });
+        $('#history-alerts').on('click', function() {
+            window.location = window.location.href.split('?')[0];
+        });
+    },
+    getPeriodData: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'history.php',
+            data:    {'server': 'All', 'date_to': this.returnMysqlDate(this.date_to) + ':00', 'date_from': this.returnMysqlDate(this.date_from) + ':00'},
+            success: function(data){
+                var table = "";
+                table += "<table class='history-table'>";
+                table += "<tr>";
+                table += "<th class='host-th'>Host</th>";
+                table += "<th class='service-th'>Service</th>";
+                table += "<th class='status-th'>State</th>";
+                table += "<th class='last_check-th'>Date</th>";
+                table += "<th class='severity-th'>Severity</th>";
+                table += "<th class='user-th'>User</th>";
+                table += "<th class='status_information-th'>Output</th>";
+                table += "<th class='comment-th'>Comment</th>";
+                table += "</tr>";
+
+                for (var server in data){
+                    table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;<i>"+ server +"</i></th></tr>";
+
+                    for (var i = 0; i < data[server].length; i++) {
+                        var state = data[server][i]['state'];
+                        var severity = (data[server][i]['severity'] == 'planned_downtime') ? "planned" : data[server][i]['severity'];
+                        table += "<tr>";
+                        table += "<td class='host "+ state +"''>"+ data[server][i]['host'] +"</td>";
+                        table += "<td class='service "+ state +"'>"+ data[server][i]['service'] +"</td>";
+                        table += "<td class='status "+ state +"''>"+ state.toUpperCase() +"</td>";
+                        table += "<td class='last_check "+ state +"''>"+ data[server][i]['date'] +"</td>";
+                        table += "<td class='severity "+ state +"''>"+ severity +"</td>";
+                        table += "<td class='user "+ state +"''>"+ data[server][i]['user'] +"</td>";
+                        table += "<td class='status_information "+ state +"''>"+ data[server][i]['output'] +"</td>";
+                        table += "<td class='comment "+ state +"''>"+ data[server][i]['comment'] +"</td>";
+                        table += "</tr>";
+                    }
+                }
+
+                table += "</table>";
+
+                $('#historyContent .historyText').html(table);
+            },
+            error: function(data) {
+                $('#historyContent .historyText').html("<h3><br />Bad request: " + data.responseText + "</h3>");
+            },
+            complete: function() {
+                $('#loading').hide();
+                $('#historyContent').show();
+            }
+        });
+    },
+    getHistoryData: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'history.php',
+            data:    {'server': 'All', 'date_to': this.returnMysqlDate(this.date_to) + ':00'},
+            success: function(data){
+                var table = "";
+                table += "<table class='history-table'>";
+                table += "<tr>";
+                table += "<th class='host-th'>Host</th>";
+                table += "<th class='service-th'>Service</th>";
+                table += "<th class='status-th'>State</th>";
+                table += "<th class='last_check-th'>Date</th>";
+                table += "<th class='severity-th'>Severity</th>";
+                table += "<th class='user-th'>User</th>";
+                table += "<th class='status_information-th'>Output</th>";
+                table += "<th class='comment-th'>Comment</th>";
+                table += "</tr>";
+
+                for (var server in data){
+                    table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;<i>"+ server +"</i></th></tr>";
+
+                    for (var severity in data[server]) {
+                        if (data[server][severity].length) {
+                            table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i style='font-weight: normal'>"+ severity +"</i></th></tr>";
+
+                            for (var i = 0; i < data[server][severity].length; i++) {
+                                var state = data[server][severity][i]['state'];
+                                var severity = (data[server][severity][i]['severity'] == 'planned_downtime') ? "planned" : data[server][i]['severity'];
+                                table += "<tr>";
+                                table += "<td class='host "+ state +"''>"+ data[server][severity][i]['host'] +"</td>";
+                                table += "<td class='service "+ state +"'>"+ data[server][severity][i]['service'] +"</td>";
+                                table += "<td class='status "+ state +"''>"+ state.toUpperCase() +"</td>";
+                                table += "<td class='last_check "+ state +"''>"+ data[server][severity][i]['date'] +"</td>";
+                                table += "<td class='severity "+ state +"''>"+ severity +"</td>";
+                                table += "<td class='user "+ state +"''>"+ data[server][severity][i]['user'] +"</td>";
+                                table += "<td class='status_information "+ state +"''>"+ data[server][severity][i]['output'] +"</td>";
+                                table += "<td class='comment "+ state +"''>"+ data[server][severity][i]['comment'] +"</td>";
+                                table += "</tr>";
+                            }
+                        }
+                    }
+                }
+
+                table += "</table>";
+
+                $('#historyContent .historyText').html(table);
+            },
+            error: function(data) {
+                $('#historyContent .historyText').html("<h3><br />Bad request: " + data.responseText + "</h3>");
+            },
+            complete: function() {
+                $('#loading').hide();
+                $('#historyContent').show();
+            }
+        });
+    },
+    drawDatePickers: function() {
+        if (getParameterByName('date_from')) {
+            this.date_from = this.returnDate(getParameterByName('date_from'));
+        }
+
+        if (getParameterByName('date_to')) {
+            this.date_to = this.returnDate(getParameterByName('date_to'));
+        }
+
+        if (this.date_from) {
+            $('#history_date_from').datetimepicker({
+                value: this.date_from,
+                format:'Y-m-d H:i',
+                onChangeDateTime:function(dp, $input){
+                    History.date_from = History.returnDate($input.val());
+                }
+            });
+        } else {
+            $('#history_date_from').datetimepicker({
+                format:'Y-m-d H:i',
+                onChangeDateTime:function(dp, $input){
+                    History.date_from = History.returnDate($input.val());
+                }
+            });
+        }
+
+        if (this.date_to) {
+            $('#history_date_to').datetimepicker({
+                value: this.date_to,
+                format:'Y-m-d H:i',
+                onChangeDateTime:function(dp, $input){
+                    History.date_to = History.returnDate($input.val());
+                }
+            });
+        } else {
+            $('#history_date_to').datetimepicker({
+                format:'Y-m-d H:i',
+                onChangeDateTime:function(dp, $input){
+                    History.date_to = History.returnDate($input.val());
+                }
+            });
+        }
+    },
+    returnDate: function(fullDate) {
+        if (fullDate) {
+            var dateAndTime = fullDate.split(" ");
+
+            if (typeof dateAndTime[0] != "undefined" && typeof dateAndTime[1] != "undefined") {
+                var date = dateAndTime[0].split("-");
+                var time = dateAndTime[1].split(":");
+
+                if (typeof date[0] != "undefined" && typeof date[1] != "undefined" && typeof date[2] != "undefined" && typeof time[0] != "undefined" && typeof time[1] != "undefined") {
+                    return new Date(date[0], date[1] - 1, date[2], time[0], time[1], 0);
+                }
+            }
+        }
+        return "";
+    },
+    returnMysqlDate: function(d) {
+        if (!d) {
+            return "";
+        }
+
+        return [
+                d.getFullYear(),
+                (d.getMonth()+1).padLeft(),
+                d.getDate().padLeft()
+            ].join('-') + ' ' +
+            [
+                d.getHours().padLeft(),
+                d.getMinutes().padLeft()
+            ].join(':');
+    }
+}
+
+Number.prototype.padLeft = function(base,chr){
+    var  len = (String(base || 10).length - String(this).length)+1;
+    return len > 0? new Array(len).join(chr || '0')+this : this;
+}

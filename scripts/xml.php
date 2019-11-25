@@ -71,18 +71,10 @@ class xml
         }
     }
 
-    public function returnXml($isHash, $xmlFile)
+    public function returnXml($isHash)
     {
         $this->verifyTab();
         $this->setmemcacheFullName();
-
-        if ($xmlFile) {
-            if ($this->verifyXmlArchive()) {
-                return $this->db->getXmlHistory($_GET['file'], $this->currentTab);
-            }
-
-            $this->dieXmlArchiveNotFound();
-        }
 
         if (!$this->getDataFromMemcache) {
             $this->prepareDataToXml();
@@ -108,19 +100,6 @@ class xml
         return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
     }
 
-    public function dieXmlArchiveNotFound()
-    {
-        http_response_code(404);
-        die('Archive file not found.');
-    }
-    public function verifyXmlArchive()
-    {
-        if ($this->currentTab && $this->db->getXmlHistory($_GET['file'], $this->currentTab)) {
-            return true;
-        }
-
-        return false;
-    }
     private function prepareDataToXml()
     {
         $this->currentTabList = [];
@@ -138,6 +117,8 @@ class xml
 
             if (!in_array($this->currentTabTmp, $this->errorTabs)) {
                 $this->otherFiles();
+                $this->getHistoryChecks();
+                $this->getHistoryUnfinishedAlerts();
                 $this->getStatusFile();
                 $this->prepareHosts();
                 $this->prepareOtherData();
@@ -147,8 +128,6 @@ class xml
     private function addDataToMemcache()
     {
         $data = serialize($this->generateXml());
-        $date = date('Ymd_Hi');
-        $this->db->setXmlHistory($date, $this->currentTab, $data);
 
         $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 1200);
         $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 1200);
@@ -382,6 +361,81 @@ class xml
         }
     }
 
+    private function getHistoryChecks() {
+        $this->historyChecks = $this->db->historyGetChecks($this->currentTabTmp);
+    }
+    private function getHistoryUnfinishedAlerts() {
+        $this->unfinishedAlerts = $this->db->historyGetUnfinishedAlerts($this->currentTabTmp);
+    }
+    private function addHistoryData($host, $service, $data)
+    {
+        $state = (int)$data['current_state'];
+
+        if ($state) {
+            if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
+                $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], false);
+            } else {
+                $checkId = $this->returnOrInsertHistoryId($host, $service);
+                $this->db->historyAddHistory($checkId, 'unhandled', $this->statesArray[$state], NULL, NULL, $data['plugin_output']);
+            }
+        } else {
+            if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
+                $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], true);
+            }
+        }
+    }
+    private function insertOrUpdateHistory($data, $host, $service, $state, $isOk = false)
+    {
+        $old_severity = $this->returnHistoryId($host, $service, 'severity');
+
+        if ((int) $data['problem_has_been_acknowledged']) {
+            $values   = array_values($data['comments']);
+            $values   = end($values);
+            $user     = $values['author'];
+            $comment  = $values['comment_data'];
+            $severity = ($comment == 'temp') ? 'quick_acked' : 'acked';
+        } else if ((int) $data['scheduled_downtime_depth']) {
+            $values   = array_values($data['downtimes']);
+            $values   = end($values);
+            $user     = $values['author'];
+            $comment  = $values['comment'];
+            $severity = (substr($comment, 0, 9) == '(planned)') ? 'planned_downtime' : 'sched';
+        } else {
+            $user     = NULL;
+            $comment  = NULL;
+            $severity = 'unhandled';
+        }
+
+        if ($old_severity == $severity && !$isOk) {
+            unset($this->unfinishedAlerts[$host][$service]);
+            return;
+        }
+
+        $user     = ($isOk) ? NULL : $user;
+        $comment  = ($isOk) ? NULL : $comment;
+        $check_id = $this->returnHistoryId($host, $service, 'check_id');
+        $this->db->historyAddHistory($check_id, $severity, $state, $user, $comment, $data['plugin_output']);
+
+        unset($this->unfinishedAlerts[$host][$service]);
+    }
+    private function returnHistoryId($host, $service, $column) {
+        if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
+            return $this->unfinishedAlerts[$host][$service][$column];
+        }
+
+        return "";
+    }
+    private function returnOrInsertHistoryId($host, $service) {
+        if (isset($this->historyChecks['checks'])
+            && isset($this->historyChecks['checks'][$host])
+            && isset($this->historyChecks['checks'][$host][$service])
+        ) {
+            return $this->historyChecks['checks'][$host][$service];
+        }
+
+        return $this->db->historyAddCheck($host, $service, $this->currentTabTmp);
+    }
+
     private function getStatusFile() {
         $i = 0;
         while ($i < 5) {
@@ -440,6 +494,7 @@ class xml
 
         return json_decode($result, true);
     }
+
     private function prepareHosts()
     {
         foreach ($this->statusFile['content'] as $host => $data) {
@@ -451,7 +506,6 @@ class xml
         $service = 'SERVER IS UP';
 
         if ($this->verifyMatchHost($host, $service, (int)$data['current_state'], (int)$data['last_state_change'], 0)) {
-
             $this->hosts[$host][$service] = array(
                 'state'              => 2, // down host is always shown as CRITICAL alert
                 'origState'          => '',
@@ -492,6 +546,7 @@ class xml
             'tab'                => $this->currentTabTmp,
         );
 
+        $this->addHistoryData($host, $service, $data);
         $this->checkBackendStatus((int)$data['last_check']);
 
         foreach ($data['services'] as $service => $serviceData) {
@@ -521,6 +576,7 @@ class xml
             );
         }
 
+        $this->addHistoryData($host, $service, $data);
         $this->checkBackendStatus((int)$data['last_check']);
     }
     private function returnCommentData($data, $service, $host)

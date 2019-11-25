@@ -13,7 +13,7 @@ if ($memcacheEnabled) {
         $xml = new xml;
         $xml->getDataFromMemcache = false;
         $xml->setCurrentTab($server);
-        $xml->returnXml(false, '');
+        $xml->returnXml(false);
 
     }
 }

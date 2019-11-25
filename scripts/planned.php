@@ -302,7 +302,7 @@ class planned
             $xml = new xml;
             $xml->setCurrentTab($this->server);
 
-            $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false, false))),TRUE);
+            $array           = json_decode(json_encode(simplexml_load_string($xml->returnXml(false))),TRUE);
 
             if (isset($array['alert']['host'])) {
                 $array['alert'] = [$array['alert']];

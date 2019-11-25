@@ -22,8 +22,7 @@ class json
         $this->additional = [];
         $this->user       = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
-        $this->xmlFile  = (isset($_GET['file'])) ? $_GET['file'] : '';
-        $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false, $this->xmlFile))),TRUE);
+        $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
 
         if (!$this->fullData) {
             http_response_code(404);
@@ -96,7 +95,7 @@ class json
 
             $infoRecord = $this->returnInfoRecord($service, $statusInfo);
 
-            if (!$this->xmlFile && $plannedRecord = $this->plannedData->findPlannedRecords($host, $service, $statusInfo, $hostOrService, $sched, $schComment, $downtimeId)) {
+            if ($plannedRecord = $this->plannedData->findPlannedRecords($host, $service, $statusInfo, $hostOrService, $sched, $schComment, $downtimeId)) {
                 $sched          = $plannedRecord['sched'];
                 $schComment     = $plannedRecord['comment'];
                 $acked          = 0;
