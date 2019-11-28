@@ -110,11 +110,11 @@ copy
 #ext_search .list-recheck-icon  { background: url('../images/all_icons.png') no-repeat -114px 0; }
 #ext_search .list-edit-icon     { background: url('../images/all_icons.png') no-repeat -228px 0; }
 
-#mainTable .likeTable { display: table; width: 100%; }
-#mainTable .likeTable ul { display: table-row; list-style: none; margin: 0; padding: 0; }
-#mainTable .likeTable ul li { display: table-cell; vertical-align: middle; }
-#mainTable .likeTable ul li:not(:first-child) { width: 19px; }
-#mainTable .likeTable ul li:first-child { width: 100%; }
+#mainTable .likeTable, .history-table .likeTable { display: table; width: 100%; }
+#mainTable .likeTable ul, .history-table .likeTable ul { display: table-row; list-style: none; margin: 0; padding: 0; }
+#mainTable .likeTable ul li, .history-table .likeTable ul li { display: table-cell; vertical-align: middle; }
+#mainTable .likeTable ul li:not(:first-child), .history-table .likeTable ul li:not(:first-child) { width: 19px; }
+#mainTable .likeTable ul li:first-child, .history-table .likeTable ul li:first-child { width: 100%; }
 #mainTable .likeTable .list-unack-icon,
 #mainTable .likeTable .list-downtime-icon,
 #mainTable .likeTable .list-notes-icon,
@@ -158,17 +158,25 @@ copy
 #grouping-button { width: 135px !important; }
 #grouping-menu { width: 135px !important; }
 
+#tabsSelect-button { width: 150px !important; }
+#tabsSelect-menu { width: 150px !important; }
+
 #refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
 #refreshTimeSelect-button { width: auto !important; min-width: 122px; }
+#tabsSelect-button { width: auto !important; min-width: 150px; }
 
-#refreshTime, #normalGrouping { float: right; }
-#refreshTimeSelect-button, #grouping-button, #info-show-button { outline: none; }
-#refreshTimeSelect-menu li, #grouping-menu li, #info-show-menu li { font-size: 12px; line-height: 16px; }
-#refreshTimeSelect-menu li.ui-selectmenu-optgroup, #grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
+#refreshTime, #normalGrouping, #tabs { float: right; }
+#refreshTimeSelect-button, #grouping-button, #info-show-button, #tabsSelect-button { outline: none; }
+#refreshTimeSelect-menu li, #grouping-menu li, #info-show-menu li, #tabsSelect-menu { font-size: 12px; line-height: 16px; }
+#refreshTimeSelect-menu li.ui-selectmenu-optgroup, #grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup, #tabsSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 #refreshTime .ui-selectmenu-button span.ui-selectmenu-text,
-#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 26px; padding: 0 15px 0 3px; }
+#normalGrouping .ui-selectmenu-button span.ui-selectmenu-text,
+#tabsSelect .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 26px; padding: 0 15px 0 3px; }
 #refreshTime .ui-selectmenu-button span.ui-icon,
-#normalGrouping .ui-selectmenu-button span.ui-icon { right: 0; }
+#normalGrouping .ui-selectmenu-button span.ui-icon,
+#tabsSelect .ui-selectmenu-button span.ui-icon { right: 0; }
+
+#history_date:hover { outline: none; }
 
 #radio { float: left; font-size: 14px; }
 #radio em { font-style: normal; }
@@ -230,16 +238,41 @@ table.dataTable thead .no-border-th {
 #mainTable td.status_information.UNKNOWN.blue-text,
 #mainTable td.comment.UNKNOWN.blue-text,
 #mainTable td.last_check.UNKNOWN.blue-text,
-#mainTable td.more.UNKNOWN.blue-text { background-color: #bed8ff; }
-#mainTable td.status.UNKNOWN.blue-text, #mainTable td.status.WARNING.blue-text { background-color: #67a4ff; }
+#mainTable td.more.UNKNOWN.blue-text,
+.history-table td.service.WARNING.blue-text,
+.history-table td.duration.WARNING.blue-text,
+.history-table td.status_information.WARNING.blue-text,
+.history-table td.comment.WARNING.blue-text,
+.history-table td.last_check.WARNING.blue-text,
+.history-table td.more.WARNING.blue-text,
+.history-table td.severity.WARNING.blue-text,
+.history-table td.user.WARNING.blue-text,
+.history-table td.service.UNKNOWN.blue-text,
+.history-table td.duration.UNKNOWN.blue-text,
+.history-table td.status_information.UNKNOWN.blue-text,
+.history-table td.comment.UNKNOWN.blue-text,
+.history-table td.last_check.UNKNOWN.blue-text,
+.history-table td.severity.UNKNOWN.blue-text,
+.history-table td.user.UNKNOWN.blue-text,
+.history-table td.more.UNKNOWN.blue-text{ background-color: #bed8ff; }
+#mainTable td.status.UNKNOWN.blue-text, #mainTable td.status.WARNING.blue-text,
+.history-table td.status.UNKNOWN.blue-text, .history-table td.status.WARNING.blue-text{ background-color: #67a4ff; }
 
 #mainTable td.service.CRITICAL.brown-text,
 #mainTable td.duration.CRITICAL.brown-text,
 #mainTable td.status_information.CRITICAL.brown-text,
 #mainTable td.comment.CRITICAL.brown-text,
 #mainTable td.last_check.CRITICAL.brown-text,
-#mainTable td.more.CRITICAL.brown-text { background-color: #d8a961; }
-#mainTable td.status.CRITICAL.brown-text { background-color: #ad7e36; }
+#mainTable td.more.CRITICAL.brown-text,
+.history-table td.service.CRITICAL.brown-text,
+.history-table  td.duration.CRITICAL.brown-text,
+.history-table  td.status_information.CRITICAL.brown-text,
+.history-table  td.comment.CRITICAL.brown-text,
+.history-table  td.last_check.CRITICAL.brown-text,
+.history-table  td.severity.CRITICAL.brown-text,
+.history-table  td.user.CRITICAL.brown-text,
+.history-table  td.more.CRITICAL.brown-text{ background-color: #d8a961; }
+#mainTable td.status.CRITICAL.brown-text, .history-table td.status.CRITICAL.brown-text { background-color: #ad7e36; }
 
 .sched_label_col { width: 130px; white-space: nowrap; }
 .sched_label_col label { font-size: 14px; width: 130px; }
@@ -262,40 +295,6 @@ table.dataTable thead .no-border-th {
 .full-planned-list tbody tr td:nth-child(9) { text-align: center; }
 
 #mainTable .comment .likeTable ul li.sched.text, #mainTable .comment .likeTable ul li.ack.text { word-break: break-all; }
-
-#tabs {
-    border-bottom: 1px solid #c5c5c5;
-    margin: 0 0 15px 0;
-}
-#tabs ul {
-    margin: 0;
-    padding: 5px 0 15px 0;
-    text-align: right;
-}
-#tabs ul li {
-    display: inline-block;
-    list-style: none;
-    margin: 1px .2em 0 0;
-    padding: .5em 1em;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1px solid #c5c5c5;
-    background: #f6f6f6;
-    font-weight: normal;
-    color: #454545;
-    border-radius: 4px;
-    font-size: 14px;
-    outline: none;
-}
-#tabs ul li:hover {
-    background: #e0e0e0;
-}
-#tabs ul li.active {
-    border: 1px solid #003eff;
-    background: #007fff;
-    color: #ffffff;
-    cursor: default;
-}
 
 @media (max-width: 1199px) {
     #radio { font-size: 12px; }
@@ -454,10 +453,15 @@ table.dataTable thead .no-border-th {
     border: 0 !important;
 }
 .history-table td {
-    padding: 8px 3px;
+    padding: 5px 3px;
 }
 .history-table th.server {
     border-bottom: 1px solid #000 !important;
+}
+.history-table .abb, .history-table .abb-th { width:  12px !important; overflow: hidden; text-align: center; }
+.history-table td.abb span {
+    font-weight: bold;
+    font-size: 15px;
 }
 .history-table .host, .history-table .host-th {
     width: 87px !important;
@@ -501,6 +505,7 @@ table.dataTable thead .no-border-th {
 .history-table td.status.unknown  { background-color: rgb(255, 153, 0); }
 .history-table td.status.warning  { background-color: rgb(255, 255, 0); }
 .history-table td.status.critical { background-color: rgb(248, 56, 56); }
+.history-table td.host, .history-table td.abb { background-color: rgb(219, 219, 219); }
 
 #history-radio .ui-widget {
     font-size: 0.93em;
@@ -598,3 +603,34 @@ table.dataTable thead .no-border-th {
 .xdsoft_datetimepicker .xdsoft_save_selected { display: block; border: 1px solid #dddddd !important; margin-top: 5px; width: 100%; color: #454551; font-size: 13px; }
 .xdsoft_datetimepicker .blue-gradient-button { font-family: "museo-sans", "Book Antiqua", sans-serif; font-size: 12px; font-weight: 300; color: #82878c; height: 28px; position: relative; padding: 4px 17px 4px 33px; border: 1px solid #d7d8da; background: -moz-linear-gradient(top, #fff 0%, #f4f8fa 73%); background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #fff), color-stop(73%, #f4f8fa)); background: -webkit-linear-gradient(top, #fff 0%, #f4f8fa 73%); background: -o-linear-gradient(top, #fff 0%, #f4f8fa 73%); background: -ms-linear-gradient(top, #fff 0%, #f4f8fa 73%); background: linear-gradient(to bottom, #fff 0%, #f4f8fa 73%); filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fff', endColorstr='#f4f8fa',GradientType=0 ); }
 .xdsoft_datetimepicker .blue-gradient-button:hover, .xdsoft_datetimepicker .blue-gradient-button:focus, .xdsoft_datetimepicker .blue-gradient-button:hover span, .xdsoft_datetimepicker .blue-gradient-button:focus span { color: #454551; background: -moz-linear-gradient(top, #f4f8fa 0%, #FFF 73%); background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #f4f8fa), color-stop(73%, #FFF)); background: -webkit-linear-gradient(top, #f4f8fa 0%, #FFF 73%); background: -o-linear-gradient(top, #f4f8fa 0%, #FFF 73%); background: -ms-linear-gradient(top, #f4f8fa 0%, #FFF 73%); background: linear-gradient(to bottom, #f4f8fa 0%, #FFF 73%); filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f4f8fa', endColorstr='#FFF',GradientType=0 ); }
+
+.ui-timepicker-div .ui-widget-header { margin-bottom: 8px; }
+.ui-timepicker-div dl { text-align: left; }
+.ui-timepicker-div dl dt { float: left; clear:left; padding: 0 0 0 5px; }
+.ui-timepicker-div dl dd { margin: 0 10px 10px 40%; }
+.ui-timepicker-div td { font-size: 90%; }
+.ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
+.ui-timepicker-div .ui_tpicker_unit_hide{ display: none; }
+
+.ui-timepicker-div .ui_tpicker_time .ui_tpicker_time_input { background: none; color: inherit; border: none; outline: none; border-bottom: solid 1px #555; width: 95%; }
+.ui-timepicker-div .ui_tpicker_time .ui_tpicker_time_input:focus { border-bottom-color: #aaa; }
+
+.ui-timepicker-rtl{ direction: rtl; }
+.ui-timepicker-rtl dl { text-align: right; padding: 0 5px 0 0; }
+.ui-timepicker-rtl dl dt{ float: right; clear: right; }
+.ui-timepicker-rtl dl dd { margin: 0 40% 10px 10px; }
+
+/* Shortened version style */
+.ui-timepicker-div.ui-timepicker-oneLine { padding-right: 2px; }
+.ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_time,
+.ui-timepicker-div.ui-timepicker-oneLine dt { display: none; }
+.ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_time_label { display: block; padding-top: 2px; }
+.ui-timepicker-div.ui-timepicker-oneLine dl { text-align: right; }
+.ui-timepicker-div.ui-timepicker-oneLine dl dd,
+.ui-timepicker-div.ui-timepicker-oneLine dl dd > div { display:inline-block; margin:0; }
+.ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_minute:before,
+.ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_second:before { content:':'; display:inline-block; }
+.ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_millisec:before,
+.ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_microsec:before { content:'.'; display:inline-block; }
+.ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide,
+.ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide:before{ display: none; }

@@ -35,7 +35,33 @@ lastTime = (new Date()).getTime();
 globalTime = 0;
 globalReload = true;
 
-Search = {}
+Search = {
+    serversList: '',
+    drawTabsList: function() {
+        var tabsList = '';
+        var tabsData = this.serversList.split(',');
+
+        $(tabsData).each(function (key, value) {
+            var selected = (Search.currentServerTab == value) ? 'selected="selected"' : '';
+
+            tabsList += '<option value="'+ value +'" '+ selected +'>Server: '+ value +'</option>';
+        });
+
+        $('#tabsSelect').html(tabsList);
+        $('#tabsSelect').selectmenu({
+            select: function (event, data) {
+                if (Search.currentServerTab != data.item.value) {
+                    Search.currentServerTab = data.item.value;
+                    localStorage.setItem('currentServerTab', Search.currentServerTab);
+                    $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
+                    $('#tabsSelect').selectmenu('refresh');
+
+                    Search.getNewData();
+                }
+            }
+        });
+    },
+}
 
 Search.whatWeChangeObject      = [{}];
 Search.whatWeChangeDataObject  = [{}];
@@ -44,7 +70,6 @@ Search.currentTab              = localStorage.getItem('currentTabNew');
 Search.currentGroup            = localStorage.getItem('currentGroup');
 Search.currentReload           = localStorage.getItem('currentReloadNew');
 Search.currentServerTab        = localStorage.getItem('currentServerTab');
-Search.serverTabsList          = '';
 Search.reloadCustomText        = 'Refresh: Custom';
 Search.autoRefresh             = true;
 Search.backgroundReload        = true;
@@ -84,7 +109,7 @@ Search.changeNagiosComment = function(comment) {
 
     return replacedText;
 }
-Search.allDataTable       = (getParameterByName('history')) ? false : $('#mainTable').DataTable({
+Search.allDataTable       = (getParameterByName('t')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
@@ -289,7 +314,6 @@ Search.allDataTable       = (getParameterByName('history')) ? false : $('#mainTa
 			Search.countRecords();
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
-            $("#tabs ul li.active .spinner").remove();
             $('#mainTable').show();
 		},
 		'initComplete': function(settings, json) {
@@ -304,6 +328,8 @@ Search.allDataTable       = (getParameterByName('history')) ? false : $('#mainTa
 				$('#groupByHost').text(json.additional.groupByHost);
 				$('#refreshArray').text(json.additional.refreshArray);
 
+                Search.serversList = json.additional.tabsList;
+                Search.drawTabsList(json.additional.tabsList);
                 Planned.getPlanned();
 
 				var refreshData = $('#refreshArray').text().split(';');
@@ -460,7 +486,6 @@ Search.filterDataTable = function(val, startReload) {
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
-    Search.drawServerTabs();
 	Search.extension();
 	Search.emptyHosts();
 
@@ -708,23 +733,6 @@ Search.addDialogJs = function() {
 			}
 		]
 	});
-}
-Search.drawServerTabs = function() {
-    if (Search.ajaxData.tabCurrent != Search.currentServerTab || Search.serverTabsList != Search.ajaxData.tabsList) {
-        Search.currentServerTab = Search.ajaxData.tabCurrent;
-        Search.serverTabsList   = Search.ajaxData.tabsList;
-
-        localStorage.setItem('currentServerTab', Search.currentServerTab);
-
-        var tabs = Search.ajaxData.tabsList.split(',');
-
-        $("#tabs ul").html("");
-
-        for (var i = 0; i < tabs.length; i++) {
-            var active = (tabs[i] == Search.currentServerTab) ? ' class="active"' : '';
-            $("#tabs ul").append('<li'+ active +' data-server-tab-name="'+ tabs[i] +'">'+ tabs[i] +'<span data-server-tab="'+ tabs[i] +'"></span></li>');
-        }
-    }
 }
 
 
@@ -1915,6 +1923,7 @@ function checkSelectedText() {
 }
 
 Search.init = function() {
+	$('#alerts, #alerts-label').hide();
     Search.startedGetData = true;
 	Search.startAgo();
     setTimeout(function(){ Search.getCounts(); }, 3000);
@@ -2604,22 +2613,9 @@ Search.init = function() {
 		$('td.status_information').css('width', '200px');
 		setTimeout(function() { $('td.status_information').removeAttr('style') });
 	});
-    $(document).on('click', '#tabs ul li:not(.active)', function() {
-        Search.currentServerTab = $(this).attr('data-server-tab-name');
-
-        localStorage.setItem('currentServerTab', Search.currentServerTab);
-
-        $("#tabs ul li.active").removeClass('active');
-        $(this).addClass('active').append('<div class="spinner"></div>');
-        $('#mainTable').hide();
-        $('.dataTables_info').text('');
-
-
-        Search.getNewData();
-    });
 
     $('#history').on('click', function() {
-        window.location = window.location.href.split('?')[0] + "?history=1";
+        window.location = window.location.href.split('?')[0] + "?t=1";
     });
 }
 
@@ -2686,12 +2682,12 @@ $('#mainTable').on('error.dt', function(e, settings, techNote, message) {
 })
 
 function hideNoData() {
-    $('#loading, #refreshTime, #normalGrouping, #radio, #mainTable_wrapper').hide();
+    $('#loading, #refreshTime, #tabs, #normalGrouping, #radio, #mainTable_wrapper').hide();
     $('#updatedAgo').closest('p').hide();
     $('#noDataServer').show();
 }
 function showNoData() {
-    $('#refreshTime, #normalGrouping, #radio, #mainTable_wrapper').show();
+    $('#refreshTime, #tabs, #normalGrouping, #radio, #mainTable_wrapper').show();
     $('#updatedAgo').closest('p').show();
     $('#noDataServer').hide();
     showNoDataBlock = false;
@@ -4233,132 +4229,190 @@ Grouping = {
     }
 };
 History = {
-    date_to: "",
-    date_from: "",
+    tableData: {},
+    serversList: '',
     init: function() {
-        $('#history-radio').buttonset();
-        this.drawDatePickers();
-
-        if (this.date_to && this.date_from) {
-            this.getPeriodData();
-        } else if (this.date_to) {
-            this.getHistoryData();
-        } else {
-            $('#loading').hide();
-            $('#historyContent').show();
+        if (!Search.currentServerTab) {
+            Search.currentServerTab = 'All';
         }
 
-        $('#history_filter').on('click', function() {
-            window.location = window.location.href.split('?')[0] + "?history=1&date_to=" + History.returnMysqlDate(History.date_to) + "&date_from=" + History.returnMysqlDate(History.date_from);
-        });
-        $('#history_filter_reset').on('click', function() {
-            $('#history_date_from').datetimepicker('reset');
-            $('#history_date_to').datetimepicker('reset');
-            History.date_to = "";
-            History.date_from = "";
-        });
-        $('#history-alerts').on('click', function() {
+        if (!Search.currentTab) {
+            Search.currentTab = 'normal';
+        }
+
+        this.getServersList();
+        this.drawButtons();
+        this.drawDatePickers();
+        this.getHistoryData();
+
+        $('#alerts').on('click', function() {
             window.location = window.location.href.split('?')[0];
         });
+        $('#history_filter').on('click', function() {
+            var value = $('#history_date').val();
+
+            if (value.length > 10 && Date.parse(value) != 'NaN') {
+                window.location = window.location.href.split('?')[0] + "?t=" + (Date.parse(value) / 1000);
+            }
+        });
+        $('#normal, #acked, #sched').on('click', function() {
+            if (Search.currentTab != $(this).attr('id')) {
+                Search.currentTab = $(this).attr('id');
+                localStorage.setItem('currentTabNew', Search.currentTab);
+
+                History.drawTable();
+            }
+        });
     },
-    getPeriodData: function() {
+    drawButtons: function() {
+        $('#' + Search.currentTab).prop('checked', true);
+        $('#history, #history-label, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide').hide();
+        $('#radio').buttonset();
+
+        $('#loading, #refreshTime, #normalGrouping, #mainTable').hide();
+        $('#updatedAgo').closest('p').hide();
+        $('#infoHolder, #historyContent').show();
+    },
+    drawDatePickers: function() {
+        this.getTimestamp();
+
+        var dateTimePickerSettings = {
+            timeFormat: 'HH:mm',
+            dateFormat: 'yy-mm-dd',
+            controlType: 'select',
+            oneLine: true
+        }
+
+        if (this.timestamp) {
+            $('#history_date').val(this.date);
+            dateTimePickerSettings.defaultValue = this.date;
+        }
+
+        $('#history_date').datetimepicker(dateTimePickerSettings);
+    },
+    drawTabsList: function() {
+        var tabsList = '';
+        var tabsData = this.serversList.split(',');
+
+        $(tabsData).each(function (key, value) {
+            var selected = (Search.currentServerTab == value) ? 'selected="selected"' : '';
+
+            tabsList += '<option value="'+ value +'" '+ selected +'>Server: '+ value +'</option>';
+        });
+
+        $('#tabsSelect').html(tabsList);
+        $('#tabsSelect').selectmenu({
+            select: function (event, data) {
+                if (Search.currentServerTab != data.item.value) {
+                    Search.currentServerTab = data.item.value;
+                    localStorage.setItem('currentServerTab', Search.currentServerTab);
+                    $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
+                    $('#tabsSelect').selectmenu('refresh');
+
+                    History.drawTable();
+                }
+            }
+        });
+    },
+    drawTable: function() {
+        var data = History.tableData;
+        var server = Search.currentServerTab;
+        var severity = Search.currentTab;
+
+        var table = "";
+        table += "<table class='history-table'>";
+        table += "<tr>";
+        table += "<th class='abb-th'></th>";
+        table += "<th class='host-th'>Host</th>";
+        table += "<th class='service-th'>Service</th>";
+        table += "<th class='status-th'>State</th>";
+        table += "<th class='last_check-th'>Date</th>";
+        table += "<th class='severity-th'>Severity</th>";
+        table += "<th class='user-th'>User</th>";
+        table += "<th class='status_information-th'>Output</th>";
+        if (Search.currentTab != 'normal') {
+            table += "<th class='comment-th'>Comment</th>";
+        }
+
+        table += "</tr>";
+
+        for (var i = 0; i < data[server][severity].length; i++) {
+            var state = data[server][severity][i]['state'];
+            var severityTmp = (data[server][severity][i]['severity'] == 'planned_downtime') ? "planned" : data[server][severity][i]['severity'];
+            var userIcon = (data[server][severity][i]['avatar']) ? ('<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ data[server][severity][i]['avatar'] +'?size=20" width="19" height="19" />') : '';
+            var service = '<div class="likeTable"><ul><li>' + data[server][severity][i]['service'] + '</li><li>' + userIcon + '</li></ul></div>';
+
+            var info = '';
+            if (data[server][severity][i]['info']) {
+                if (state == 'WARNING' || state == 'UNKNOWN') {
+                    info = ' blue-text';
+                } else {
+                    info = ' brown-text';
+                }
+            }
+
+            table += "<tr>";
+            table += "<td class='abb'><span title='"+ server +"'>"+ data[server][severity][i]['server'].charAt(0) +"</span></td>";
+            table += "<td class='host "+ state + info +"'>"+ data[server][severity][i]['host'] +"</td>";
+            table += "<td class='service "+ state + info +"'>"+ service +"</td>";
+            table += "<td class='status "+ state + info +"'>"+ state.toUpperCase() +"</td>";
+            table += "<td class='last_check "+ state + info +"'>"+ data[server][severity][i]['date'] +"</td>";
+            table += "<td class='severity "+ state + info +"'>"+ severityTmp +"</td>";
+            table += "<td class='user "+ state + info +"'>"+ ((data[server][severity][i]['user']) ? data[server][severity][i]['user'] : '') +"</td>";
+            table += "<td class='status_information "+ state + info +"'>"+ data[server][severity][i]['output'] +"</td>";
+            if (Search.currentTab != 'normal') {
+                table += "<td class='comment " + state + info + "'>" + data[server][severity][i]['comment'] + "</td>";
+            }
+            table += "</tr>";
+        }
+
+        table += "</table>";
+
+        $('#historyContent .historyText').html(table);
+
+        $("span[title]").tooltip({ track: true });
+        $(".ui-tooltip").remove();
+
+        History.setCounts();
+    },
+    getTimestamp: function() {
+        this.timestamp = null;
+
+        if (getParameterByName('t')) {
+            var date = getParameterByName('t');
+
+            if (date.length == 10 && parseInt(date).toString() == date) {
+                this.timestamp = parseInt(date);
+            } else if (date.length > 10 && Date.parse(date) != 'Nan') {
+                this.timestamp = Date.parse(date) / 1000;
+            }
+        }
+
+        this.date = this.returnMysqlDate(new Date(this.timestamp * 1000));
+    },
+    getServersList: function() {
         $.ajax({
             type:    'GET',
             url:     'history.php',
-            data:    {'server': 'All', 'date_to': this.returnMysqlDate(this.date_to) + ':00', 'date_from': this.returnMysqlDate(this.date_from) + ':00'},
+            data:    {'list': 'servers'},
             success: function(data){
-                var table = "";
-                table += "<table class='history-table'>";
-                table += "<tr>";
-                table += "<th class='host-th'>Host</th>";
-                table += "<th class='service-th'>Service</th>";
-                table += "<th class='status-th'>State</th>";
-                table += "<th class='last_check-th'>Date</th>";
-                table += "<th class='severity-th'>Severity</th>";
-                table += "<th class='user-th'>User</th>";
-                table += "<th class='status_information-th'>Output</th>";
-                table += "<th class='comment-th'>Comment</th>";
-                table += "</tr>";
-
-                for (var server in data){
-                    table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;<i>"+ server +"</i></th></tr>";
-
-                    for (var i = 0; i < data[server].length; i++) {
-                        var state = data[server][i]['state'];
-                        var severity = (data[server][i]['severity'] == 'planned_downtime') ? "planned" : data[server][i]['severity'];
-                        table += "<tr>";
-                        table += "<td class='host "+ state +"''>"+ data[server][i]['host'] +"</td>";
-                        table += "<td class='service "+ state +"'>"+ data[server][i]['service'] +"</td>";
-                        table += "<td class='status "+ state +"''>"+ state.toUpperCase() +"</td>";
-                        table += "<td class='last_check "+ state +"''>"+ data[server][i]['date'] +"</td>";
-                        table += "<td class='severity "+ state +"''>"+ severity +"</td>";
-                        table += "<td class='user "+ state +"''>"+ data[server][i]['user'] +"</td>";
-                        table += "<td class='status_information "+ state +"''>"+ data[server][i]['output'] +"</td>";
-                        table += "<td class='comment "+ state +"''>"+ data[server][i]['comment'] +"</td>";
-                        table += "</tr>";
-                    }
-                }
-
-                table += "</table>";
-
-                $('#historyContent .historyText').html(table);
-            },
-            error: function(data) {
-                $('#historyContent .historyText').html("<h3><br />Bad request: " + data.responseText + "</h3>");
-            },
-            complete: function() {
-                $('#loading').hide();
-                $('#historyContent').show();
+                History.serversList = data.serversList;
+                History.drawTabsList();
             }
         });
     },
     getHistoryData: function() {
+        if (!this.timestamp) {
+            return;
+        }
+
         $.ajax({
             type:    'GET',
             url:     'history.php',
-            data:    {'server': 'All', 'date_to': this.returnMysqlDate(this.date_to) + ':00'},
+            data:    {'server': 'All', 'date': this.timestamp},
             success: function(data){
-                var table = "";
-                table += "<table class='history-table'>";
-                table += "<tr>";
-                table += "<th class='host-th'>Host</th>";
-                table += "<th class='service-th'>Service</th>";
-                table += "<th class='status-th'>State</th>";
-                table += "<th class='last_check-th'>Date</th>";
-                table += "<th class='severity-th'>Severity</th>";
-                table += "<th class='user-th'>User</th>";
-                table += "<th class='status_information-th'>Output</th>";
-                table += "<th class='comment-th'>Comment</th>";
-                table += "</tr>";
-
-                for (var server in data){
-                    table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;<i>"+ server +"</i></th></tr>";
-
-                    for (var severity in data[server]) {
-                        if (data[server][severity].length) {
-                            table += "<tr><th colspan='8'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i style='font-weight: normal'>"+ severity +"</i></th></tr>";
-
-                            for (var i = 0; i < data[server][severity].length; i++) {
-                                var state = data[server][severity][i]['state'];
-                                var severity = (data[server][severity][i]['severity'] == 'planned_downtime') ? "planned" : data[server][i]['severity'];
-                                table += "<tr>";
-                                table += "<td class='host "+ state +"''>"+ data[server][severity][i]['host'] +"</td>";
-                                table += "<td class='service "+ state +"'>"+ data[server][severity][i]['service'] +"</td>";
-                                table += "<td class='status "+ state +"''>"+ state.toUpperCase() +"</td>";
-                                table += "<td class='last_check "+ state +"''>"+ data[server][severity][i]['date'] +"</td>";
-                                table += "<td class='severity "+ state +"''>"+ severity +"</td>";
-                                table += "<td class='user "+ state +"''>"+ data[server][severity][i]['user'] +"</td>";
-                                table += "<td class='status_information "+ state +"''>"+ data[server][severity][i]['output'] +"</td>";
-                                table += "<td class='comment "+ state +"''>"+ data[server][severity][i]['comment'] +"</td>";
-                                table += "</tr>";
-                            }
-                        }
-                    }
-                }
-
-                table += "</table>";
-
-                $('#historyContent .historyText').html(table);
+                History.tableData = data;
+                History.drawTable();
             },
             error: function(data) {
                 $('#historyContent .historyText').html("<h3><br />Bad request: " + data.responseText + "</h3>");
@@ -4368,64 +4422,6 @@ History = {
                 $('#historyContent').show();
             }
         });
-    },
-    drawDatePickers: function() {
-        if (getParameterByName('date_from')) {
-            this.date_from = this.returnDate(getParameterByName('date_from'));
-        }
-
-        if (getParameterByName('date_to')) {
-            this.date_to = this.returnDate(getParameterByName('date_to'));
-        }
-
-        if (this.date_from) {
-            $('#history_date_from').datetimepicker({
-                value: this.date_from,
-                format:'Y-m-d H:i',
-                onChangeDateTime:function(dp, $input){
-                    History.date_from = History.returnDate($input.val());
-                }
-            });
-        } else {
-            $('#history_date_from').datetimepicker({
-                format:'Y-m-d H:i',
-                onChangeDateTime:function(dp, $input){
-                    History.date_from = History.returnDate($input.val());
-                }
-            });
-        }
-
-        if (this.date_to) {
-            $('#history_date_to').datetimepicker({
-                value: this.date_to,
-                format:'Y-m-d H:i',
-                onChangeDateTime:function(dp, $input){
-                    History.date_to = History.returnDate($input.val());
-                }
-            });
-        } else {
-            $('#history_date_to').datetimepicker({
-                format:'Y-m-d H:i',
-                onChangeDateTime:function(dp, $input){
-                    History.date_to = History.returnDate($input.val());
-                }
-            });
-        }
-    },
-    returnDate: function(fullDate) {
-        if (fullDate) {
-            var dateAndTime = fullDate.split(" ");
-
-            if (typeof dateAndTime[0] != "undefined" && typeof dateAndTime[1] != "undefined") {
-                var date = dateAndTime[0].split("-");
-                var time = dateAndTime[1].split(":");
-
-                if (typeof date[0] != "undefined" && typeof date[1] != "undefined" && typeof date[2] != "undefined" && typeof time[0] != "undefined" && typeof time[1] != "undefined") {
-                    return new Date(date[0], date[1] - 1, date[2], time[0], time[1], 0);
-                }
-            }
-        }
-        return "";
     },
     returnMysqlDate: function(d) {
         if (!d) {
@@ -4441,6 +4437,16 @@ History = {
                 d.getHours().padLeft(),
                 d.getMinutes().padLeft()
             ].join(':');
+    },
+    setCounts: function() {
+        $('#normal-label .xs-hide').show();
+        $('#normal-label .xs-hide em').text(History.tableData[Search.currentServerTab]['normal'].length);
+
+        $('#acked-label .xs-hide').show();
+        $('#acked-label .xs-hide em').text(History.tableData[Search.currentServerTab]['acked'].length);
+
+        $('#sched-label .xs-hide').show();
+        $('#sched-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
     }
 }
 

@@ -60,15 +60,9 @@
     </ol>
 </div>
 <div id="infoHolder" style="display: none;">
-    <div id="tabs">
-        <ul>
-        </ul>
-    </div>
 	<form>
 		<div id="refreshTime">
-			<select name="files" id="refreshTimeSelect">
-
-			</select>
+			<select name="files" id="refreshTimeSelect"></select>
 		</div>
 		<div id="normalGrouping">
 			<select name="files" id="grouping">
@@ -76,21 +70,24 @@
 				<option value="1">Grouping: Enabled</option>
 			</select>
 		</div>
+        <div id="tabs">
+            <select name="tabsSelect" id="tabsSelect"></select>
+        </div>
 		<div id="radio">
             <input type="radio" id="normal" name="radio"/>
-			<label for="normal">
+			<label for="normal" id="normal-label">
 					<span class="top-normal-icon"></span>
 					<span class="small-hide">&#160;Normal</span>
 					<span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
             <input type="radio" id="acked" name="radio"/>
-			<label for="acked">
+			<label for="acked" id="acked-label">
 				<span class="top-ack-icon"></span>
 				<span class="small-hide">&#160;Acknowledged</span>
 				<span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
             <input type="radio" id="sched" name="radio"/>
-			<label for="sched">
+			<label for="sched" id="sched-label">
 				<span class="top-downtime-icon"></span>
 				<span class="small-hide">&#160;Scheduled downtime</span>
 				<span class="xs-hide">&#160;(<em></em>)</span>
@@ -113,12 +110,10 @@
 				<span class="small-hide">&#160;Schedule a downtime</span>
                 <span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
-            <input type="radio" id="history" name="radio"/>
-            <label for="history" id="history-label">
-                <span class="top-history-icon"></span>
-                <span class="small-hide">&#160;History</span>
-                <span class="xs-hide">&#160;</span>
-            </label>
+            <input type="radio" id="history" name="radio">
+            <label for="history" id="history-label">History</label>
+            <input type="radio" id="alerts" name="radio">
+            <label for="alerts" id="alerts-label">Alerts</label>
         </div>
     </form>
 	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
@@ -221,32 +216,14 @@
         </ol>
     </div>
 </div>
-<div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px;">
-    <div class="historyHeading" style="padding-bottom: 20px;">
-        <form style="border-bottom: 1px solid #c5c5c5; margin: 0 0 15px 0; padding-bottom: 10px;">
-            <div id="history-radio">
-                <input type="radio" id="history-alerts" name="history-alerts">
-                <label for="history-alerts">Alerts</label>
-
-                <input type="radio" id="history-history" name="history-history" checked="checked">
-                <label for="history-history">History</label>
-            </div>
-        </form>
-
+<div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px; clear: both;">
+    <div class="historyHeading" style="border-bottom: 1px solid #c5c5c5; margin: 0 0 15px 0; padding: 20px 0 10px 0;">
         <table cellpadding="0" cellspacing="0" border="0">
             <tr>
-                <td>Date from: </td>
-                <td><input type="text" name="history_date_from" id="history_date_from" class="text"></td>
+                <td>Date: </td>
+                <td><input type="text" name="history_date" id="history_date" class="text" style="font-size: 14px; outline: none;" autocomplete="off"></td>
                 <td>&nbsp;&nbsp;&nbsp;</td>
-                <td>Date to: </td>
-                <td><input type="text" name="history_date_to" id="history_date_to" class="text"></td>
-                <td>&nbsp;&nbsp;&nbsp;</td>
-                <td><input type="button" value="filter" id="history_filter" style="font-size: 13px; padding: 2px 10px; cursor: pointer;"></td>
-                <td>&nbsp;&nbsp;&nbsp;</td>
-                <td><input type="button" value="clear dates" id="history_filter_reset" style="font-size: 13px; padding: 2px 10px; cursor: pointer;"></td>
-            </tr>
-            <tr>
-                <td colspan="9"><small><i>If it's needed to see history use only 'Date to'.</i></small></td>
+                <td><input type="button" value="filter" id="history_filter" style="font-size: 16px; padding: 2px 10px; cursor: pointer;"></td>
             </tr>
         </table>
     </div>
@@ -258,6 +235,10 @@
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
     <script src="js/datetimepicker.min.js"></script>
+<?php
+if (isset($_GET['t']) && trim($_GET['t'])) { ?>
+    <script src="js/jquery-ui-timepicker-addon.js"></script>
+<?php } ?>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
     <script>
         $(document).ready(function() {
@@ -270,7 +251,7 @@
                 location.reload();
             });
 
-            if (!getParameterByName('history')) {
+            if (!getParameterByName('t')) {
                 Search.init();
                 Grouping.init();
                 Planned.init();

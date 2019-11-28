@@ -7,8 +7,10 @@ class db
     function __construct()
     {
         global $database;
+        global $infoRecordMark;
 
         $this->database = $database;
+        $this->infoRecordMark = $infoRecordMark;
 
         $this->connect();
         $this->createTables();
@@ -683,6 +685,7 @@ class db
     {
         $server = $this->mysql->real_escape_string($server);
         $dateTo = $this->mysql->real_escape_string($dateTo);
+        $users  = $this->usersList($server);
 
         if ($dateTo) {
             $dateTo = "WHERE `date` < '{$dateTo}'";
@@ -710,18 +713,123 @@ class db
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         $list = [
-            'unhandled'        => [],
-            'quick_acked'      => [],
-            'acked'            => [],
-            'sched'            => [],
-            'planned_downtime' => [],
+            'normal' => [],
+            'acked'  => [],
+            'sched'  => [],
         ];
 
         while ($row = $result->fetch_assoc()){
-            $list[$row['severity']][] = $row;
+            $tab = 'normal';
+
+            if ($row['severity'] == 'acked') {
+                $tab = 'acked';
+            }
+
+            if ($row['severity'] == 'planned_downtime' || $row['severity'] == 'sched') {
+                $tab = 'sched';
+            }
+
+            $row['state_id'] = $this->returnState($row['state']);
+            $row['avatar'] = '';
+
+            $row['info'] = false;
+            $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
+            if ($infoRecord['info']) {
+                $row['info']    = true;
+                $row['service'] = $infoRecord['service'];
+                $row['output']  = $infoRecord['status'];
+            }
+
+            if ($row['user'] && isset($users[$row['user']])) {
+                $row['avatar'] = md5(strtolower(trim($users[$row['user']])));
+            }
+
+            $list[$tab][] = $row;
         }
 
         return $list;
+    }
+    private function returnState($state) {
+        if ($state == 'warning') {
+            return '1';
+        }
+
+        if ($state == 'critical') {
+            return '2';
+        }
+
+        if ($state == 'unknown') {
+            return '3';
+        }
+
+        return '0';
+    }
+    private function returnInfoRecord($service, $status) {
+        $return = [
+            'service' => $service,
+            'status'  => $status,
+            'info'    => false,
+        ];
+
+        if (count($this->infoRecordMark['everywhere']['remove'])) {
+            foreach ($this->infoRecordMark['everywhere']['remove'] as $item) {
+                if ($match = $this->infoPregMatch($item, $return['service'], false, true)) {
+                    $return['service'] = $match;
+                    $return['info']    = true;
+                }
+                if ($match = $this->infoPregMatch($item, $return['status'], false, true)) {
+                    $return['status'] = $match;
+                    $return['info']   = true;
+                }
+            }
+        }
+        if (count($this->infoRecordMark['everywhere']['leave'])) {
+            foreach ($this->infoRecordMark['everywhere']['leave'] as $item) {
+                if ($this->infoPregMatch($item, $return['service'], false, false) || $this->infoPregMatch($item, $return['status'], false, false)) {
+                    $return['info'] = true;
+                }
+            }
+        }
+
+        if (count($this->infoRecordMark['begin']['remove'])) {
+            foreach ($this->infoRecordMark['begin']['remove'] as $item) {
+                if ($match = $this->infoPregMatch($item, $return['service'], true, true)) {
+                    $return['service'] = $match;
+                    $return['info']    = true;
+                }
+                if ($match = $this->infoPregMatch($item, $return['status'], true, true)) {
+                    $return['status'] = $match;
+                    $return['info']   = true;
+                }
+            }
+        }
+        if (count($this->infoRecordMark['begin']['leave'])) {
+            foreach ($this->infoRecordMark['begin']['leave'] as $item) {
+                if ($this->infoPregMatch($item, $return['service'], true, false) || $this->infoPregMatch($item, $return['status'], true, false)) {
+                    $return['info'] = true;
+                }
+            }
+        }
+
+        return $return;
+    }
+    private function infoPregMatch($marker, $subject, $start = false, $remove = false) {
+        $return  = '';
+        $pattern = '/'. (($start) ? '^' : '') . $marker .'/';
+
+        if (preg_match($pattern, $subject)) {
+            if ($remove) {
+                if ($start) {
+                    $return = substr($subject, mb_strlen($marker));
+                } else {
+                    $return = str_replace($marker, '', $subject);
+                }
+            } else {
+                $return = $subject;
+            }
+        }
+
+        return $return;
     }
     public function historyGetUnfinishedAlertsWithPeriod($server, $dateFrom, $dateTo)
     {
