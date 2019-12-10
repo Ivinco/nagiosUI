@@ -371,14 +371,14 @@ class xml
     {
         $state = (int)$data['current_state'];
 
-        if ($state) {
+        if ($state && (int) $data['last_hard_state']) {
             if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
                 $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], false);
             } else {
                 $checkId = $this->returnOrInsertHistoryId($host, $service);
                 $this->db->historyAddHistory($checkId, 'unhandled', $this->statesArray[$state], NULL, NULL, $data['plugin_output']);
             }
-        } else {
+        } else if (!$state) {
             if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
                 $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], true);
             }

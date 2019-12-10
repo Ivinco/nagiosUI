@@ -360,9 +360,11 @@ Search.allDataTable       = (getParameterByName('t')) ? false : $('#mainTable').
 				Search.groupByService     = $('#groupByService').text();
 				Search.groupByHost        = $('#groupByHost').text();
 
-				$('#' + Search.currentTab).attr('checked', 'checked');
-				$('#radio').buttonset();
-				Search.addDialog();
+                $('#' + Search.currentTab).attr('checked', 'checked');
+                $('#alerts').prop('checked', true);
+                $('#radio-switch').buttonset();
+                $('#radio').buttonset();
+                Search.addDialog();
 
 				refreshValues = [];
 				$('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
@@ -1923,7 +1925,6 @@ function checkSelectedText() {
 }
 
 Search.init = function() {
-	$('#alerts, #alerts-label').hide();
     Search.startedGetData = true;
 	Search.startAgo();
     setTimeout(function(){ Search.getCounts(); }, 3000);
@@ -4248,7 +4249,8 @@ History = {
         $('#alerts').on('click', function() {
             window.location = window.location.href.split('?')[0];
         });
-        $('#history_filter').on('click', function() {
+
+        $(document).on('click', '.ui-datepicker-close', function() {
             var value = $('#history_date').val();
 
             if (value.length > 10 && Date.parse(value) != 'NaN') {
@@ -4266,8 +4268,10 @@ History = {
     },
     drawButtons: function() {
         $('#' + Search.currentTab).prop('checked', true);
-        $('#history, #history-label, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide').hide();
+        $('#history').prop('checked', true);
+        $('#EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide').hide();
         $('#radio').buttonset();
+        $('#radio-switch').buttonset();
 
         $('#loading, #refreshTime, #normalGrouping, #mainTable').hide();
         $('#updatedAgo').closest('p').hide();

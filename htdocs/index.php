@@ -8,6 +8,8 @@
     include_once __DIR__ . '/../scripts/init.php';
 
     if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
+        $db = new db;
+        $usersArray = $db->usersList('All');
         $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
         $user = (!$user) ? ((isset($_SERVER['REDIRECT_REMOTE_USER']) ? $_SERVER['REDIRECT_REMOTE_USER'] : '')) : $user;
         $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
@@ -110,10 +112,12 @@
 				<span class="small-hide">&#160;Schedule a downtime</span>
                 <span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
+        </div>
+        <div id="radio-switch" style="float: right; margin-right: 30px; margin-left: 30px;">
+            <input type="radio" id="alerts" name="radio">
+            <label for="alerts" id="alerts-label">Normal</label>
             <input type="radio" id="history" name="radio">
             <label for="history" id="history-label">History</label>
-            <input type="radio" id="alerts" name="radio">
-            <label for="alerts" id="alerts-label">Alerts</label>
         </div>
     </form>
 	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
@@ -222,8 +226,6 @@
             <tr>
                 <td>Date: </td>
                 <td><input type="text" name="history_date" id="history_date" class="text" style="font-size: 14px; outline: none;" autocomplete="off"></td>
-                <td>&nbsp;&nbsp;&nbsp;</td>
-                <td><input type="button" value="filter" id="history_filter" style="font-size: 16px; padding: 2px 10px; cursor: pointer;"></td>
             </tr>
         </table>
     </div>
