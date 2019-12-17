@@ -4,8 +4,6 @@ include_once __DIR__ . '/../scripts/init.php';
 
 $server   = (isset($_GET['server'])    && $_GET['server'])    ? $_GET['server']    : '';
 $date     = (isset($_GET['date'])      && $_GET['date'])      ? $_GET['date']      : '';
-$dateFrom = (isset($_GET['date_from']) && $_GET['date_from']) ? $_GET['date_from'] : '';
-$dateTo   = (isset($_GET['date_to'])   && $_GET['date_to'])   ? $_GET['date_to']   : '';
 $list     = (isset($_GET['list'])      && $_GET['list'])      ? $_GET['list']      : '';
 
 ob_start('ob_gzhandler');
@@ -17,70 +15,52 @@ if ($list) {
     die;
 }
 
-if ($date && !validateDate($date)) {
+if (!$date) {
     http_response_code(400);
-    die('date_from format must be: "1970-01-01 00:00:00" or timestamp');
-}
-if ($dateFrom && !validateDate($dateFrom)) {
-    http_response_code(400);
-    die('date_from format must be: "1970-01-01 00:00:00" or timestamp');
-}
-if ($dateTo && !validateDate($dateTo)) {
-    http_response_code(400);
-    die('date_to format must be: "1970-01-01 00:00:00" or timestamp');
-}
-if (!$dateFrom && !$dateTo && !$date) {
-    http_response_code(400);
-    die('date or date_from or date_to must be set. Date format: "1970-01-01 00:00:00" or timestamp');
+    die('date must be set. Date format: "1970-01-01 00:00:00" or timestamp');
 }
 
-if (!$dateTo && $date) {
-    $dateTo = $date;
+if ($date && !validateDate($date)) {
+    http_response_code(400);
+    die('date format must be: "1970-01-01 00:00:00" or timestamp');
 }
 
 $db       = new db;
 $history  = [];
 $servers  = returnServers($server, $serversList);
-$dateFrom = (isTimestamp($dateFrom)) ? returnDateFromTimestamp($dateFrom) : $dateFrom;
-$dateTo   = (isTimestamp($dateTo))   ? returnDateFromTimestamp($dateTo)   : $dateTo;
+$date     = (isTimestamp($date)) ? returnDateFromTimestamp($date) : $date;
 
-if (!$dateFrom && $dateTo) {
-    foreach ($servers as $item) {
-        $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $dateTo);
-    }
+foreach ($servers as $item) {
+    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $date);
+}
 
-    $all = [
-        'normal' => [],
-        'acked'  => [],
-        'sched'  => [],
-    ];
+$all = [
+    'normal' => [],
+    'acked'  => [],
+    'sched'  => [],
+];
 
-    foreach ($history as $server => $serverData) {
-        foreach ($serverData as $tab => $tabData) {
-            foreach ($tabData as $row) {
-                $all[$tab][] = $row;
-            }
+foreach ($history as $server => $serverData) {
+    foreach ($serverData as $tab => $tabData) {
+        foreach ($tabData as $row) {
+            $all[$tab][] = $row;
         }
     }
+}
 
-    $history['All'] = $all;
+$history['All'] = $all;
 
-    foreach ($history as $server => $serverData) {
-        foreach ($serverData as $tab => $tabData) {
+foreach ($history as $server => $serverData) {
+    foreach ($serverData as $tab => $tabData) {
 
-            list($state, $service) = returnOrder($tabData);
+        list($state, $service) = returnOrder($tabData);
 
-            array_multisort($state, SORT_DESC, SORT_NATURAL | SORT_FLAG_CASE,
-                $service, SORT_ASC, SORT_NATURAL | SORT_FLAG_CASE,
-                $tabData
-            );
+        array_multisort($state, SORT_DESC, SORT_NATURAL | SORT_FLAG_CASE,
+            $service, SORT_ASC, SORT_NATURAL | SORT_FLAG_CASE,
+            $tabData
+        );
 
-            $history[$server][$tab] = $tabData;
-        }
-    }
-} else {
-    foreach ($servers as $item) {
-        $history[$item] = $db->historyGetUnfinishedAlertsWithPeriod($item, $dateFrom, $dateTo);
+        $history[$server][$tab] = $tabData;
     }
 }
 
@@ -124,6 +104,7 @@ function isTimestamp($timestamp) {
 }
 function returnDateFromTimestamp($timestamp) {
     $date = new DateTime("@{$timestamp}");
+    $date->setTimezone(new DateTimeZone('America/New_York'));
 
     return $date->format('Y-m-d H:i:s');
 }

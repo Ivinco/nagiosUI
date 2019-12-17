@@ -109,7 +109,7 @@ Search.changeNagiosComment = function(comment) {
 
     return replacedText;
 }
-Search.allDataTable       = (getParameterByName('t')) ? false : $('#mainTable').DataTable({
+Search.allDataTable       = (getParameterByName('t') || getParameterByName('stats')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
@@ -2618,6 +2618,9 @@ Search.init = function() {
     $('#history').on('click', function() {
         window.location = window.location.href.split('?')[0] + "?t=1";
     });
+    $('#stats').on('click', function() {
+        window.location = window.location.href.split('?')[0] + "?stats=1";
+    });
 }
 
 function getParameterByName (name) {
@@ -4237,7 +4240,7 @@ History = {
             Search.currentServerTab = 'All';
         }
 
-        if (!Search.currentTab) {
+        if (!Search.currentTab || ['normal', 'acked', 'sched'].indexOf(Search.currentTab) == -1) {
             Search.currentTab = 'normal';
         }
 
@@ -4248,6 +4251,9 @@ History = {
 
         $('#alerts').on('click', function() {
             window.location = window.location.href.split('?')[0];
+        });
+        $('#stats').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?stats=1";
         });
 
         $(document).on('click', '.ui-datepicker-close', function() {
@@ -4269,7 +4275,7 @@ History = {
     drawButtons: function() {
         $('#' + Search.currentTab).prop('checked', true);
         $('#history').prop('checked', true);
-        $('#EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide').hide();
+        $('#EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.statsInput').hide();
         $('#radio').buttonset();
         $('#radio-switch').buttonset();
 
@@ -4338,7 +4344,7 @@ History = {
             table += "<th class='comment-th'>Comment</th>";
         }
 
-        table += "</tr>";
+        table += "</tr>";console.log(severity);console.log(data[server]);
 
         for (var i = 0; i < data[server][severity].length; i++) {
             var state = data[server][severity][i]['state'];
@@ -4452,7 +4458,211 @@ History = {
         $('#sched-label .xs-hide').show();
         $('#sched-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
     }
-}
+};
+Stats = {
+    selectedUsers: null,
+    selectedFrom: null,
+    selectedTo: null,
+    serversList: '',
+    usersList: '',
+    init: function() {
+        if (!Search.currentServerTab) {
+            Search.currentServerTab = 'All';
+        }
+
+        this.getServersList();
+        this.drawButtons();
+
+        $('#alerts').on('click', function() {
+            window.location = window.location.href.split('?')[0];
+        });
+        $('#history').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?t=1";
+        });
+        $('#filterStats').on('click', function() {
+            Stats.selectedUsers = $('#usersFilter').val();
+            Stats.selectedFrom  = $("#calendar_switch option:selected").attr('data-from');
+            Stats.selectedTo    = $("#calendar_switch option:selected").attr('data-to');
+
+            if (!Stats.selectedUsers) {
+                alert('Please select at least one user.');
+            }
+
+            if (!Stats.selectedFrom) {
+                alert('Please select at least one user.');
+            }
+
+            if (!Stats.selectedTo) {
+                alert('Please select at least one user.');
+            }
+
+            if (Stats.selectedFrom && Stats.selectedTo && Stats.selectedUsers) {
+                Stats.drawStats();
+            }
+        });
+    },
+    drawStats: function() {
+        $('.historyText').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
+        $.ajax({
+            type:    'GET',
+            url:     'stats.php',
+            data:    {'date_from': Stats.selectedFrom + ' 00:00:00', 'date_to': Stats.selectedTo + ' 23:59:59'},
+            success: function(data){
+                $('.historyText').html('');
+
+                var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59. ('+ Stats.selectedUsers.join(', ') +')</h4>';
+                $(Stats.selectedUsers).each(function (key, value) {
+                    if (value in data && Search.currentServerTab in data[value]) {
+                        html += '<p><br />'+ value +' ('+ Search.currentServerTab +')</p>';
+                        html += '<ul>';
+                        html += '<li>unhandled alerts time: '+ Stats.returnDayHour(data[value][Search.currentServerTab]['unhandled_time']) +'</li>';
+                        html += '<li>number of alerts: '+ data[value][Search.currentServerTab]['alerts_count'] +'</li>';
+                        html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(data[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
+                        html += '<li>reaction time (avg): '+ Stats.returnDayHour(data[value][Search.currentServerTab]['reaction_avg']) +'</li>';
+                        html += '</ul>';
+                    } else {
+                        html += '<p><br />No stats for: '+ value +'</p>';
+                    }
+                });
+
+                $('.historyText').html(html);
+            }
+        });
+    },
+    returnDayHour: function(seconds) {
+        var result  = '';
+        seconds     = parseInt(seconds, 10);
+        var days    = Math.floor(seconds / (3600 * 24));
+        seconds    -= days * 3600 * 24;
+        var hours   = Math.floor(seconds / 3600);
+        seconds    -= hours * 3600;
+        var minutes = Math.floor(seconds / 60);
+        seconds    -= minutes * 60;
+
+        if (days) {
+            result += days + 'd ';
+        }
+
+        if (hours) {
+            result += hours + 'h ';
+        }
+
+        if (minutes) {
+            result += minutes + 'm ';
+        }
+
+        if (seconds) {
+            result += seconds + 's';
+        }
+
+        return result;
+    },
+    getServersList: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'stats.php',
+            data:    {'list': 'servers'},
+            success: function(data){
+                Stats.serversList = data.serversList;
+                Stats.usersList = data.usersList;
+                Stats.drawTabsList();
+                Stats.drawSelects();
+            }
+        });
+    },
+    drawTabsList: function() {
+        var tabsList = '';
+        var tabsData = this.serversList.split(',');
+
+        $(tabsData).each(function (key, value) {
+            var selected = (Search.currentServerTab == value) ? 'selected="selected"' : '';
+
+            tabsList += '<option value="'+ value +'" '+ selected +'>Server: '+ value +'</option>';
+        });
+
+        $('#tabsSelect').html(tabsList);
+        $('#tabsSelect').selectmenu({
+            select: function (event, data) {
+                if (Search.currentServerTab != data.item.value) {
+                    Search.currentServerTab = data.item.value;
+                    localStorage.setItem('currentServerTab', Search.currentServerTab);
+                    $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
+                    $('#tabsSelect').selectmenu('refresh');
+                }
+            }
+        });
+    },
+    drawButtons: function() {
+        $('#' + Search.currentTab).prop('checked', true);
+        $('#stats').prop('checked', true);
+        $('#radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput').hide();
+        $('#radio-switch').buttonset();
+
+        $('#loading, #refreshTime, #normalGrouping, #mainTable').hide();
+        $('#updatedAgo').closest('p').hide();
+        $('#infoHolder, #historyContent').show();
+
+        $('.historyHeading').css('padding-top', '0');
+    },
+    drawSelects: function() {
+        $('#usersFilter').html('');
+        $(Stats.usersList).each(function (key, value) {
+            $('#usersFilter').append('<option value="'+ value +'">'+ value +'</option>');
+        });
+
+        $('#calendar_switch').html('');
+        $(Stats.returnSelectList()).each(function (key, value) {
+            $('#calendar_switch').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'">'+ value.name +'</option>');
+        });
+    },
+    returnPeriod: function(period) {
+        var from = moment(),
+            to   = moment();
+
+        if (period == 'yesterday') {
+            from.subtract(1, 'days');
+            to.subtract(1, 'days');
+        }
+        if (period == 'last2days') {
+            from.subtract(1, 'days');
+        }
+        if (period == 'thisWeek') {
+            from.startOf('isoweek');
+        }
+        if (period == 'last7days') {
+            from.subtract(6, 'days');
+        }
+        if (period == 'lastWeek') {
+            from.subtract(6, 'days').startOf('isoweek');
+            to.subtract(6, 'days').endOf('isoweek');
+        }
+        if (period == 'thisMonth') {
+            from.startOf('month');
+        }
+        if (period == 'last30days') {
+            from.subtract(29, 'days');
+        }
+        if (period == 'lastMonth') {
+            from.subtract(1, 'months').startOf('month');
+            to.subtract(1, 'months').endOf('month');
+        }
+
+        return { from: from.format('Y-MM-DD'), to: to.format('Y-MM-DD') };
+    },
+    returnSelectList: function() {
+        return [
+            { name: 'Today',        value: this.returnPeriod('today') },
+            { name: 'Yesterday',    value: this.returnPeriod('yesterday') },
+            { name: 'Last 2 Days',  value: this.returnPeriod('last2days') },
+            { name: 'This Week',    value: this.returnPeriod('thisWeek') },
+            { name: 'Last 7 Days',  value: this.returnPeriod('last7days') },
+            { name: 'Last Week',    value: this.returnPeriod('lastWeek') },
+            { name: 'This Month',   value: this.returnPeriod('thisMonth') },
+            { name: 'Last 30 Days', value: this.returnPeriod('last30days') },
+            { name: 'Last Month',   value: this.returnPeriod('lastMonth') },
+        ];
+    },
+};
 
 Number.prototype.padLeft = function(base,chr){
     var  len = (String(base || 10).length - String(this).length)+1;

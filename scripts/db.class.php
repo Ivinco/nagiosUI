@@ -867,6 +867,14 @@ class db
         $list = [];
 
         while ($row = $result->fetch_assoc()){
+            $row['info'] = false;
+            $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
+            if ($infoRecord['info']) {
+                $row['info']    = true;
+                $row['service'] = $infoRecord['service'];
+                $row['output']  = $infoRecord['status'];
+            }
+
             $list[$row['check_id'].$row['date']] = $row;
         }
 
@@ -889,6 +897,14 @@ class db
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){
+            $row['info'] = false;
+            $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
+            if ($infoRecord['info']) {
+                $row['info']    = true;
+                $row['service'] = $infoRecord['service'];
+                $row['output']  = $infoRecord['status'];
+            }
+
             $list[$row['check_id'].$row['date']] = $row;
         }
 

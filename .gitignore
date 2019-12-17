@@ -1,3 +1,5 @@
 htdocs/config/config.php
 htdocs/planned.json
 htdocs/data/
+config/calendar.json
+config/client_secret.json

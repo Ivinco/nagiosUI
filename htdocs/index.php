@@ -113,11 +113,15 @@
                 <span class="xs-hide">&#160;(<em></em>)</span>
 			</label>
         </div>
+    </form>
+    <form>
         <div id="radio-switch" style="float: right; margin-right: 30px; margin-left: 30px;">
             <input type="radio" id="alerts" name="radio">
             <label for="alerts" id="alerts-label">Normal</label>
             <input type="radio" id="history" name="radio">
             <label for="history" id="history-label">History</label>
+            <input type="radio" id="stats" name="radio">
+            <label for="stats" id="stats-label">Stats</label>
         </div>
     </form>
 	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
@@ -222,10 +226,25 @@
 </div>
 <div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px; clear: both;">
     <div class="historyHeading" style="border-bottom: 1px solid #c5c5c5; margin: 0 0 15px 0; padding: 20px 0 10px 0;">
-        <table cellpadding="0" cellspacing="0" border="0">
+        <table class="historyInput" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td>Date: </td>
                 <td><input type="text" name="history_date" id="history_date" class="text" style="font-size: 14px; outline: none;" autocomplete="off"></td>
+            </tr>
+        </table>
+        <table class="statsInput" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <td width="200">
+                    <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
+                </td>
+            </tr>
+            <tr>
+                <td width="200">
+                    <select id="calendar_switch"></select>
+                </td>
+            </tr>
+            <tr>
+                <td><input type="button" value="show" name="filterStats" id="filterStats"></td>
             </tr>
         </table>
     </div>
@@ -253,12 +272,14 @@ if (isset($_GET['t']) && trim($_GET['t'])) { ?>
                 location.reload();
             });
 
-            if (!getParameterByName('t')) {
+            if (getParameterByName('stats')) {
+                Stats.init();
+            } else if (getParameterByName('t')) {
+                History.init();
+            } else {
                 Search.init();
                 Grouping.init();
                 Planned.init();
-            } else {
-                History.init();
             }
         });
     </script>
