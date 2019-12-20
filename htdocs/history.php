@@ -10,7 +10,21 @@ ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
 if ($list) {
-    echo json_encode(returnTabsList($serversList));
+    $return = returnTabsList($serversList);
+    $return['groupByService'] = 2;
+    $return['groupByHost'] = 11;
+    $return['refreshArray'] = [
+        [ 'value' =>  '10', 'name' => '10 sec' ],
+        [ 'value' =>  '20', 'name' => '20 sec' ],
+        [ 'value' =>  '40', 'name' => '40 sec' ],
+        [ 'value' =>  '60', 'name' =>  '1 min' ],
+        [ 'value' => '120', 'name' =>  '2 min' ],
+        [ 'value' => '180', 'name' =>  '3 min' ],
+        [ 'value' => '300', 'name' =>  '5 min' ],
+        [ 'value' => '600', 'name' => '10 min' ],
+    ];
+
+    echo json_encode($return);
     http_response_code(200);
     die;
 }

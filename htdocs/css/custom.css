@@ -91,6 +91,15 @@ copy
 #mainTable .group-list > td { border-top: 1px solid #000; }
 #mainTable .group-list-bottom > td { border-bottom: 1px solid #000; }
 
+.draw-borders > td { border-top: 1px solid #000; border-bottom: 1px solid #000; cursor:pointer; }
+.draw-borders > td.host, .draw-borders > td.service { font-weight: bold; text-align: center; }
+.history-table thead .no-border-th {
+    background: #fff !important;
+    font-size: 3px !important;
+    border-bottom: 0 !important;
+    border-top: 1px solid #000;
+}
+
 #ext_search { display: inline-block; float: left; width: auto; padding: 0; margin: 12px 0 12px 20px; }
 #ext_search img { display: inline-block; margin: 0 2px; width: 19px; height: 19px; cursor: pointer; }
 #ext_search .list-unack-icon,
@@ -155,15 +164,15 @@ copy
 #info-show-button { width: 96px !important; }
 #info-show-menu { width: 96px !important; }
 
-#grouping-button { width: 135px !important; }
-#grouping-menu { width: 135px !important; }
+#grouping-button { width: 137px !important; }
+#grouping-menu { width: 137px !important; }
 
 #tabsSelect-button { width: 150px !important; }
 #tabsSelect-menu { width: 150px !important; }
 
 #refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
 #refreshTimeSelect-button { width: auto !important; min-width: 122px; }
-#tabsSelect-button { width: auto !important; min-width: 150px; }
+#tabsSelect-button { width: auto !important; min-width: 146px; }
 
 #refreshTime, #normalGrouping, #tabs { float: right; }
 #refreshTimeSelect-button, #grouping-button, #info-show-button, #tabsSelect-button { outline: none; }
@@ -171,7 +180,6 @@ copy
 #refreshTimeSelect-menu li.ui-selectmenu-optgroup, #grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup, #tabsSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 #refreshTime .ui-selectmenu-button span.ui-selectmenu-text,
 #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text,
-#tabsSelect .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 26px; padding: 0 15px 0 3px; }
 #refreshTime .ui-selectmenu-button span.ui-icon,
 #normalGrouping .ui-selectmenu-button span.ui-icon,
 #tabsSelect .ui-selectmenu-button span.ui-icon { right: 0; }
@@ -190,8 +198,9 @@ copy
 #radio .top-normal-icon    { background: url('../images/all_icons.png') no-repeat -152px -19px; }
 #radio .top-emergency-icon { background: url('../images/all_icons.png') no-repeat -171px -19px; }
 #radio .top-planned-icon   { background: url('../images/all_icons.png') no-repeat -208px -19px; }
-#radio .ui-widget { font-size: 0.93em; }
+#radio .ui-widget { font-size: 0.85em; }
 #radio .ui-button-text-only .ui-button-text { padding: .4em .3em; }
+.ui-selectmenu-button span.ui-selectmenu-text { padding: 0.3em 1.7em 0.3em 0.3em; }
 
 #loading { width: 100%; margin: 40px auto; text-align: center; }
 #loading img { width: 100px; }

@@ -4235,9 +4235,18 @@ Grouping = {
 History = {
     tableData: {},
     serversList: '',
+    groupByService: 0,
+    groupByHost: 0,
+    refreshArray: [],
+    services: [],
+    hosts: [],
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
+        }
+
+        if (!Search.currentGroup) {
+            Search.currentGroup = '1';
         }
 
         if (!Search.currentTab || ['normal', 'acked', 'sched'].indexOf(Search.currentTab) == -1) {
@@ -4271,6 +4280,18 @@ History = {
                 History.drawTable();
             }
         });
+
+        $(document).on('click', '.draw-borders', function () {
+            var attr = $(this).attr('data-group');
+
+            if (localStorage.getItem(Search.currentTab + '_' + attr)) {
+                localStorage.removeItem(Search.currentTab + '_' + attr);
+            } else {
+                localStorage.setItem(Search.currentTab + '_' + attr, true);
+            }
+
+            History.drawTable();
+        });
     },
     drawButtons: function() {
         $('#' + Search.currentTab).prop('checked', true);
@@ -4279,9 +4300,47 @@ History = {
         $('#radio').buttonset();
         $('#radio-switch').buttonset();
 
-        $('#loading, #refreshTime, #normalGrouping, #mainTable').hide();
+        $('#loading, #mainTable').hide();
         $('#updatedAgo').closest('p').hide();
         $('#infoHolder, #historyContent').show();
+    },
+    drawSelects: function() {
+        $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
+        $('#grouping').selectmenu({
+            select: function (event, data) {
+                localStorage.setItem('currentGroup', data.item.value);
+                Search.currentGroup = localStorage.getItem('currentGroup');
+
+                History.drawTable();
+            }
+        });
+
+        var refreshList = '';
+        refreshList += '<option value="auto">Refresh: Auto</option>';
+        refreshList += '<optgroup label="---">';
+
+        $(History.refreshArray).each(function () {
+            refreshList += '<option value="'+ this.value +'">Refresh: '+ this.name +'</option>';
+        });
+
+        refreshList += '<option value="custom">Refresh: Custom</option>';
+        refreshList += '</optgroup>';
+        refreshList += '<optgroup label="----">';
+        refreshList += '<option value="10000000">Refresh: Disable</option>';
+        refreshList += '</optgroup>';
+
+        $('#refreshTimeSelect').html(refreshList);
+
+        var refreshValues = [];
+        $('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
+
+        if ($.inArray(Search.currentReload, refreshValues) !== -1) {
+            $('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
+        } else {
+            $('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
+        }
+
+        $('#refreshTimeSelect').selectmenu({ disabled: true });
     },
     drawDatePickers: function() {
         this.getTimestamp();
@@ -4325,12 +4384,58 @@ History = {
         });
     },
     drawTable: function() {
-        var data = History.tableData;
         var server = Search.currentServerTab;
         var severity = Search.currentTab;
+        var group = parseInt(Search.currentGroup);
 
+        History.drawEmptyTable();
+
+        if (!group) {
+            for (var i = 0; i < History.tableData[server][severity].length; i++) {
+                History.drawChildRow(History.tableData[server][severity][i], true, false, '');
+            }
+        } else {
+            for (var key in History.listGroups[server][severity]) {
+                History.drawChildRow(History.listGroups[server][severity][key].data, false, true, key);
+
+                if (localStorage.getItem(Search.currentTab + '_' + key)) {
+                    for (var i = 0; i < History.listGroups[server][severity][key].children.length; i++) {
+                        History.drawChildRow(History.listGroups[server][severity][key].children[i], false, false, key);
+                    }
+
+                    var row = "";
+                    row += "<tr " + ((key) ? ' data-group="'+ key +'"' : '') +">";
+                    row += "<td class='abb no-border-th'>&nbsp;</td>";
+                    row += "<td class='host no-border-th'>&nbsp;</td>";
+                    row += "<td class='service no-border-th'>&nbsp;</td>";
+                    row += "<td class='status no-border-th'>&nbsp;</td>";
+                    row += "<td class='last_check no-border-th'>&nbsp;</td>";
+                    row += "<td class='severity no-border-th'>&nbsp;</td>";
+                    row += "<td class='user no-border-th'>&nbsp;</td>";
+                    row += "<td class='status_information no-border-th'>&nbsp;</td>";
+                    if (Search.currentTab != 'normal') {
+                        row += "<td class='comment no-border-th'>&nbsp;</td>";
+                    }
+                    row += "</tr>";
+
+                    $('#historyContent .historyText .history-table thead').append(row);
+                }
+            }
+
+            for (var i = 0; i < History.listReturn[server][severity].length; i++) {
+                History.drawChildRow(History.listReturn[server][severity][i], true, false, '');
+            }
+        }
+
+        $("span[title]").tooltip({ track: true });
+        $(".ui-tooltip").remove();
+
+        History.setCounts();
+    },
+    drawEmptyTable: function() {
         var table = "";
         table += "<table class='history-table'>";
+        table += "<thead>";
         table += "<tr>";
         table += "<th class='abb-th'></th>";
         table += "<th class='host-th'>Host</th>";
@@ -4343,47 +4448,52 @@ History = {
         if (Search.currentTab != 'normal') {
             table += "<th class='comment-th'>Comment</th>";
         }
-
-        table += "</tr>";console.log(severity);console.log(data[server]);
-
-        for (var i = 0; i < data[server][severity].length; i++) {
-            var state = data[server][severity][i]['state'];
-            var severityTmp = (data[server][severity][i]['severity'] == 'planned_downtime') ? "planned" : data[server][severity][i]['severity'];
-            var userIcon = (data[server][severity][i]['avatar']) ? ('<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ data[server][severity][i]['avatar'] +'?size=20" width="19" height="19" />') : '';
-            var service = '<div class="likeTable"><ul><li>' + data[server][severity][i]['service'] + '</li><li>' + userIcon + '</li></ul></div>';
-
-            var info = '';
-            if (data[server][severity][i]['info']) {
-                if (state == 'WARNING' || state == 'UNKNOWN') {
-                    info = ' blue-text';
-                } else {
-                    info = ' brown-text';
-                }
-            }
-
-            table += "<tr>";
-            table += "<td class='abb'><span title='"+ server +"'>"+ data[server][severity][i]['server'].charAt(0) +"</span></td>";
-            table += "<td class='host "+ state + info +"'>"+ data[server][severity][i]['host'] +"</td>";
-            table += "<td class='service "+ state + info +"'>"+ service +"</td>";
-            table += "<td class='status "+ state + info +"'>"+ state.toUpperCase() +"</td>";
-            table += "<td class='last_check "+ state + info +"'>"+ data[server][severity][i]['date'] +"</td>";
-            table += "<td class='severity "+ state + info +"'>"+ severityTmp +"</td>";
-            table += "<td class='user "+ state + info +"'>"+ ((data[server][severity][i]['user']) ? data[server][severity][i]['user'] : '') +"</td>";
-            table += "<td class='status_information "+ state + info +"'>"+ data[server][severity][i]['output'] +"</td>";
-            if (Search.currentTab != 'normal') {
-                table += "<td class='comment " + state + info + "'>" + data[server][severity][i]['comment'] + "</td>";
-            }
-            table += "</tr>";
-        }
-
+        table += "</tr>";
+        table += "</thead>";
+        table += "<tbody>";
+        table += "</tbody>";
         table += "</table>";
 
         $('#historyContent .historyText').html(table);
+    },
+    drawChildRow: function(data, toBody, mainRow, key) {
+        var state = data['state'];
+        var severityTmp = (data['severity'] == 'planned_downtime') ? "planned" : data['severity'];
+        var userIcon = (data['avatar']) ? ('<img class="icons quickUnAck" src="https://www.gravatar.com/avatar/'+ data['avatar'] +'?size=20" width="19" height="19" />') : '';
+        var service = '<div class="likeTable"><ul><li>' + data['service'] + '</li><li>' + userIcon + '</li></ul></div>';
+        var info = '';
 
-        $("span[title]").tooltip({ track: true });
-        $(".ui-tooltip").remove();
+        if (data['info']) {
+            if (state == 'warning' || state == 'unknown') {
+                info = ' blue-text';
+            } else {
+                info = ' brown-text';
+            }
+        }
 
-        History.setCounts();
+        var cursor = (mainRow) ? ' class="draw-borders"' : '';
+        var dataGroup = (key) ? ' data-group="'+ key +'"' : '';
+
+        var row = "";
+        row += "<tr "+ cursor + dataGroup +">";
+        row += "<td class='abb'><span title='"+ Search.currentServerTab +"'>"+ ((data['server']) ? data['server'].charAt(0) : '') +"</span></td>";
+        row += "<td class='host "+ state + info +"'>"+ data['host'] +"</td>";
+        row += "<td class='service "+ state + info +"'>"+ service +"</td>";
+        row += "<td class='status "+ state + info +"'>"+ state.toUpperCase() +"</td>";
+        row += "<td class='last_check "+ state + info +"'>"+ data['date'] +"</td>";
+        row += "<td class='severity "+ state + info +"'>"+ severityTmp +"</td>";
+        row += "<td class='user "+ state + info +"'>"+ ((data['user']) ? data['user'] : '') +"</td>";
+        row += "<td class='status_information "+ state + info +"'>"+ data['output'] +"</td>";
+        if (Search.currentTab != 'normal') {
+            row += "<td class='comment " + state + info + "'>" + data['comment'] + "</td>";
+        }
+        row += "</tr>";
+
+        if (toBody) {
+            $('#historyContent .historyText .history-table tbody').append(row);
+        } else {
+            $('#historyContent .historyText .history-table thead').append(row);
+        }
     },
     getTimestamp: function() {
         this.timestamp = null;
@@ -4406,8 +4516,13 @@ History = {
             url:     'history.php',
             data:    {'list': 'servers'},
             success: function(data){
-                History.serversList = data.serversList;
+                History.serversList    = data.serversList;
+                History.groupByService = parseInt(data.groupByService);
+                History.groupByHost    = parseInt(data.groupByHost);
+                History.refreshArray   = data.refreshArray;
+
                 History.drawTabsList();
+                History.drawSelects();
             }
         });
     },
@@ -4422,6 +4537,7 @@ History = {
             data:    {'server': 'All', 'date': this.timestamp},
             success: function(data){
                 History.tableData = data;
+                History.setGroupingData();
                 History.drawTable();
             },
             error: function(data) {
@@ -4432,6 +4548,221 @@ History = {
                 $('#historyContent').show();
             }
         });
+    },
+    setGroupingData: function() {
+        History.fillHostsAndServices();
+        History.countHosts();
+        History.countServices();
+        History.prepareData();
+        History.sortParents();
+        History.setAbbreviation();
+    },
+    setAbbreviation: function() {
+        var data = History.listGroups;
+
+        for (var server in data) {
+            for (var severity in data[server]) {
+                for (var key in data[server][severity]) {
+                    var abbreviations = 0,
+                        childrens = data[server][severity][key].children.length;
+
+                    for (var i = 0; i < childrens; i++) {
+                        if (data[server][severity][key].data.server == data[server][severity][key].children[i].server) {
+                            abbreviations++;
+                        }
+                    }
+
+                    if (abbreviations != childrens) {
+                        History.listGroups[server][severity][key].data.server = '';
+                    }
+                }
+            }
+        }
+    },
+    sortParents: function() {
+        var data = History.listGroups;
+        var temp = {};
+
+        for (var server in data) {
+            temp[server] = {};
+            for (var severity in data[server]) {
+                var tmp = [];
+
+                for (var key in data[server][severity]) {
+                    var item = data[server][severity][key];
+                    item.key = key;
+                    tmp.push(item);
+                }
+
+                tmp.sort(function(a,b) {
+                    if (parseInt(a.data.count) < parseInt(b.data.count)) {
+                        return 1;
+                    } else if (parseInt(a.data.count) > parseInt(b.data.count)) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                });
+
+                var result = {};
+
+                for (var i = 0; i < tmp.length; i++) {
+                    result[tmp[i].key] = tmp[i];
+                }
+
+                temp[server][severity] = result;
+            }
+        }
+
+        History.listGroups = temp;
+    },
+    fillHostsAndServices: function() {
+        var data = History.tableData;
+        History.groupData = {};
+
+        for (var server in data) {
+            History.groupData[server] = {};
+            for (var severity in data[server]) {
+                History.groupData[server][severity] = { hosts: [], services: [] };
+                for (var i = 0; i < data[server][severity].length; i++) {
+                    History.groupData[server][severity]['hosts'].push(data[server][severity][i]['host']);
+                    History.groupData[server][severity]['services'].push(data[server][severity][i]['service']);
+                }
+            }
+        }
+    },
+    countHosts: function() {
+        var data = History.groupData;
+        History.hostsCount = {};
+
+        for (var server in data) {
+            History.hostsCount[server] = {};
+            for (var severity in data[server]) {
+                History.hostsCount[server][severity] = {};
+
+                var counts = [];
+                for (var i = 0; i < data[server][severity]['hosts'].length; i++) {
+                    counts[data[server][severity]['hosts'][i]] = 1 + (counts[data[server][severity]['hosts'][i]] || 0);
+                }
+
+                for (var i in counts){
+                    if (counts[i] >= History.groupByHost) {
+                        History.hostsCount[server][severity][i] = counts[i];
+                    }
+                }
+            }
+        }
+    },
+    countServices: function() {
+        var data = History.groupData;
+        History.servicesCount = {};
+
+        for (var server in data) {
+            History.servicesCount[server] = {};
+            for (var severity in data[server]) {
+                History.servicesCount[server][severity] = {};
+
+                var counts = [];
+                for (var i = 0; i < data[server][severity]['services'].length; i++) {
+                    counts[data[server][severity]['services'][i]] = 1 + (counts[data[server][severity]['services'][i]] || 0);
+                }
+
+                for (var i in counts){
+                    if (counts[i] >= History.groupByService) {
+                        History.servicesCount[server][severity][i] = counts[i];
+                    }
+                }
+            }
+        }
+    },
+    returnEmptyTheadObj: function() {
+        return {
+            'avatar':   null,
+            'check_id': null,
+            'comment':  null,
+            'date':     null,
+            'host':     null,
+            'info':     null,
+            'output':   null,
+            'server':   null,
+            'service':  null,
+            'severity': null,
+            'state':    null,
+            'state_id': null,
+            'user':     null,
+            'count':    null,
+            'type':     null,
+        };
+    },
+    prepareData: function() {
+        var data = History.tableData;
+        History.listGroups = {};
+        History.listReturn = {};
+
+        for (var server in data) {
+            History.listGroups[server] = {};
+            History.listReturn[server] = {};
+            for (var severity in data[server]) {
+                History.listGroups[server][severity] = [];
+                History.listReturn[server][severity] = [];
+
+                for (var i = 0; i < data[server][severity].length; i++) {
+                    var toReturn = true;
+
+                    if (History.hostsCount[server][severity][data[server][severity][i]['host']] !== undefined) {
+                        var host  = data[server][severity][i]['host'],
+                            tab   = data[server][severity][i]['server'],
+                            count = History.hostsCount[server][severity][host],
+                            key   = host + '|||' + count;
+
+                        if (History.listGroups[server][severity][key] === undefined) {
+                            var tmp = Object.assign({}, data[server][severity][i]);
+                            History.listGroups[server][severity][key] = {
+                                data: tmp,
+                                children: []
+                            };
+
+                            History.listGroups[server][severity][key].data.service = count;
+                            History.listGroups[server][severity][key].data.host    = host;
+                            History.listGroups[server][severity][key].data.count   = count;
+                            History.listGroups[server][severity][key].data.type    = 'host';
+                            History.listGroups[server][severity][key].data.server  = tab;
+                        }
+
+                        History.listGroups[server][severity][key].children.push(data[server][severity][i]);
+                        toReturn = false;
+                    }
+
+                    if (History.servicesCount[server][severity][data[server][severity][i]['service']] !== undefined) {
+                        var service = data[server][severity][i]['service'],
+                            tab     = data[server][severity][i]['server'],
+                            count   = History.servicesCount[server][severity][service],
+                            key     = count + '|||' + service;
+
+                        if (History.listGroups[server][severity][key] === undefined) {
+                            var tmp = Object.assign({}, data[server][severity][i]);
+                            History.listGroups[server][severity][key] = {
+                                data: tmp,
+                                children: []
+                            };
+
+                            History.listGroups[server][severity][key].data.service = service;
+                            History.listGroups[server][severity][key].data.host    = count;
+                            History.listGroups[server][severity][key].data.count   = count;
+                            History.listGroups[server][severity][key].data.type    = 'service';
+                            History.listGroups[server][severity][key].data.server  = tab;
+                        }
+
+                        History.listGroups[server][severity][key].children.push(data[server][severity][i]);
+                        toReturn = false;
+                    }
+
+                    if (toReturn) {
+                        History.listReturn[server][severity].push(data[server][severity][i]);
+                    }
+                }
+            }
+        }
     },
     returnMysqlDate: function(d) {
         if (!d) {
@@ -4465,6 +4796,9 @@ Stats = {
     selectedTo: null,
     serversList: '',
     usersList: '',
+    groupByService: 0,
+    groupByHost: 0,
+    refreshArray: [],
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
@@ -4563,8 +4897,11 @@ Stats = {
             url:     'stats.php',
             data:    {'list': 'servers'},
             success: function(data){
-                Stats.serversList = data.serversList;
-                Stats.usersList = data.usersList;
+                Stats.serversList    = data.serversList;
+                Stats.usersList      = data.usersList;
+                Stats.groupByService = data.groupByService;
+                Stats.groupByHost    = data.groupByHost;
+                Stats.refreshArray   = data.refreshArray;
                 Stats.drawTabsList();
                 Stats.drawSelects();
             }
@@ -4598,7 +4935,7 @@ Stats = {
         $('#radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput').hide();
         $('#radio-switch').buttonset();
 
-        $('#loading, #refreshTime, #normalGrouping, #mainTable').hide();
+        $('#loading, #mainTable').hide();
         $('#updatedAgo').closest('p').hide();
         $('#infoHolder, #historyContent').show();
 
@@ -4614,6 +4951,36 @@ Stats = {
         $(Stats.returnSelectList()).each(function (key, value) {
             $('#calendar_switch').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'">'+ value.name +'</option>');
         });
+
+        $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
+        $('#grouping').selectmenu({ disabled: true });
+
+        var refreshList = '';
+        refreshList += '<option value="auto">Refresh: Auto</option>';
+        refreshList += '<optgroup label="---">';
+
+        $(Stats.refreshArray).each(function () {
+            refreshList += '<option value="'+ this.value +'">Refresh: '+ this.name +'</option>';
+        });
+
+        refreshList += '<option value="custom">Refresh: Custom</option>';
+        refreshList += '</optgroup>';
+        refreshList += '<optgroup label="----">';
+        refreshList += '<option value="10000000">Refresh: Disable</option>';
+        refreshList += '</optgroup>';
+
+        $('#refreshTimeSelect').html(refreshList);
+
+        var refreshValues = [];
+        $('#refreshTime select option').each(function () { refreshValues.push($(this).val()); });
+
+        if ($.inArray(Search.currentReload, refreshValues) !== -1) {
+            $('#refreshTime select option[value="'+ Search.currentReload +'"]').attr('selected', 'selected');
+        } else {
+            $('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
+        }
+
+        $('#refreshTimeSelect').selectmenu({ disabled: true });
     },
     returnPeriod: function(period) {
         var from = moment(),

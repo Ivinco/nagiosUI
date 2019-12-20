@@ -173,7 +173,7 @@ class db
             exit();
         }
     }
-    public function logAction($data, $command, $server) {
+    public function logAction($data, $command, $server, $insertToDb = false) {
         $host    = (isset($data['host']))    ? $data['host']    : '';
         $service = (isset($data['service'])) ? $data['service'] : '';
         $author  = (isset($data['author']))  ? $data['author']  : '';
@@ -186,15 +186,22 @@ class db
         $command = $this->mysql->real_escape_string($command);
         $server  = $this->mysql->real_escape_string($server);
 
-        $sql = "
-            INSERT INTO `{$this->nagios_external_commands_log}`
-                (`logged`, `host`, `service`, `command`, `author`, `comment`, `server`) 
-            VALUES 
-                (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$command}', '{$author}', '{$comment}', '{$server}')
-        ";
+        if ($insertToDb) {
+            $sql = "
+                INSERT INTO `{$this->nagios_external_commands_log}`
+                    (`logged`, `host`, `service`, `command`, `author`, `comment`, `server`) 
+                VALUES 
+                    (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$command}', '{$author}', '{$comment}', '{$server}')
+            ";
 
-        if ($this->mysql->query($sql) !== true) {
-            echo "Error saving data: " . $this->mysql->error;
+            if ($this->mysql->query($sql) !== true) {
+                echo "Error saving data: " . $this->mysql->error;
+            }
+        }
+
+        if (in_array($command, ['ack', 'sched', 'unack', 'unsched'])) {
+            $xml = new xml;
+            $xml->updateMemcache($server, $data, $command);
         }
     }
 

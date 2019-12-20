@@ -82,7 +82,7 @@ class actions
         }
 
         $this->curlRequest('/acknowledge_problem', $data);
-        $this->db->logAction($data, 'ack', $this->server);
+        $this->db->logAction($data, 'ack', $this->server, true);
     }
     public function unAcknowledgeProblem($post)
     {
@@ -95,6 +95,7 @@ class actions
         }
 
         $this->curlRequest('/remove_acknowledgement', $data);
+        $this->db->logAction($data, 'unack', $this->server, false);
     }
     public function scheduleProblem($post)
     {
@@ -112,12 +113,13 @@ class actions
         }
 
         $this->curlRequest('/schedule_downtime', $data);
-        $this->db->logAction($data, 'sched', $this->server);
+        $this->db->logAction($data, 'sched', $this->server, true);
     }
     public function unScheduleProblem($post)
     {
         $data = [
             'host' => $post['host'],
+            'down_id' => $post['down_id'],
         ];
 
         if ($post['isHost'] == 'service') {
@@ -125,6 +127,7 @@ class actions
         }
 
         $this->curlRequest('/cancel_downtime/' . $post['down_id'], $data);
+        $this->db->logAction($data, 'unsched', $this->server, false);
     }
     public function recheckProblem($post)
     {

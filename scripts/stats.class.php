@@ -34,8 +34,20 @@ class stats
         array_unshift($users, 'Summary report', 'Nobody\'s shift');
 
         return [
-            'serversList' => 'All,'. $servers,
-            'usersList'   => $users,
+            'serversList'    => 'All,'. $servers,
+            'usersList'      => $users,
+            'groupByService' => 2,
+            'groupByHost'    => 11,
+            'refreshArray'   => [
+                [ 'value' =>  '10', 'name' => '10 sec' ],
+                [ 'value' =>  '20', 'name' => '20 sec' ],
+                [ 'value' =>  '40', 'name' => '40 sec' ],
+                [ 'value' =>  '60', 'name' =>  '1 min' ],
+                [ 'value' => '120', 'name' =>  '2 min' ],
+                [ 'value' => '180', 'name' =>  '3 min' ],
+                [ 'value' => '300', 'name' =>  '5 min' ],
+                [ 'value' => '600', 'name' => '10 min' ],
+            ],
         ];
     }
 

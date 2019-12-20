@@ -132,6 +132,87 @@ class xml
         $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 1200);
         $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 1200);
     }
+    public function updateMemcache($server, $data, $command)
+    {
+        if ($this->memcacheEnabled) {
+            $photo = "";
+
+            if (isset($data['author'])) {
+                $usersList = $this->db->usersList($server);
+                $photo = (isset($usersList[$data['author']])) ? $usersList[$data['author']] : '';
+                $photo = ($photo) ? $photo : ((isset($usersList[$data['default']]) ? $usersList[$data['default']] : ''));
+                $photo = md5($photo);
+            }
+
+            $servers = ['All', $server];
+            foreach ($servers as $serverForMemcache) {
+                $memcacheFullName = "nagiosUI_{$this->memcacheName}_{$serverForMemcache}";
+
+                $oldData = $this->memcache->get("{$memcacheFullName}_data");
+                $oldData = unserialize($oldData);
+                $xml = new SimpleXMLElement($oldData);
+
+                if (in_array($command, ['unsched'])) {
+                    foreach ($xml->children() as $value) {
+                        if ($value->downtime_id != $data['down_id'] || $value->tab != $server) {
+                            continue;
+                        }
+
+                        $value[0]->sched = 0;
+                        $value[0]->sched_start = "";
+                        $value[0]->sched_end = "";
+                        $value[0]->sched_duration = "";
+                        $value[0]->downtime_id = "";
+                        $value[0]->sched_last_temp = "";
+                        $value[0]->sched_last_author = "";
+                        $value[0]->sched_comment = "";
+                    }
+                }
+
+                if (in_array($command, ['unack', 'ack', 'sched'])) {
+                    foreach ($xml->children() as $value) {
+                        if ($value->host != $data['host'] || $value->service != $data['service'] || $value->tab != $server) {
+                            continue;
+                        }
+
+                        if ($command == 'unack') {
+                            $value[0]->acked = 0;
+                            $value[0]->ack_last_temp = "";
+                            $value[0]->ack_last_author = "";
+                            $value[0]->quick_ack_author = "";
+                            $value[0]->ack_comment = "";
+                        }
+
+                        if ($command == 'ack') {
+                            $value[0]->acked = 1;
+                            $value[0]->ack_last_temp = $data['comment'];
+                            $value[0]->ack_last_author = $data['author'];
+                            $value[0]->quick_ack_author = $photo;
+                            $value[0]->ack_comment = "'". $data['comment'] ."' by ". $data['author'] ."<br />added: " . date('M j H:i');
+                        }
+
+                        if ($command == 'sched') {
+                            $value[0]->sched = 1;
+                            $value[0]->sched_start = time();
+                            $value[0]->sched_end = time() + (int)$data['duration'];
+                            $value[0]->sched_duration = (int)$data['duration'];
+                            $value[0]->downtime_id = 0;
+                            $value[0]->sched_last_temp = "";
+                            $value[0]->sched_last_author = "";
+                            $value[0]->sched_comment = "'". $data['comment'] ."' by ". $data['author'] ."<br />added: " . date('M j H:i');
+                            $value[0]->quick_ack_author = $photo;
+                        }
+                    }
+                }
+
+                $newData = $xml->asXML();
+                $newData = serialize($newData);
+
+                $this->memcache->set("{$memcacheFullName}_verify", md5($newData), 0, 1200);
+                $this->memcache->set("{$memcacheFullName}_data", $newData, 0, 1200);
+            }
+        }
+    }
     private function generateXml()
     {
         $xmlContent  = '<alerts sort="1">';
@@ -497,6 +578,40 @@ class xml
 
     private function prepareHosts()
     {
+        $unfinishedAlerts = $this->db->historyGetUnfinishedAlerts($this->currentTabTmp);
+        foreach ($unfinishedAlerts as $tab => $data) {
+            foreach ($data as $alert) {
+                if ($alert['service'] == 'SERVER IS UP') {
+                    if (isset($this->statusFile['content']) && isset($this->statusFile['content'][$alert['host']])) {
+                        continue;
+                    }
+
+                    $this->db->historyAddHistory($alert['check_id'], 'unhandled', $this->statesArray[0], NULL, NULL, $alert['output']);
+                    continue;
+                }
+
+                if ($alert['service'] == 'FULL HOSTS LIST') {
+                    if (isset($this->statusFile['content']) && isset($this->statusFile['content'][$alert['host']])) {
+                        continue;
+                    }
+
+                    $this->db->historyAddHistory($alert['check_id'], 'unhandled', $this->statesArray[0], NULL, NULL, $alert['output']);
+                    continue;
+                }
+
+                if (
+                        isset($this->statusFile['content'])
+                     && isset($this->statusFile['content'][$alert['host']])
+                     && isset($this->statusFile['content'][$alert['host']]['services'])
+                     && isset($this->statusFile['content'][$alert['host']]['services'][$alert['service']])
+                ) {
+                    continue;
+                } else {
+                    $this->db->historyAddHistory($alert['check_id'], 'unhandled', $this->statesArray[0], NULL, NULL, $alert['output']);
+                }
+            }
+        }
+
         foreach ($this->statusFile['content'] as $host => $data) {
             $this->addHostToList($host, $data);
         }

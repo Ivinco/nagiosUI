@@ -79,38 +79,38 @@
             <input type="radio" id="normal" name="radio"/>
 			<label for="normal" id="normal-label">
 					<span class="top-normal-icon"></span>
-					<span class="small-hide">&#160;Normal</span>
-					<span class="xs-hide">&#160;(<em></em>)</span>
+					<span class="small-hide">&#160;Unhandled</span>
+					<span class="xs-hide">(<em></em>)</span>
 			</label>
             <input type="radio" id="acked" name="radio"/>
 			<label for="acked" id="acked-label">
 				<span class="top-ack-icon"></span>
-				<span class="small-hide">&#160;Acknowledged</span>
-				<span class="xs-hide">&#160;(<em></em>)</span>
+				<span class="small-hide">&#160;Acked</span>
+				<span class="xs-hide">(<em></em>)</span>
 			</label>
             <input type="radio" id="sched" name="radio"/>
 			<label for="sched" id="sched-label">
 				<span class="top-downtime-icon"></span>
-				<span class="small-hide">&#160;Scheduled downtime</span>
-				<span class="xs-hide">&#160;(<em></em>)</span>
+				<span class="small-hide">&#160;Sched</span>
+				<span class="xs-hide">(<em></em>)</span>
 			</label>
             <input type="radio" id="EMERGENCY" name="radio"/>
 			<label for="EMERGENCY" id="EMERGENCY-label">
 				<span class="top-emergency-icon"></span>
 				<span class="small-hide">&#160;EMERGENCY</span>
-				<span class="xs-hide">&#160;(<em></em>)</span>
+				<span class="xs-hide">(<em></em>)</span>
 			</label>
             <input type="radio" id="hosts" name="radio"/>
             <label for="hosts" id="hosts-label">
                 <span class="top-hosts-icon"></span>
                 <span class="small-hide">&#160;Hosts</span>
-                <span class="xs-hide">&#160;(<em></em>)</span>
+                <span class="xs-hide">(<em></em>)</span>
             </label>
 			<input type="radio" id="planned" name="radio"/>
 			<label for="planned" id="planned-label">
 				<span class="top-planned-icon"></span>
 				<span class="small-hide">&#160;Schedule a downtime</span>
-                <span class="xs-hide">&#160;(<em></em>)</span>
+                <span class="xs-hide">(<em></em>)</span>
 			</label>
         </div>
     </form>
