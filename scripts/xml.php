@@ -532,7 +532,7 @@ class xml
 
         if (!$this->statusFile) {
             http_response_code(404);
-            die('Status file not found.');
+            die(date("Y-m-d H:i:s") . " Status file not found.\n");
         }
     }
     private function verifyNagiosApi()
