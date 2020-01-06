@@ -164,7 +164,7 @@ class db
                 `state`    ENUM('ok','warning','critical','unknown') NOT NULL,
                 `user`     VARCHAR(255),
                 `comment`  TEXT,
-                `output`   VARCHAR(255) NOT NULL,
+                `output`   VARCHAR(1024) NOT NULL,
                 PRIMARY KEY (`date`, `check_id`)
             )
         ";
@@ -172,6 +172,14 @@ class db
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
+
+        $history_alter = "
+            ALTER TABLE
+                {$this->history}
+            CHANGE
+                `output` `output` VARCHAR(1024) NOT NULL;
+        ";
+        $this->mysql->query($history_alter);
     }
     public function logAction($data, $command, $server, $insertToDb = false) {
         $host    = (isset($data['host']))    ? $data['host']    : '';
@@ -644,6 +652,7 @@ class db
         $comment  = $this->mysql->real_escape_string($comment);
         $comment  = ($comment) ? "'$comment'" : "NULL";
         $output   = $this->mysql->real_escape_string($output);
+        $output   = substr($output, 0, 1024);
 
         $sql = "
             INSERT INTO 
