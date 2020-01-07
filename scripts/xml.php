@@ -142,7 +142,7 @@ class xml
         foreach ($this->hosts as $host => $services) {
             foreach ($services as $service => $attrs) {
 
-                if ($service == 'FULL HOSTS LIST') {
+                if ($service != 'FULL HOSTS LIST') {
                     $servicesCount++;
                 } else {
                     $hostsCount++;
