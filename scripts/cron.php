@@ -15,11 +15,13 @@ if ($memcacheEnabled) {
 function lock($filename) {
 
     $fp = fopen($filename, "w+");
-    if (!$fp) die(date("Y-m-d H:i:s") . " Unable to create lock file.\n");
+    if (!$fp) die(date("Y-m-d H:i:s") . " Unable to create lock file. Lock is already set.\n");
 
     $r = flock($fp, LOCK_EX | LOCK_NB,$l);
 
     if ($r & !$l) {
+        $start = time();
+        echo date("Y-m-d H:i:s") . " Started\n";
         $servers = getServersList();
         foreach ($servers as $server) {
             $xml = new xml;
@@ -31,6 +33,7 @@ function lock($filename) {
         flock($fp, LOCK_UN);
         unlink($filename);
         fclose($fp);
+        echo date("Y-m-d H:i:s") . " Finished in ". (time() - $start) ."s\n";
         exit();
     } else {
         fclose($fp);

@@ -77,8 +77,11 @@ class xml
         $this->setmemcacheFullName();
 
         if (!$this->getDataFromMemcache) {
+            $start = time();
+            $this->log($this->currentTab . ": started");
             $this->prepareDataToXml();
-            $this->addDataToMemcache();
+            list($hostsCount, $servicesCount) = $this->addDataToMemcache();
+            $this->log($this->currentTab . ": finished in ". (time() - $start) ."s. Processed: {$hostsCount} hosts and $servicesCount services.");
 
             return;
         }
@@ -98,6 +101,12 @@ class xml
         }
 
         return unserialize($this->memcache->get("{$this->memcacheFullName}_data"));
+    }
+
+    public function log($text) {
+        if (!$this->getDataFromMemcache) {
+            echo date("Y-m-d H:i:s") . " " . $text . "\n";
+        }
     }
 
     private function prepareDataToXml()
@@ -127,10 +136,26 @@ class xml
     }
     private function addDataToMemcache()
     {
+        $hostsCount = 0;
+        $servicesCount = 0;
+
+        foreach ($this->hosts as $host => $services) {
+            foreach ($services as $service => $attrs) {
+
+                if ($service == 'FULL HOSTS LIST') {
+                    $servicesCount++;
+                } else {
+                    $hostsCount++;
+                }
+            }
+        }
+
         $data = serialize($this->generateXml());
 
         $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 1200);
         $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 1200);
+
+        return [$hostsCount, $servicesCount];
     }
     public function updateMemcache($server, $data, $command)
     {
