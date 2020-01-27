@@ -16,11 +16,15 @@ if (!localStorage.getItem('currentServerTab')) {
 if (!localStorage.getItem('searchValue')) {
     localStorage.setItem('searchValue', '');
 }
+if (!localStorage.getItem('timeZone')) {
+	localStorage.setItem('timeZone', 'browser');
+}
 
 var tmpTab    = localStorage.getItem('currentTabNew'),
 	tmpReload = localStorage.getItem('currentReloadNew'),
     tmpServer = localStorage.getItem('currentServerTab'),
 	tmpGroup  = localStorage.getItem('currentGroup'),
+	tmpTimeZone  = localStorage.getItem('timeZone'),
 	tmpsearchValue = localStorage.getItem('searchValue');
 	
 localStorage.clear();
@@ -30,6 +34,7 @@ localStorage.setItem('currentGroup', tmpGroup);
 localStorage.setItem('canceledReloads', '0');
 localStorage.setItem('currentServerTab', tmpServer);
 localStorage.setItem('searchValue', tmpsearchValue);
+localStorage.setItem('timeZone', tmpTimeZone);
 
 lastTime = (new Date()).getTime();
 globalTime = 0;
@@ -37,6 +42,7 @@ globalReload = true;
 
 Search = {
     serversList: '',
+    timeZone: localStorage.getItem('timeZone'),
     drawTabsList: function() {
         var tabsList = '';
         var tabsData = this.serversList.split(',');
@@ -114,7 +120,7 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
         'ajax': {
-            url: 'json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue'),
+            url: 'json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue'),
             dataFilter: function(data){
                 var tabsArray = ['normal', 'acked', 'sched'];
 
@@ -374,6 +380,19 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 				} else {
 					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
 				}
+
+                $('#timeZoneBlock').show();
+                $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
+                $('#timeZoneSelect').selectmenu({
+                    select: function (event, data) {
+                        Search.stopReloads();
+
+                        localStorage.setItem('timeZone', data.item.value);
+                        Search.timeZone = localStorage.getItem('timeZone');
+
+                        Search.getNewData();
+                    }
+                });
 
 				$('#refreshTimeSelect').selectmenu({
 					select: function (event, data) {
@@ -1819,7 +1838,7 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
     Search.stopReloads();
     Search.startedGetData = true;
-    Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+    Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
         Search.resetAgo();
         Planned.getPlanned();
         Planned.showHidePlanned();
@@ -1982,7 +2001,7 @@ Search.init = function() {
 
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 
-		Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
@@ -1994,7 +2013,7 @@ Search.init = function() {
             localStorage.setItem('searchValue', val);
             Search.stopReloads();
 
-            Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
+            Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
                 Search.resetAgo();
                 Planned.showHidePlanned();
 
@@ -4064,7 +4083,7 @@ Grouping = {
                 localStorage.setItem('currentGroup', data.item.value);
                 Search.currentGroup = localStorage.getItem('currentGroup');
 
-                Search.allDataTable.ajax.url('json_new.php?server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+                Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
                     Search.resetAgo();
                     Planned.showHidePlanned();
                 }).order(Search.orderBy[Search.currentTab]);
@@ -4233,6 +4252,7 @@ Grouping = {
     }
 };
 History = {
+    timeZone: localStorage.getItem('timeZone'),
     tableData: {},
     serversList: '',
     groupByService: 0,
@@ -4341,6 +4361,22 @@ History = {
         }
 
         $('#refreshTimeSelect').selectmenu({ disabled: true });
+
+        console.log(History.timeZone);
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                localStorage.setItem('timeZone', data.item.value);
+                History.timeZone = localStorage.getItem('timeZone');
+
+                var value = $('#history_date').val();
+
+                if (value.length > 10 && Date.parse(value) != 'NaN') {
+                    window.location = window.location.href.split('?')[0] + "?t=" + (Date.parse(value) / 1000);
+                }
+            }
+        });
     },
     drawDatePickers: function() {
         this.getTimestamp();
@@ -4534,7 +4570,12 @@ History = {
         $.ajax({
             type:    'GET',
             url:     'history.php',
-            data:    {'server': 'All', 'date': this.timestamp},
+            data:    {
+                'server': 'All',
+                'date': this.timestamp,
+                'time_correction_type': this.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
             success: function(data){
                 History.tableData = data;
                 History.setGroupingData();

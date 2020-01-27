@@ -24,6 +24,9 @@ class json
 
         $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
 
+        $this->timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
+        $this->timeCorrectionDiff = ($this->timeCorrectionType == 'browser' && isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
+
         if (!$this->fullData) {
             http_response_code(404);
             die;
@@ -88,6 +91,12 @@ class json
             $showInNormal    = false;
             $schedPlanned    = true;
             $serviceOriginal = $service;
+
+            if ($this->timeCorrectionType) {
+                $lastCheck = $this->returnCorrectedDate($lastCheck, $this->timeCorrectionType, $tab, $this->timeCorrectionDiff);
+                $ackComment = $this->returnCorrectedComments($ackComment, $tab);
+                $schComment = $this->returnCorrectedComments($schComment, $tab);
+            }
 
             if (!$this->ac->verifyUser($service, $this->user)) {
                 continue;
@@ -200,6 +209,75 @@ class json
             );
         }
     }
+
+    private function returnCorrectedComments($comment, $tab) {
+        if (!$comment) {
+            return "";
+        }
+
+        $commentTmp = explode('<br /><br />', $comment);
+
+        foreach ($commentTmp as $key => $value) {
+            $parts = explode('<br />added: ', $value);
+            $parts[1] = $this->returnCorrectedCommentDate($parts[1], $this->timeCorrectionType, $tab, $this->timeCorrectionDiff);
+            $commentTmp[$key] = implode('<br />added: ', $parts);
+        }
+
+        return implode('<br /><br />', $commentTmp);
+    }
+    private function returnCorrectedDate($date, $type, $server, $diff = 0) {
+        $timeDiff = $this->returnDiff($type . 'Time', $server, $diff);
+
+        if ($timeDiff) {
+            $date = DateTime::createFromFormat('m-d-Y H:i:s', $date);
+
+            return date('m-d-Y H:i:s', strtotime($date->format('Y-m-d H:i:s') . ' ' . $timeDiff . ' seconds'));
+        }
+
+        return $date;
+    }
+    private function returnCorrectedCommentDate($date, $type, $server, $diff = 0) {
+        $timeDiff = $this->returnDiff($type . 'Time', $server, $diff);
+
+        if ($timeDiff) {
+            $date = DateTime::createFromFormat('M j H:i', $date);
+
+            $modify = (intval($date->format('n')) > intval(date('n'))) ? " -1 year" : "";
+            $modify .= " {$timeDiff} seconds";
+
+            return date('M j H:i', strtotime($date->format('Y-m-d H:i:s') . $modify));
+        }
+
+        return $date;
+    }
+    private function returnDiff($type, $server, $diff = 0) {
+        global $serversList, $timeZone;
+        $out = 0;
+
+        if (!isset($serversList[$server]) || !isset($serversList[$server]['timeZone'])) {
+            return 0;
+        }
+
+        if (in_array($type, ['browserTime', 'utcTime'])) {
+            date_default_timezone_set($serversList[$server]['timeZone']);
+            $out = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
+            date_default_timezone_set($timeZone);
+        }
+
+        if ($type == 'serverTime') {
+            if ($serversList[$server]['timeZone'] == $timeZone) {
+                return 0;
+            }
+
+            $serverTS = strtotime(gmdate("Y-m-d H:i:s"));
+            date_default_timezone_set($serversList[$server]['timeZone']);
+            $out = strtotime(gmdate("Y-m-d H:i:s")) - $serverTS;
+            date_default_timezone_set($timeZone);
+        }
+
+        return $out + $diff * 60;
+    }
+
     private function formatAdditional() {
         $this->additional = array(
             'nagiosConfigFile'  => $this->fullData['nagios-config-file'],
