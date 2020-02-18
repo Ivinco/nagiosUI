@@ -22,6 +22,9 @@ class stats
         $this->servers     = $this->setServers($this->server, $this->serversList);
         $this->timeZone    = $timeZone;
         $this->calendar    = new calendar;
+
+        $this->timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
+        $this->timeCorrectionDiff = ($this->timeCorrectionType == 'browser' && isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
     }
 
     public function returnTabsList()
@@ -179,18 +182,18 @@ class stats
     private function setFormatedDates()
     {
         $this->dateFrom   = (isset($_GET['date_from']) && $_GET['date_from']) ? $_GET['date_from'] : '';
-        $this->dateFrom   = ($this->isTimestamp($this->dateFrom)) ? $this->returnDateFromTimestamp($this->dateFrom) : $this->dateFrom;
+        $this->dateFrom   = ($this->isTimestamp($this->dateFrom)) ? $this->returnConstructDateFromTimestamp($this->dateFrom) : $this->dateFrom;
         $this->dateTo     = (isset($_GET['date_to'])   && $_GET['date_to'])   ? $_GET['date_to']   : '';
-        $this->dateTo     = ($this->isTimestamp($this->dateTo)) ? $this->returnDateFromTimestamp($this->dateTo) : $this->dateTo;
-        $this->dateFromTs = strtotime($this->dateFrom);
-        $this->dateToTs   = strtotime($this->dateTo);
+        $this->dateTo     = ($this->isTimestamp($this->dateTo)) ? $this->returnConstructDateFromTimestamp($this->dateTo) : $this->dateTo;
+        $this->dateFromTs = $this->returnTimestampWithTimezone($this->dateFrom);
+        $this->dateToTs   = $this->returnTimestampWithTimezone($this->dateTo);
     }
     private function setDates($from, $to)
     {
         $this->dateFrom   = $this->returnDateFromTimestamp($from);
         $this->dateTo     = $this->returnDateFromTimestamp($to);
-        $this->dateFromTs = $from;
-        $this->dateToTs   = $to;
+        $this->dateFromTs = $from + $this->returnDiff();
+        $this->dateToTs   = $to + $this->returnDiff();
     }
     private function setServers($server, $serversList) {
         $servers = [];
@@ -355,5 +358,34 @@ class stats
     private function addUnhandledTime($server, $diff)
     {
         $this->results[$server]['unhandled_time'] += $diff;
+    }
+
+    private function returnDiff() {
+        global $timeZone;
+
+        $serverTS = strtotime(gmdate("Y-m-d H:i:s"));
+        date_default_timezone_set($this->returnTimeZone());
+        $out = strtotime(gmdate("Y-m-d H:i:s")) - $serverTS;
+        date_default_timezone_set($timeZone);
+
+        return $out - $this->timeCorrectionDiff * 60;
+    }
+    private function returnTimeZone() {
+        global $timeZone;
+
+        if (in_array($this->timeCorrectionType, ['browser', 'utc'])) {
+            return 'UTC';
+        }
+
+        return $timeZone;
+    }
+    private function returnConstructDateFromTimestamp($timestamp) {
+        $date = new DateTime("@{$timestamp}");
+        $date->setTimezone(new DateTimeZone($this->returnTimeZone()));
+
+        return $date->format($this->dateTimeFormat);
+    }
+    private function returnTimestampWithTimezone($date) {
+        return strtotime($date) + $this->returnDiff();
     }
 }

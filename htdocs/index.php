@@ -150,7 +150,7 @@
             </tr>
         </thead>
     </table>
-	<div id="planned-maintenance">
+	<div id="planned-maintenance" style="clear: both;">
 		<div class="holder" style="width: 350px;">
 			<label for="maintenance-host">Host</label><br />
 			<input type="text" name="maintenance-host" id="maintenance-host" /><br />

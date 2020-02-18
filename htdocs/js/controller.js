@@ -4362,7 +4362,6 @@ History = {
 
         $('#refreshTimeSelect').selectmenu({ disabled: true });
 
-        console.log(History.timeZone);
         $('#timeZoneBlock').css('clear', 'both').show();
         $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
         $('#timeZoneSelect').selectmenu({
@@ -4832,6 +4831,7 @@ History = {
     }
 };
 Stats = {
+    timeZone: localStorage.getItem('timeZone'),
     selectedUsers: null,
     selectedFrom: null,
     selectedTo: null,
@@ -4881,7 +4881,12 @@ Stats = {
         $.ajax({
             type:    'GET',
             url:     'stats.php',
-            data:    {'date_from': Stats.selectedFrom + ' 00:00:00', 'date_to': Stats.selectedTo + ' 23:59:59'},
+            data:    {
+                'date_from': Stats.selectedFrom + ' 00:00:00',
+                'date_to': Stats.selectedTo + ' 23:59:59',
+                'time_correction_type': this.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
             success: function(data){
                 $('.historyText').html('');
 
@@ -4981,6 +4986,16 @@ Stats = {
         $('#infoHolder, #historyContent').show();
 
         $('.historyHeading').css('padding-top', '0');
+
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                localStorage.setItem('timeZone', data.item.value);
+                Stats.timeZone = localStorage.getItem('timeZone');
+                Stats.drawStats();
+            }
+        });
     },
     drawSelects: function() {
         $('#usersFilter').html('');

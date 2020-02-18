@@ -577,7 +577,10 @@ class xml
         if (curl_errno($curl)) {
             $error_msg = curl_error($curl);
 
-            if ($error_msg == 'connect() timed out!' || $error_msg == 'couldn\'t connect to host') {
+            if ($error_msg == 'connect() timed out!'
+                || $error_msg == 'couldn\'t connect to host'
+                || preg_match('#^connection timed out after?#i', $error_msg) === 1
+            ) {
                 $this->errorTabs[] = $this->currentTabTmp;
             }
         }
