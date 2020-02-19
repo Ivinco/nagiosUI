@@ -348,6 +348,7 @@ class xml
                     $this->actions->setServer($this->currentTabTmp);
 
                     $request = [
+                        'tab'     => $this->currentTab,
                         'host'    => $host,
                         'down_id' => $key,
                         'isHost'  => ($service != 'SERVER IS UP') ? 'service' : 'host',
