@@ -175,7 +175,12 @@ class xml
 
                 $oldData = $this->memcache->get("{$memcacheFullName}_data");
                 $oldData = unserialize($oldData);
-                $xml = new SimpleXMLElement($oldData);
+
+                try {
+                    $xml = new SimpleXMLElement($oldData);
+                } catch (Exception $e) {
+                    continue;
+                }
 
                 if (in_array($command, ['unsched'])) {
                     foreach ($xml->children() as $value) {
