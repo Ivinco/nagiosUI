@@ -314,7 +314,7 @@ class xml
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
                 $this->hosts[$host][$service]['notesUrl']        = $this->returnNotesUrl($host, $service);
-                $this->hosts[$host][$service]['last_check_date'] = date('m-d-Y H:i:s', $attrs['last_check']);
+                $this->hosts[$host][$service]['last_check_date'] = $this->getLastCheckDate($attrs['last_check'], 'm-d-Y H:i:s');
                 $this->hosts[$host][$service]['attempt']         = $attrs['attempts']/$attrs['max_attempts'];
                 $this->hosts[$host][$service]['host_or_service'] = ($service == "SERVER IS UP") ? "host" : "service";
                 $this->hosts[$host][$service]['userAvatar']      = (isset($usersArray[$comments['ackLastAuthor']]))   ? $usersArray[$comments['ackLastAuthor']]   : '';
@@ -325,11 +325,26 @@ class xml
             }
         }
     }
+    private function getLastCheckDate($time, $format = 'm-d-Y H:i:s') {
+        global $serversList, $timeZone;
+
+        $time = intval($time);
+
+        if (isset($serversList[$this->currentTabTmp]) && isset($serversList[$this->currentTabTmp]['timeZone'])) {
+            date_default_timezone_set($serversList[$this->currentTabTmp]['timeZone']);
+            $date = date($format, $time);
+            date_default_timezone_set($timeZone);
+
+            return $date;
+        }
+
+        return date('m-d-Y H:i:s', $time);
+    }
     private function prepareAckSchedComment($comment, $author, $date)
     {
         $result  = $this->parseUrls($comment);
         $result  = "'{$result}' by {$author}";
-        $result .= ($date) ? '<br />added: '. date('M j H:i', intval($date)) : '';
+        $result .= (intval($date)) ? ('<br />added: '. $this->getLastCheckDate($date, 'M j H:i')) : '';
 
         return $result;
     }
