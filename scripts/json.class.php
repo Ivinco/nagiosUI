@@ -85,6 +85,7 @@ class json
             $pending         = intval($pending);
             $nextCheck       = (!is_array($item['next_check']))           ? $item['next_check']           : implode(' ', $item['next_check']);
             $nextCheck       = intval($nextCheck);
+            $schedEnd        = intval($schedEnd);
             $hostOrService   = $item['host_or_service'];
             $plannedComment  = ['', ''];
             $isPlanned       = false;
@@ -93,7 +94,7 @@ class json
             $serviceOriginal = $service;
 
             if ($this->timeCorrectionType) {
-                $lastCheck = $this->returnCorrectedDate($lastCheck, $this->timeCorrectionType, $tab, $this->timeCorrectionDiff);
+                $lastCheck = $this->returnCorrectedDate($lastCheck, $this->timeCorrectionType, $tab, $this->timeCorrectionDiff, 'm-d-Y H:i:s');
                 $ackComment = $this->returnCorrectedComments($ackComment, $tab);
                 $schComment = $this->returnCorrectedComments($schComment, $tab);
             }
@@ -219,63 +220,61 @@ class json
 
         foreach ($commentTmp as $key => $value) {
             $parts = explode('<br />added: ', $value);
-            $parts[1] = $this->returnCorrectedCommentDate($parts[1], $this->timeCorrectionType, $tab, $this->timeCorrectionDiff);
+            $parts[1] = $this->returnCorrectedDate($parts[1], $this->timeCorrectionType, $tab, $this->timeCorrectionDiff, 'M j H:i');
             $commentTmp[$key] = implode('<br />added: ', $parts);
         }
 
         return implode('<br /><br />', $commentTmp);
     }
-    private function returnCorrectedDate($date, $type, $server, $diff = 0) {
-        $timeDiff = $this->returnDiff($type . 'Time', $server, $diff);
+    private function returnCorrectedDate($date, $type, $server, $diff = 0, $format = 'm-d-Y H:i:s') {
+        $timeDiff = $this->returnDiff($type, $server, $diff);
 
         if ($timeDiff) {
-            $date = DateTime::createFromFormat('m-d-Y H:i:s', $date);
+            $timestamp = $this->returnTimestamp($date, $format);
+            $timestamp += $timeDiff;
+            $date = date($format, $timestamp);
 
-            return date('m-d-Y H:i:s', strtotime($date->format('Y-m-d H:i:s') . ' ' . $timeDiff . ' seconds'));
+            return $date;
         }
 
         return $date;
     }
-    private function returnCorrectedCommentDate($date, $type, $server, $diff = 0) {
-        $timeDiff = $this->returnDiff($type . 'Time', $server, $diff);
+    private function returnTimestamp($date, $format) {
+        $date = DateTime::createFromFormat($format, $date);
 
-        if ($timeDiff) {
-            $date = DateTime::createFromFormat('M j H:i', $date);
-
-            $modify = (intval($date->format('n')) > intval(date('n'))) ? " -1 year" : "";
-            $modify .= " {$timeDiff} seconds";
-
-            return date('M j H:i', strtotime($date->format('Y-m-d H:i:s') . $modify));
+        if (intval($date->format('n')) > intval(date('n'))) {
+            $date->modify('-1 year');
         }
 
-        return $date;
+        $timestamp = strtotime($date->format('Y-m-d H:i:s'));
+
+        return $timestamp;
     }
     private function returnDiff($type, $server, $diff = 0) {
         global $serversList, $timeZone;
         $out = 0;
 
-        if (!isset($serversList[$server]) || !isset($serversList[$server]['timeZone'])) {
+        if (    !isset($serversList[$server])
+            || !isset($serversList[$server]['timeZone'])
+            || ($type == 'server' && $serversList[$server]['timeZone'] == $timeZone)
+        ) {
             return 0;
         }
 
-        if (in_array($type, ['browserTime', 'utcTime'])) {
+        if (in_array($type, ['browser', 'utc'])) {
             date_default_timezone_set($serversList[$server]['timeZone']);
             $out = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
             date_default_timezone_set($timeZone);
         }
 
-        if ($type == 'serverTime') {
-            if ($serversList[$server]['timeZone'] == $timeZone) {
-                return 0;
-            }
-
+        if ($type == 'server') {
             $serverTS = strtotime(gmdate("Y-m-d H:i:s"));
             date_default_timezone_set($serversList[$server]['timeZone']);
             $out = strtotime(gmdate("Y-m-d H:i:s")) - $serverTS;
             date_default_timezone_set($timeZone);
         }
 
-        return $out + $diff * 60;
+        return $diff * 60 + $out;
     }
 
     private function formatAdditional() {
