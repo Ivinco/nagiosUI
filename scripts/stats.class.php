@@ -72,13 +72,13 @@ class stats
     private function validate()
     {
         if ($this->dateFrom && !$this->validateDate($this->dateFrom)) {
-            $this->returnError('date_from format must be: "1970-01-01 00:00:00" or timestamp');
+            $this->returnError('date_from format must be: "1970-01-01 00:00:00"');
         }
         if ($this->dateTo && !$this->validateDate($this->dateTo)) {
-            $this->returnError('date_to format must be: "1970-01-01 00:00:00" or timestamp');
+            $this->returnError('date_to format must be: "1970-01-01 00:00:00"');
         }
         if (!$this->dateFrom || !$this->dateTo) {
-            $this->returnError('date_from and date_to must be set. Date format: "1970-01-01 00:00:00" or timestamp');
+            $this->returnError('date_from and date_to must be set. Date format: "1970-01-01 00:00:00"');
         }
     }
 
@@ -109,14 +109,15 @@ class stats
 
             foreach ($tmpUserData as $tmpRecord) {
                 foreach ($tmpRecord as $server => $serverData) {
-
-                    $this->fullResults[$user][$server] = [
-                        'alerts_count'     => 0,
-                        'unhandled_time'   => 0,
-                        'quick_acked_time' => 0,
-                        'reaction_time'    => 0,
-                        'reaction_alerts'  => 0,
-                    ];
+                    if (!isset($this->fullResults[$user][$server])) {
+                        $this->fullResults[$user][$server] = [
+                            'alerts_count'     => 0,
+                            'unhandled_time'   => 0,
+                            'quick_acked_time' => 0,
+                            'reaction_time'    => 0,
+                            'reaction_alerts'  => 0,
+                        ];
+                    }
 
                     $this->fullResults[$user][$server]['alerts_count']     += $serverData['alerts_count'];
                     $this->fullResults[$user][$server]['unhandled_time']   += $serverData['unhandled_time'];
@@ -172,28 +173,21 @@ class stats
         $d = DateTime::createFromFormat($this->dateTimeFormat, $date);
         return $d && $d->format($this->dateTimeFormat) === $date;
     }
-    private function isTimestamp($timestamp) {
-        if (strlen($timestamp) == 10 && strval(intval($timestamp)) == $timestamp) {
-            return true;
-        }
-
-        return false;
-    }
     private function setFormatedDates()
     {
         $this->dateFrom   = (isset($_GET['date_from']) && $_GET['date_from']) ? $_GET['date_from'] : '';
-        $this->dateFrom   = ($this->isTimestamp($this->dateFrom)) ? $this->returnConstructDateFromTimestamp($this->dateFrom) : $this->dateFrom;
+        $this->dateFrom   = $this->correctDate($this->dateFrom);
         $this->dateTo     = (isset($_GET['date_to'])   && $_GET['date_to'])   ? $_GET['date_to']   : '';
-        $this->dateTo     = ($this->isTimestamp($this->dateTo)) ? $this->returnConstructDateFromTimestamp($this->dateTo) : $this->dateTo;
-        $this->dateFromTs = $this->returnTimestampWithTimezone($this->dateFrom);
-        $this->dateToTs   = $this->returnTimestampWithTimezone($this->dateTo);
+        $this->dateTo     = $this->correctDate($this->dateTo);
+        $this->dateFromTs = $this->getTimestamp($this->dateFrom);
+        $this->dateToTs   = $this->getTimestamp($this->dateTo);
     }
     private function setDates($from, $to)
     {
         $this->dateFrom   = $this->returnDateFromTimestamp($from);
         $this->dateTo     = $this->returnDateFromTimestamp($to);
-        $this->dateFromTs = $from + $this->returnDiff();
-        $this->dateToTs   = $to + $this->returnDiff();
+        $this->dateFromTs = $from;
+        $this->dateToTs   = $to;
     }
     private function setServers($server, $serversList) {
         $servers = [];
@@ -209,7 +203,7 @@ class stats
     }
     private function returnDateFromTimestamp($timestamp) {
         $date = new DateTime("@{$timestamp}");
-        $date->setTimezone(new DateTimeZone('America/New_York'));
+        $date->setTimezone(new DateTimeZone('UTC'));
 
         return $date->format($this->dateTimeFormat);
     }
@@ -241,13 +235,15 @@ class stats
     }
     private function calcData() {
         foreach ($this->history as $server => $data) {
-            $this->results[$server] = [
-                'alerts_count'     => 0,
-                'unhandled_time'   => 0,
-                'quick_acked_time' => 0,
-                'reaction_time'    => 0,
-                'reaction_alerts'  => 0,
-            ];
+            if (!isset($this->results[$server])) {
+                $this->results[$server] = [
+                    'alerts_count'     => 0,
+                    'unhandled_time'   => 0,
+                    'quick_acked_time' => 0,
+                    'reaction_time'    => 0,
+                    'reaction_alerts'  => 0,
+                ];
+            }
 
             foreach ($data as $check_id => $dataList) {
                 $this->lastTs          = null;
@@ -264,9 +260,16 @@ class stats
                         continue;
                     }
 
+                    if ($ts > $this->dateToTs) {
+                        $ts = $this->dateToTs;
+                    }
+                    if ($ts < $this->dateFromTs) {
+                        $ts = $this->dateFromTs;
+                    }
+
                     if ($severity == 'unhandled' && $state != 'ok') {
                         $this->alertStarted = true;
-                        $this->lastTs = ($this->dateFromTs > $ts ? $this->dateFromTs : $ts);
+                        $this->lastTs = $ts;
                         $this->results[$server]['alerts_count']++;
                     }
 
@@ -360,32 +363,29 @@ class stats
         $this->results[$server]['unhandled_time'] += $diff;
     }
 
-    private function returnDiff() {
-        global $timeZone;
+    private function correctDate($date)
+    {
+        if ($date) {
+            $ts = $this->getTimestamp($date);
+            $date = new DateTime("@{$ts}");
+            $date->setTimezone(new DateTimeZone('UTC'));
 
-        $serverTS = strtotime(gmdate("Y-m-d H:i:s"));
-        date_default_timezone_set($this->returnTimeZone());
-        $out = strtotime(gmdate("Y-m-d H:i:s")) - $serverTS;
-        date_default_timezone_set($timeZone);
-
-        return $out - $this->timeCorrectionDiff * 60;
-    }
-    private function returnTimeZone() {
-        global $timeZone;
-
-        if (in_array($this->timeCorrectionType, ['browser', 'utc'])) {
-            return 'UTC';
+            return $date->format('Y-m-d H:i:s');
         }
 
-        return $timeZone;
+        return $date;
     }
-    private function returnConstructDateFromTimestamp($timestamp) {
-        $date = new DateTime("@{$timestamp}");
-        $date->setTimezone(new DateTimeZone($this->returnTimeZone()));
+    private function getDiffToUtc()
+    {
+        $out = strtotime(date("Y-m-d H:i:s")) - strtotime(gmdate("Y-m-d H:i:s"));
 
-        return $date->format($this->dateTimeFormat);
+        return $out + $this->timeCorrectionDiff * 60;
     }
-    private function returnTimestampWithTimezone($date) {
-        return strtotime($date) + $this->returnDiff();
+    private function getTimestamp($date)
+    {
+        $date = DateTime::createFromFormat('Y-m-d H:i:s', $date, new DateTimeZone('UTC'));
+        $ts = $date->getTimestamp() - $this->getDiffToUtc();
+
+        return $ts;
     }
 }

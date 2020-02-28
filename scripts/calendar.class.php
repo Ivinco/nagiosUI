@@ -56,8 +56,6 @@ class calendar
         $this->timeFinish = $finish;
     }
     public function getEvents() {
-        $dtz = new DateTimeZone($this->timeZone);
-
         $optParams = array(
             'maxResults' => 2500,
             'orderBy' => 'startTime',

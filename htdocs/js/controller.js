@@ -4935,6 +4935,10 @@ Stats = {
             result += seconds + 's';
         }
 
+        if (!result) {
+            result = '-';
+        }
+
         return result;
     },
     getServersList: function() {

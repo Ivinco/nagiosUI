@@ -6,7 +6,8 @@ $server   = (isset($_GET['server'])    && $_GET['server'])    ? $_GET['server'] 
 $date     = (isset($_GET['date'])      && $_GET['date'])      ? $_GET['date']      : '';
 $list     = (isset($_GET['list'])      && $_GET['list'])      ? $_GET['list']      : '';
 $timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
-$timeCorrectionDiff = (isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
+$timeCorrectionDiff = ($timeCorrectionType == 'browser' && isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
+$timeCorrectionDiffTmp = (isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
 
 ob_start('ob_gzhandler');
 header('Content-Type: application/json');
@@ -44,7 +45,7 @@ if ($date && !validateDate($date)) {
 $db       = new db;
 $history  = [];
 $servers  = returnServers($server, $serversList);
-$date     = (isTimestamp($date)) ? returnDateFromTimestamp($date) : $date;
+$date     = (isTimestamp($date)) ? returnDateForDb($date) : $date;
 
 foreach ($servers as $item) {
     $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $date);
@@ -59,8 +60,8 @@ $all = [
 foreach ($history as $server => $serverData) {
     foreach ($serverData as $tab => $tabData) {
         foreach ($tabData as $key => $row) {
-            $history[$server][$tab][$key]['date'] = returnCorrectedDate($row['date']);
-            $row['date'] = returnCorrectedDate($row['date']);
+            $history[$server][$tab][$key]['date'] = returnCorrectedDate($row['date'], $row['server']);
+            $row['date'] = returnCorrectedDate($row['date'], $row['server']);
             $all[$tab][] = $row;
         }
     }
@@ -120,19 +121,65 @@ function isTimestamp($timestamp) {
 
     return false;
 }
-function returnDiff() {
+function returnTimestamp($date, $format) {
+    $date = DateTime::createFromFormat($format, $date);
+
+    if (intval($date->format('n')) > intval(date('n'))) {
+        $date->modify('-1 year');
+    }
+
+    $timestamp = strtotime($date->format('Y-m-d H:i:s'));
+
+    return $timestamp;
+}
+function returnCorrectedDate($date, $server, $format = 'Y-m-d H:i:s') {
+    $timeDiff = returnDateDiff($server);
+
+    if ($timeDiff) {
+        $timestamp = returnTimestamp($date, $format);
+        $timestamp += $timeDiff;
+        $date = date($format, $timestamp);
+
+        return $date;
+    }
+
+    return $date;
+}
+function returnDateForDb($timestamp) {
+    global $timeCorrectionType, $timeCorrectionDiffTmp;
+
+    if ($timeCorrectionType != 'browser') {
+        $timestamp += $timeCorrectionDiffTmp * 60;
+    }
+    $timestamp -= returnDiffToDb();
+
+    $date = new DateTime("@{$timestamp}");
+    $date->setTimezone(new DateTimeZone('UTC'));
+
+    return $date->format('Y-m-d H:i:s');
+}
+function returnDiffToDb() {
+    global $timeCorrectionType;
+
+    if ($timeCorrectionType == 'server') {
+        return 0;
+    }
+
     return strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
 }
-function returnCorrectedDate($date) {
-    global $timeZone, $timeCorrectionDiff;
+function returnDateDiff($server) {
+    global $serversList, $timeZone, $timeCorrectionType, $timeCorrectionDiff;
 
-    date_default_timezone_set('UTC');
-    $date = strtotime($date);
-    date_default_timezone_set($timeZone);
+    if (    !isset($serversList[$server])
+        || !isset($serversList[$server]['timeZone'])
+        || ($timeCorrectionType == 'server' && $serversList[$server]['timeZone'] == $timeZone)
+    ) {
+        return 0;
+    }
 
-    $ts = $date - $timeCorrectionDiff * 60;
+    $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
 
-    return returnDateFromTimestamp($ts);
+    return $timeCorrectionDiff * 60 + $diff;
 }
 function returnDateFromTimestamp($timestamp) {
     global $timeCorrectionType, $timeCorrectionDiff, $timeZone;
