@@ -45,23 +45,24 @@ if ($date && !validateDate($date)) {
 $db       = new db;
 $history  = [];
 $servers  = returnServers($server, $serversList);
-$date     = (isTimestamp($date)) ? returnDateForDb($date) : $date;
 
 foreach ($servers as $item) {
-    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $date);
+    $serverDate = (isTimestamp($date)) ? returnDateForDb($item, $date) : $date;
+    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $serverDate);
 }
 
 $all = [
-    'normal' => [],
-    'acked'  => [],
-    'sched'  => [],
+    'normal'    => [],
+    'acked'     => [],
+    'sched'     => [],
+    'EMERGENCY' => [],
 ];
 
 foreach ($history as $server => $serverData) {
     foreach ($serverData as $tab => $tabData) {
         foreach ($tabData as $key => $row) {
-            $history[$server][$tab][$key]['date'] = returnCorrectedDate($row['date'], $row['server']);
-            $row['date'] = returnCorrectedDate($row['date'], $row['server']);
+            $history[$server][$tab][$key]['date'] = $row['date'] = returnCorrectedDate($row['date'], $row['server']);
+            $history[$server][$tab][$key]['tz']   = $row['tz']   = returnTZ($row['server']);
             $all[$tab][] = $row;
         }
     }
@@ -133,6 +134,12 @@ function returnTimestamp($date, $format) {
     return $timestamp;
 }
 function returnCorrectedDate($date, $server, $format = 'Y-m-d H:i:s') {
+    global $timeCorrectionType;
+
+    if ($timeCorrectionType == 'server') {
+        return returnServerDate($server, $date, $format);
+    }
+
     $timeDiff = returnDateDiff($server);
 
     if ($timeDiff) {
@@ -145,7 +152,7 @@ function returnCorrectedDate($date, $server, $format = 'Y-m-d H:i:s') {
 
     return $date;
 }
-function returnDateForDb($timestamp) {
+function returnDateForDb($server, $timestamp) {
     global $timeCorrectionType, $timeCorrectionDiffTmp;
 
     if ($timeCorrectionType != 'browser') {
@@ -153,7 +160,32 @@ function returnDateForDb($timestamp) {
     }
     $timestamp -= returnDiffToDb();
 
+    if ($timeCorrectionType == 'server') {
+        $date = new DateTime("@{$timestamp}");
+        $date->setTimezone(new DateTimeZone(returnTZ($server)));
+
+        return $date->format('Y-m-d H:i:s');
+    }
+
     $date = new DateTime("@{$timestamp}");
+    $date->setTimezone(new DateTimeZone('UTC'));
+
+    return $date->format('Y-m-d H:i:s');
+}
+function returnTZ($server) {
+    global $serversList;
+
+    $tz = 'UTC';
+
+    if (isset($serversList[$server]) && isset($serversList[$server]['timeZone'])) {
+        return $serversList[$server]['timeZone'];
+    }
+
+    return $tz;
+}
+function returnServerDate($server, $date, $format) {
+    $timeZone = returnTZ($server);
+    $date = DateTime::createFromFormat($format, $date, new DateTimeZone($timeZone));
     $date->setTimezone(new DateTimeZone('UTC'));
 
     return $date->format('Y-m-d H:i:s');

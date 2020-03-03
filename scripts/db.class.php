@@ -730,9 +730,10 @@ class db
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         $list = [
-            'normal' => [],
-            'acked'  => [],
-            'sched'  => [],
+            'normal'    => [],
+            'acked'     => [],
+            'sched'     => [],
+            'EMERGENCY' => [],
         ];
 
         while ($row = $result->fetch_assoc()){
@@ -744,6 +745,10 @@ class db
 
             if ($row['severity'] == 'planned_downtime' || $row['severity'] == 'sched') {
                 $tab = 'sched';
+            }
+
+            if (strpos(implode(' ', $row), 'EMERGENCY') !== false) {
+                $tab = 'EMERGENCY';
             }
 
             $row['state_id'] = $this->returnState($row['state']);

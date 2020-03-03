@@ -4273,7 +4273,7 @@ History = {
             Search.currentGroup = '1';
         }
 
-        if (!Search.currentTab || ['normal', 'acked', 'sched'].indexOf(Search.currentTab) == -1) {
+        if (!Search.currentTab || ['normal', 'acked', 'sched', 'EMERGENCY'].indexOf(Search.currentTab) == -1) {
             Search.currentTab = 'normal';
         }
 
@@ -4296,7 +4296,7 @@ History = {
                 window.location = window.location.href.split('?')[0] + "?t=" + (Date.parse(value) / 1000);
             }
         });
-        $('#normal, #acked, #sched').on('click', function() {
+        $('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
             if (Search.currentTab != $(this).attr('id')) {
                 Search.currentTab = $(this).attr('id');
                 localStorage.setItem('currentTabNew', Search.currentTab);
@@ -4320,7 +4320,7 @@ History = {
     drawButtons: function() {
         $('#' + Search.currentTab).prop('checked', true);
         $('#history').prop('checked', true);
-        $('#EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.statsInput').hide();
+        $('#hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.statsInput').hide();
         $('#radio').buttonset();
         $('#radio-switch').buttonset();
 
@@ -4519,7 +4519,13 @@ History = {
         row += "<td class='host "+ state + info +"'>"+ data['host'] +"</td>";
         row += "<td class='service "+ state + info +"'>"+ service +"</td>";
         row += "<td class='status "+ state + info +"'>"+ state.toUpperCase() +"</td>";
-        row += "<td class='last_check "+ state + info +"'>"+ data['date'] +"</td>";
+
+        if (History.timeZone == 'server') {
+            row += "<td class='last_check "+ state + info +"'><span title='Nagios time zone: " + data['tz'] + "'>" + data['date'] + "</span></td>";
+        } else {
+            row += "<td class='last_check "+ state + info +"'>"+ data['date'] +"</td>";
+        }
+
         row += "<td class='severity "+ state + info +"'>"+ severityTmp +"</td>";
         row += "<td class='user "+ state + info +"'>"+ ((data['user']) ? data['user'] : '') +"</td>";
         row += "<td class='status_information "+ state + info +"'>"+ data['output'] +"</td>";
@@ -4832,6 +4838,9 @@ History = {
 
         $('#sched-label .xs-hide').show();
         $('#sched-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
+
+        $('#EMERGENCY-label .xs-hide').show();
+        $('#EMERGENCY-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
     }
 };
 Stats = {
