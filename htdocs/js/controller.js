@@ -212,15 +212,19 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 					},
 				},
 			},
-			{
-				data: {
-					_:     'last.name',
-					sort:  'last.order',
-					type:  'string',
-				},
-				className: 'last_check',
-			},
-			{
+            {
+                data: 'last',
+                className: 'last_check',
+                render: {
+                    _:     'last.name',
+                    sort:  'last.order',
+                    type:  'string',
+                    display: function ( data, type, full, meta ) {
+                        return (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + data.tz + '">' + data.name + '</span>') : data.name;
+                    },
+                }
+            },
+            {
                 data:      'duration',
                 className: 'duration',
                 render: {

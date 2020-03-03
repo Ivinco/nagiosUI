@@ -51,6 +51,8 @@ class json
     }
 
     private function formatJson() {
+        global $serversList;
+
         if (!isset($this->fullData['alert'])) {
             return;
         }
@@ -92,8 +94,9 @@ class json
             $showInNormal    = false;
             $schedPlanned    = true;
             $serviceOriginal = $service;
+            $tz = (isset($serversList[$tab]) && isset($serversList[$tab]['timeZone'])) ? $serversList[$tab]['timeZone'] : '';
 
-            if ($this->timeCorrectionType) {
+            if ($this->timeCorrectionType && $this->timeCorrectionType != 'server') {
                 $lastCheck = $this->returnCorrectedDate($lastCheck, $this->timeCorrectionType, $tab, $this->timeCorrectionDiff, 'm-d-Y H:i:s');
                 $ackComment = $this->returnCorrectedComments($ackComment, $tab);
                 $schComment = $this->returnCorrectedComments($schComment, $tab);
@@ -180,6 +183,7 @@ class json
                 'last'      => array(
                     'name'  => ($pending) ? '' : $lastCheck,
                     'order' => $lastCheckS,
+                    'tz'    => $tz,
                 ),
                 'duration'  => array(
                     'name'  => ($pending) ? '' : $duration,
