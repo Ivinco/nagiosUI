@@ -4853,6 +4853,8 @@ Stats = {
     groupByService: 0,
     groupByHost: 0,
     refreshArray: [],
+    statsData: null,
+    lastPeriod: null,
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
@@ -4885,7 +4887,12 @@ Stats = {
             }
 
             if (Stats.selectedFrom && Stats.selectedTo && Stats.selectedUsers) {
-                Stats.drawStats();
+                if (!Stats.statsData || Stats.lastPeriod != Stats.selectedFrom + '-' + Stats.selectedTo) {
+                    Stats.lastPeriod = Stats.selectedFrom + '-' + Stats.selectedTo
+                    Stats.drawStats();
+                } else {
+                    Stats.drawStatsHtml();
+                }
             }
         });
     },
@@ -4898,29 +4905,35 @@ Stats = {
                 'date_from': Stats.selectedFrom + ' 00:00:00',
                 'date_to': Stats.selectedTo + ' 23:59:59',
                 'time_correction_type': this.timeZone,
-                'time_correction_diff': moment().utcOffset()
+                'time_correction_diff': moment().utcOffset(),
+                'from': moment.utc(Stats.selectedFrom + ' 00:00:00').unix(),
+                'to': moment.utc(Stats.selectedTo + ' 23:59:59').unix(),
             },
             success: function(data){
-                $('.historyText').html('');
-
-                var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59. ('+ Stats.selectedUsers.join(', ') +')</h4>';
-                $(Stats.selectedUsers).each(function (key, value) {
-                    if (value in data && Search.currentServerTab in data[value]) {
-                        html += '<p><br />'+ value +' ('+ Search.currentServerTab +')</p>';
-                        html += '<ul>';
-                        html += '<li>unhandled alerts time: '+ Stats.returnDayHour(data[value][Search.currentServerTab]['unhandled_time']) +'</li>';
-                        html += '<li>number of alerts: '+ data[value][Search.currentServerTab]['alerts_count'] +'</li>';
-                        html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(data[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
-                        html += '<li>reaction time (avg): '+ Stats.returnDayHour(data[value][Search.currentServerTab]['reaction_avg']) +'</li>';
-                        html += '</ul>';
-                    } else {
-                        html += '<p><br />No stats for: '+ value +'</p>';
-                    }
-                });
-
-                $('.historyText').html(html);
+                Stats.statsData = data;
+                Stats.drawStatsHtml();
             }
         });
+    },
+    drawStatsHtml: function() {
+        $('.historyText').html('');
+
+        var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59. ('+ Stats.selectedUsers.join(', ') +')</h4>';
+        $(Stats.selectedUsers).each(function (key, value) {
+            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
+                html += '<p><br />'+ value +' ('+ Search.currentServerTab +')</p>';
+                html += '<ul>';
+                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
+                html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
+                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
+                html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
+                html += '</ul>';
+            } else {
+                html += '<p><br />No stats for: '+ value +'</p>';
+            }
+        });
+
+        $('.historyText').html(html);
     },
     returnDayHour: function(seconds) {
         var result  = '';
@@ -4988,6 +5001,7 @@ Stats = {
                     localStorage.setItem('currentServerTab', Search.currentServerTab);
                     $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
                     $('#tabsSelect').selectmenu('refresh');
+                    $('#filterStats').trigger( "click" );
                 }
             }
         });

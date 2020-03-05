@@ -62,7 +62,7 @@ class calendar
             'singleEvents' => TRUE,
             'timeMin' => date('c', $this->timeStart),
             'timeMax' => date('c', $this->timeFinish),
-            'timeZone' => $this->timeZone,
+            'timeZone' => 'Europe/London',
             'fields' => 'items(end,start,summary),summary,timeZone'
         );
 
