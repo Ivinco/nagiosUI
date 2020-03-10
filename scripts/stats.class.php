@@ -333,6 +333,10 @@ class stats
     {
         $this->from = $this->getTs('from');
         $this->to   = $this->getTs('to');
+
+        if (time() < $this->to) {
+            $this->to = time();
+        }
     }
     private function setServers($server, $serversList) {
         $servers = [];
