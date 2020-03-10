@@ -5009,7 +5009,7 @@ Stats = {
     drawButtons: function() {
         $('#' + Search.currentTab).prop('checked', true);
         $('#stats').prop('checked', true);
-        $('#radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput').hide();
+        $('#timeZoneBlock, #radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput').hide();
         $('#radio-switch').buttonset();
 
         $('#loading, #mainTable').hide();
@@ -5017,16 +5017,6 @@ Stats = {
         $('#infoHolder, #historyContent').show();
 
         $('.historyHeading').css('padding-top', '0');
-
-        $('#timeZoneBlock').css('clear', 'both').show();
-        $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
-        $('#timeZoneSelect').selectmenu({
-            select: function (event, data) {
-                localStorage.setItem('timeZone', data.item.value);
-                Stats.timeZone = localStorage.getItem('timeZone');
-                Stats.drawStats();
-            }
-        });
     },
     drawSelects: function() {
         $('#usersFilter').html('');

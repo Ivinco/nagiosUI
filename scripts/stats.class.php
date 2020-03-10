@@ -59,14 +59,12 @@ class stats
         $this->setFormatedDates();
         $this->validate();
         $this->runCalendar();
-
-        $this->fullResults['Summary report'] = $this->getStats();
-        $this->fullResults['Nobody\'s shift'] = $this->fullResults['Summary report'];
-
-        $this->getStatsByUsers();
+        $this->getStats();
+        $this->calculateAllData();
+        $this->calculateNobodysShift();
         $this->setAverages();
 
-        return $this->fullResults;
+        return $this->results;
     }
 
     private function validate()
@@ -95,112 +93,234 @@ class stats
 
         return 0;
     }
-    private function returnDateForDb($server, $timestamp) {
-        if ($this->timeCorrectionType == 'browser') {
-            $timestamp -= $this->timeCorrectionDiff * 60;
-        }
-
-        if ($this->timeCorrectionType == 'server') {
-            $date = new DateTime("@{$timestamp}");
-            $date->setTimezone(new DateTimeZone($this->returnTZ($server)));
-
-            return $date->format('Y-m-d H:i:s');
-        }
+    private function returnDateForDb($timestamp) {
+        $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
+        $timestamp -= $diff;
 
         $date = new DateTime("@{$timestamp}");
-        $date->setTimezone(new DateTimeZone($this->timeZone));
+        $date->setTimezone(new DateTimeZone('UTC'));
 
         return $date->format('Y-m-d H:i:s');
-    }
-    private function returnTZ($server) {
-        $tz = 'UTC';
-
-        if (isset($this->serversList[$server]) && isset($this->serversList[$server]['timeZone'])) {
-            return $this->serversList[$server]['timeZone'];
-        }
-
-        return $tz;
     }
 
     private function getStats()
     {
         $this->history = [];
-        $this->results = [];
         $this->getStatsDataFromDb();
-        $this->calcData();
+        $this->results = $this->getStatsByUser();
+        $this->results['Summary report'] = $this->calculateByServer($this->from, $this->to, 'Summary report', []);
+        $this->results['Nobody\'s shift'] = $this->results['Summary report'];
 
         return $this->results;
+    }
+    private function calculateByServer($from, $to, $user, $stats)
+    {
+        if (!isset($stats[$user])) {
+            $stats[$user] = [];
+        }
+
+        foreach ($this->history as $server => $data) {
+            if (!isset($stats[$user][$server])) {
+                $stats[$user][$server] = [
+                    'alerts_count' => 0,
+                    'unhandled_time' => 0,
+                    'quick_acked_time' => 0,
+                    'reaction_time' => 0,
+                    'reaction_alerts' => 0,
+                ];
+            }
+
+            foreach ($data as $check_id => $dataList) {
+                $alerts    = [];
+                $lastAlert = null;
+
+                foreach ($dataList as $key => $record) {
+                    $ts = $record['ts'];
+
+                    if ($record['info']) {
+                        continue;
+                    }
+
+                    if ($ts > $from && $ts < $to) {
+                        if (!$alerts && $lastAlert) {
+                            $lastAlert['ts'] = $from;
+                            $alerts[] = $lastAlert;
+                        }
+
+                        $alerts[] = $record;
+                    }
+
+                    $lastAlert = $record;
+                }
+
+                if (count($alerts) == 1 && $alerts[0]['state'] == 'ok') {
+                    unset($alerts[0]);
+                }
+
+                if ($alerts) {
+                    $last = end($alerts);
+                    if ($last['state'] != 'ok') {
+                        $last['state']    = 'ok';
+                        $last['severity'] = 'unhandled';
+                        $last['ts']       = $to;
+
+                        $alerts[] = $last;
+                    }
+                }
+
+                $stats[$user][$server] = $this->calculateByCheckId($stats[$user][$server], $alerts, $from, $to);
+            }
+        }
+
+        return $stats[$user];
+    }
+    private function getStatsByUser()
+    {
+        $stats = [];
+
+        foreach ($this->usersShifts as $user => $dates) {
+            foreach ($dates as $date) {
+                $stats[$user] = $this->calculateByServer($date['start'], $date['finish'], $user, $stats);
+            }
+        }
+
+        return $stats;
+    }
+    private function calculateByCheckId($stats, $alerts, $from, $to)
+    {
+        $lastTs          = null;
+        $lastQuickAckTs  = null;
+        $quickAckStarted = null;
+        $alertStarted    = null;
+
+        foreach ($alerts as $alert) {
+            $ts       = $alert['ts'];
+            $ts       = ($ts > $to)   ? $to   : $ts;
+            $ts       = ($ts < $from) ? $from : $ts;
+            $severity = $alert['severity'];
+            $state    = $alert['state'];
+
+            if ($alert['info']) {
+                continue;
+            }
+
+            if ($severity == 'unhandled' && $state != 'ok') {
+                $alertStarted = true;
+                $lastTs = $ts;
+                $stats['alerts_count']++;
+            }
+
+            if ($severity == 'quick_acked' && !$alertStarted) {
+                $alertStarted = true;
+                $lastTs = $ts;
+                $lastQuickAckTs = $ts;
+                $quickAckStarted = true;
+                $stats['alerts_count']++;
+            }
+
+            if ($severity == 'quick_acked') {
+                if ($alertStarted) {
+                    $alertStarted = false;
+                    $stats['reaction_time'] += ($ts - $lastTs);
+                    $stats['reaction_alerts']++;
+                }
+
+                $lastQuickAckTs = $ts;
+                $quickAckStarted = true;
+            }
+
+            if ((in_array($severity, ['acked', 'sched', 'planned_downtime']) || $state == 'ok') && $lastTs) {
+                $stats['unhandled_time'] += ($ts - $lastTs);
+
+                if ($alertStarted) {
+                    $alertStarted = false;
+                    $stats['reaction_time'] += ($ts - $lastTs);
+                    $stats['reaction_alerts']++;
+                }
+
+                if ($quickAckStarted) {
+                    $stats['quick_acked_time'] += ($ts - $lastQuickAckTs);
+                    $lastQuickAckTs = false;
+                    $quickAckStarted = false;
+                }
+
+                $lastTs = null;
+            }
+        }
+
+        if ($lastTs) {
+            $stats['unhandled_time'] += ($to - $lastTs);
+
+            if ($alertStarted) {
+                $stats['reaction_time'] += ($to - $lastTs);
+                $stats['reaction_alerts']++;
+            }
+
+            if ($quickAckStarted) {
+                $stats['quick_acked_time'] += ($to - $lastQuickAckTs);
+            }
+        }
+
+        return $stats;
+    }
+    private function calculateNobodysShift()
+    {
+        foreach ($this->results as $name => $stats) {
+            if (in_array($name, ['Summary report', 'Nobody\'s shift'])) {
+                continue;
+            }
+
+            foreach ($stats as $server => $stat) {
+                $this->results['Nobody\'s shift'][$server]['alerts_count']     -= $stat['alerts_count'];
+                $this->results['Nobody\'s shift'][$server]['unhandled_time']   -= $stat['unhandled_time'];
+                $this->results['Nobody\'s shift'][$server]['quick_acked_time'] -= $stat['quick_acked_time'];
+                $this->results['Nobody\'s shift'][$server]['reaction_time']    -= $stat['reaction_time'];
+                $this->results['Nobody\'s shift'][$server]['reaction_alerts']  -= $stat['reaction_alerts'];
+            }
+        }
+
+        foreach ($this->results['Nobody\'s shift'] as $server => $stats) {
+            foreach ($stats as $name => $stat) {
+                if ($stat < 0) {
+                    $this->results['Nobody\'s shift'][$server][$name] = 0;
+                }
+            }
+        }
+    }
+    private function calculateAllData()
+    {
+        foreach ($this->results as $name => $stats) {
+            $result = [
+                'alerts_count'     => 0,
+                'unhandled_time'   => 0,
+                'quick_acked_time' => 0,
+                'reaction_time'    => 0,
+                'reaction_alerts'  => 0,
+            ];
+
+            foreach ($stats as $server => $stat) {
+                $result['alerts_count']     += $stat['alerts_count'];
+                $result['unhandled_time']   += $stat['unhandled_time'];
+                $result['quick_acked_time'] += $stat['quick_acked_time'];
+                $result['reaction_time']    += $stat['reaction_time'];
+                $result['reaction_alerts']  += $stat['reaction_alerts'];
+            }
+
+            $this->results[$name]['All'] = $result;
+        }
     }
     private function runCalendar()
     {
         $this->calendar->setTime($this->from, $this->to);
         $this->usersShifts = $this->calendar->getEvents();
     }
-    private function getStatsByUsers()
-    {
-        foreach ($this->usersShifts as $user => $dates) {
-            $tmpUserData = [];
-            $this->fullResults[$user] = [];
-
-            foreach ($dates as $record) {
-                $this->setDates($record['start'], $record['finish']);
-                $tmpUserData[] = $this->getStats();
-            }
-
-            foreach ($tmpUserData as $tmpRecord) {
-                foreach ($tmpRecord as $server => $serverData) {
-                    if (!isset($this->fullResults[$user][$server])) {
-                        $this->fullResults[$user][$server] = [
-                            'alerts_count'     => 0,
-                            'unhandled_time'   => 0,
-                            'quick_acked_time' => 0,
-                            'reaction_time'    => 0,
-                            'reaction_alerts'  => 0,
-                        ];
-                    }
-
-                    $this->fullResults[$user][$server]['alerts_count']     += $serverData['alerts_count'];
-                    $this->fullResults[$user][$server]['unhandled_time']   += $serverData['unhandled_time'];
-                    $this->fullResults[$user][$server]['quick_acked_time'] += $serverData['quick_acked_time'];
-                    $this->fullResults[$user][$server]['reaction_time']    += $serverData['reaction_time'];
-                    $this->fullResults[$user][$server]['reaction_alerts']  += $serverData['reaction_alerts'];
-                }
-            }
-        }
-    }
     private function setAverages()
     {
-        foreach ($this->fullResults as $user => $userData) {
-            if (in_array($user, ['Summary report', 'Nobody\'s shift'])) {
-                continue;
-            }
-
-            foreach ($userData as $server => $serverData) {
-                $this->fullResults['Nobody\'s shift'][$server]['alerts_count']     -= $serverData['alerts_count'];
-                $this->fullResults['Nobody\'s shift'][$server]['unhandled_time']   -= $serverData['unhandled_time'];
-                $this->fullResults['Nobody\'s shift'][$server]['quick_acked_time'] -= $serverData['quick_acked_time'];
-                $this->fullResults['Nobody\'s shift'][$server]['reaction_time']    -= $serverData['reaction_time'];
-                $this->fullResults['Nobody\'s shift'][$server]['reaction_alerts']  -= $serverData['reaction_alerts'];
-            }
-        }
-
-        foreach ($this->fullResults['Nobody\'s shift'] as $server => $serverData) {
-            if ($serverData['alerts_count'] < 0) {
-                $this->fullResults['Nobody\'s shift'][$server]['alerts_count'] = $serverData['alerts_count'] * -1;
-            }
-
-            if ($serverData['reaction_alerts'] < 0) {
-                $this->fullResults['Nobody\'s shift'][$server]['reaction_alerts'] = $serverData['reaction_alerts'] * -1;
-            }
-        }
-
-        foreach ($this->fullResults as $user => $userData) {
-            if (in_array($user, ['Summary report'])) {
-                continue;
-            }
-
-            foreach ($userData as $server => $serverData) {
-                $this->fullResults[$user][$server]['reaction_avg'] = (($this->fullResults[$user][$server]['reaction_alerts']) ? (round($this->fullResults[$user][$server]['reaction_time'] / $this->fullResults[$user][$server]['reaction_alerts'], 2)) : 0);
+        foreach ($this->results as $name => $stats) {
+            foreach ($stats as $server => $stat) {
+                if ($stat['reaction_alerts']) {
+                    $this->results[$name][$server]['reaction_avg'] = round($stat['reaction_time'] / $stat['reaction_alerts'] , 2);
+                }
             }
         }
     }
@@ -213,11 +333,6 @@ class stats
     {
         $this->from = $this->getTs('from');
         $this->to   = $this->getTs('to');
-    }
-    private function setDates($from, $to)
-    {
-        $this->from = $from;
-        $this->to   = $to;
     }
     private function setServers($server, $serversList) {
         $servers = [];
@@ -234,8 +349,8 @@ class stats
     private function getStatsDataFromDb()
     {
         foreach ($this->servers as $item) {
-            $from = $this->returnDateForDb($item, $this->from);
-            $to   = $this->returnDateForDb($item, $this->to);
+            $from = $this->returnDateForDb($this->from);
+            $to   = $this->returnDateForDb($this->to);
 
             $this->history[$item] = $this->db->historyGetUnfinishedAlertsWithPeriod($item, $from, $to);
         }
@@ -248,6 +363,8 @@ class stats
         foreach ($this->history as $server => $data) {
             $results[$server] = [];
             foreach ($data as $key => $record) {
+
+
                 $record['ts'] = strtotime($record['date']);
 
                 if (!isset($results[$server][$record['check_id']])) {
@@ -259,134 +376,5 @@ class stats
         }
 
         $this->history = $results;
-    }
-    private function calcData() {
-        foreach ($this->history as $server => $data) {
-            if (!isset($this->results[$server])) {
-                $this->results[$server] = [
-                    'alerts_count'     => 0,
-                    'unhandled_time'   => 0,
-                    'quick_acked_time' => 0,
-                    'reaction_time'    => 0,
-                    'reaction_alerts'  => 0,
-                ];
-            }
-
-            foreach ($data as $check_id => $dataList) {
-                $this->lastTs          = null;
-                $this->lastQuickAckTs  = null;
-                $this->quickAckStarted = null;
-                $this->alertStarted    = null;
-
-                foreach ($dataList as $key => $record) {
-                    $ts       = $record['ts'];
-                    $severity = $record['severity'];
-                    $state    = $record['state'];
-
-                    if ($record['info']) {
-                        continue;
-                    }
-
-                    if ($ts > $this->to) {
-                        $ts = $this->to;
-                    }
-                    if ($ts < $this->from) {
-                        $ts = $this->from;
-                    }
-
-                    if ($severity == 'unhandled' && $state != 'ok') {
-                        $this->alertStarted = true;
-                        $this->lastTs = $ts;
-                        $this->results[$server]['alerts_count']++;
-                    }
-
-                    if ($severity == 'quick_acked' && !$this->alertStarted) {
-                        $this->alertStarted = true;
-                        $this->lastTs = $ts;
-
-                        $this->lastQuickAckTs = $ts;
-                        $this->quickAckStarted = true;
-
-                        $this->results[$server]['alerts_count']++;
-                    }
-
-                    if ($severity == 'quick_acked') {
-                        $this->addReactionData($server, $ts - $this->lastTs);
-
-                        $this->lastQuickAckTs = $ts;
-                        $this->quickAckStarted = true;
-                    }
-
-                    if (in_array($severity, ['acked', 'sched', 'planned_downtime']) && $this->lastTs) {
-                        $this->addUnhandledTime($server, $ts - $this->lastTs);
-                        $this->addReactionData($server, $ts - $this->lastTs);
-                        $this->addQuickAckTime($server, $ts - $this->lastQuickAckTs);
-
-                        $this->lastTs = null;
-                    }
-
-                    if ($state == 'ok' && $this->lastTs) {
-                        $this->addUnhandledTime($server, $ts - $this->lastTs);
-                        $this->addReactionData($server, $ts - $this->lastTs);
-                        $this->addQuickAckTime($server, $ts - $this->lastQuickAckTs);
-
-                        $this->lastTs = null;
-                    }
-                }
-
-                if ($this->lastTs) {
-                    $this->addUnhandledTime($server, $this->to - $this->lastTs);
-                    $this->addReactionData($server, $this->to - $this->lastTs);
-                    $this->addQuickAckTime($server, $this->to - $this->lastQuickAckTs);
-                }
-            }
-        }
-
-        $this->setAverage();
-    }
-    private function setAverage()
-    {
-        $results['All'] = [
-            'alerts_count'     => 0,
-            'unhandled_time'   => 0,
-            'quick_acked_time' => 0,
-            'reaction_time'    => 0,
-            'reaction_alerts'  => 0,
-        ];
-
-        foreach ($this->results as $server => $data) {
-            $results['All']['alerts_count']     += $data['alerts_count'];
-            $results['All']['unhandled_time']   += $data['unhandled_time'];
-            $results['All']['quick_acked_time'] += $data['quick_acked_time'];
-            $results['All']['reaction_time']    += $data['reaction_time'];
-            $results['All']['reaction_alerts']  += $data['reaction_alerts'];
-
-            $data['reaction_avg'] = ($data['reaction_alerts']) ? (round($data['reaction_time'] / $data['reaction_alerts'], 2)) : 0;
-            $results[$server] = $data;
-        }
-
-        $results['All']['reaction_avg'] = ($results['All']['reaction_alerts']) ? (round($results['All']['reaction_time'] / $results['All']['reaction_alerts'], 2)) : 0;
-
-        $this->results = $results;
-    }
-    private function addReactionData($server, $diff)
-    {
-        if ($this->alertStarted) {
-            $this->alertStarted = false;
-            $this->results[$server]['reaction_time'] += $diff;
-            $this->results[$server]['reaction_alerts']++;
-        }
-    }
-    private function addQuickAckTime($server, $diff)
-    {
-        if ($this->quickAckStarted) {
-            $this->results[$server]['quick_acked_time'] += $diff;
-            $this->lastQuickAckTs = false;
-            $this->quickAckStarted = false;
-        }
-    }
-    private function addUnhandledTime($server, $diff)
-    {
-        $this->results[$server]['unhandled_time'] += $diff;
     }
 }

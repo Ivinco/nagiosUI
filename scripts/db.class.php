@@ -890,13 +890,13 @@ class db
         while ($row = $result->fetch_assoc()){
             $row['info'] = false;
             $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
-            if ($infoRecord['info']) {
-                $row['info']    = true;
-                $row['service'] = $infoRecord['service'];
-                $row['output']  = $infoRecord['status'];
-            }
+            if (!$infoRecord['info']) {
+                if ($row['date'] < $dateFrom) {
+                    $row['date'] = $dateFrom;
+                }
 
-            $list[$row['check_id'].$row['date']] = $row;
+                $list[$row['check_id'].$row['date']] = $row;
+            }
         }
 
         $sql = "
@@ -920,13 +920,9 @@ class db
         while ($row = $result->fetch_assoc()){
             $row['info'] = false;
             $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
-            if ($infoRecord['info']) {
-                $row['info']    = true;
-                $row['service'] = $infoRecord['service'];
-                $row['output']  = $infoRecord['status'];
+            if (!$infoRecord['info']) {
+                $list[$row['check_id'].$row['date']] = $row;
             }
-
-            $list[$row['check_id'].$row['date']] = $row;
         }
 
         ksort($list);
