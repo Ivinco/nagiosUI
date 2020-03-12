@@ -124,7 +124,7 @@
             <label for="stats" id="stats-label">Stats</label>
         </div>
     </form>
-	<p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated <span id="updatedAgo">0</span>s ago</p>
+    <p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
     <div style="display: none; float: left; margin: 10px 0 0 0;" id="timeZoneBlock">
         <form>
             <select name="timeZone" id="timeZoneSelect">
@@ -151,6 +151,17 @@
         </thead>
     </table>
 	<div id="planned-maintenance" style="clear: both;">
+        <p>
+            <small>
+                <strong>?</strong> wildcard replaces any 1 character<br />
+                <strong>*</strong> wildcard replaces any # of characters<br />
+                <strong>examples:</strong><br />
+                forumdb01-?<br />
+                *mysql*<br />
+                forum*,log*<br />
+                *error*
+            </small>
+        </p>
 		<div class="holder" style="width: 350px;">
 			<label for="maintenance-host">Host</label><br />
 			<input type="text" name="maintenance-host" id="maintenance-host" /><br />
@@ -167,18 +178,6 @@
             <input type="checkbox" name="maintenance-normal" id="maintenance-normal" checked="checked" />
             <label for="maintenance-normal">Visible in Normal</label><br />
 			<button id="planned-save">Save</button>
-			
-			<p>
-				<small>
-					<strong>?</strong> wildcard replaces any 1 character<br />
-					<strong>*</strong> wildcard replaces any # of characters<br />
-					<strong>examples:</strong><br />
-						forumdb01-?<br />
-						*mysql*<br />
-						forum*,log*<br />
-						*error*
-				</small>
-			</p>
 		</div>
 
         <div class="holder planned-holder">
@@ -265,6 +264,7 @@
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
     <script src="js/datetimepicker.min.js"></script>
+    <script src="js/zingchart.min.js"></script>
 <?php
 if (isset($_GET['t']) && trim($_GET['t'])) { ?>
     <script src="js/jquery-ui-timepicker-addon.js"></script>

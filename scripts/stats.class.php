@@ -51,6 +51,7 @@ class stats
                 [ 'value' => '300', 'name' =>  '5 min' ],
                 [ 'value' => '600', 'name' => '10 min' ],
             ],
+            'timeZone'        => $this->timeZone,
         ];
     }
 
@@ -108,6 +109,7 @@ class stats
         $this->history = [];
         $this->getStatsDataFromDb();
         $this->results = $this->getStatsByUser();
+
         $this->results['Summary report'] = $this->calculateByServer($this->from, $this->to, 'Summary report', []);
         $this->results['Nobody\'s shift'] = $this->results['Summary report'];
 
@@ -122,11 +124,15 @@ class stats
         foreach ($this->history as $server => $data) {
             if (!isset($stats[$user][$server])) {
                 $stats[$user][$server] = [
-                    'alerts_count' => 0,
-                    'unhandled_time' => 0,
+                    'alerts_count'     => 0,
+                    'warning_count'    => 0,
+                    'critical_count'   => 0,
+                    'unknown_count'    => 0,
+                    'info_count'       => 0,
+                    'unhandled_time'   => 0,
                     'quick_acked_time' => 0,
-                    'reaction_time' => 0,
-                    'reaction_alerts' => 0,
+                    'reaction_time'    => 0,
+                    'reaction_alerts'  => 0,
                 ];
             }
 
@@ -136,10 +142,6 @@ class stats
 
                 foreach ($dataList as $key => $record) {
                     $ts = $record['ts'];
-
-                    if ($record['info']) {
-                        continue;
-                    }
 
                     if ($ts > $from && $ts < $to) {
                         if (!$alerts && $lastAlert) {
@@ -192,6 +194,7 @@ class stats
         $lastQuickAckTs  = null;
         $quickAckStarted = null;
         $alertStarted    = null;
+        $alertStates     = [];
 
         foreach ($alerts as $alert) {
             $ts       = $alert['ts'];
@@ -201,13 +204,21 @@ class stats
             $state    = $alert['state'];
 
             if ($alert['info']) {
+                if (in_array($state, ['warning', 'critical', 'unknown'])) {
+                    $stats['info_count']++;
+
+                    return $stats;
+                }
+
                 continue;
             }
 
             if ($severity == 'unhandled' && $state != 'ok') {
                 $alertStarted = true;
                 $lastTs = $ts;
-                $stats['alerts_count']++;
+                if (in_array($state, ['warning', 'critical', 'unknown'])) {
+                    $alertStates[] = $state;
+                }
             }
 
             if ($severity == 'quick_acked' && !$alertStarted) {
@@ -215,7 +226,9 @@ class stats
                 $lastTs = $ts;
                 $lastQuickAckTs = $ts;
                 $quickAckStarted = true;
-                $stats['alerts_count']++;
+                if (in_array($state, ['warning', 'critical', 'unknown'])) {
+                    $alertStates[] = $state;
+                }
             }
 
             if ($severity == 'quick_acked') {
@@ -261,6 +274,21 @@ class stats
             }
         }
 
+        $alertStates = array_unique($alertStates);
+        $stats['alerts_count'] += count($alertStates);
+
+        if (in_array('warning', $alertStates)) {
+            $stats['warning_count'] ++;
+        }
+
+        if (in_array('critical', $alertStates)) {
+            $stats['critical_count'] ++;
+        }
+
+        if (in_array('unknown', $alertStates)) {
+            $stats['unknown_count'] ++;
+        }
+
         return $stats;
     }
     private function calculateNobodysShift()
@@ -272,6 +300,10 @@ class stats
 
             foreach ($stats as $server => $stat) {
                 $this->results['Nobody\'s shift'][$server]['alerts_count']     -= $stat['alerts_count'];
+                $this->results['Nobody\'s shift'][$server]['warning_count']    -= $stat['warning_count'];
+                $this->results['Nobody\'s shift'][$server]['critical_count']   -= $stat['critical_count'];
+                $this->results['Nobody\'s shift'][$server]['unknown_count']    -= $stat['unknown_count'];
+                $this->results['Nobody\'s shift'][$server]['info_count']       -= $stat['info_count'];
                 $this->results['Nobody\'s shift'][$server]['unhandled_time']   -= $stat['unhandled_time'];
                 $this->results['Nobody\'s shift'][$server]['quick_acked_time'] -= $stat['quick_acked_time'];
                 $this->results['Nobody\'s shift'][$server]['reaction_time']    -= $stat['reaction_time'];
@@ -292,6 +324,10 @@ class stats
         foreach ($this->results as $name => $stats) {
             $result = [
                 'alerts_count'     => 0,
+                'warning_count'    => 0,
+                'critical_count'   => 0,
+                'unknown_count'    => 0,
+                'info_count'       => 0,
                 'unhandled_time'   => 0,
                 'quick_acked_time' => 0,
                 'reaction_time'    => 0,
@@ -300,6 +336,10 @@ class stats
 
             foreach ($stats as $server => $stat) {
                 $result['alerts_count']     += $stat['alerts_count'];
+                $result['warning_count']    += $stat['warning_count'];
+                $result['critical_count']   += $stat['critical_count'];
+                $result['unknown_count']    += $stat['unknown_count'];
+                $result['info_count']       += $stat['info_count'];
                 $result['unhandled_time']   += $stat['unhandled_time'];
                 $result['quick_acked_time'] += $stat['quick_acked_time'];
                 $result['reaction_time']    += $stat['reaction_time'];

@@ -325,6 +325,8 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
             $('#mainTable').show();
+			$(".ui-tooltip").remove();
+			$("span[title]").tooltip({ track: true });
 		},
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
@@ -505,9 +507,6 @@ Search.filterDataTable = function(val, startReload) {
         $(this).html(Search.changeNagiosComment($(this).text()));
     });
 
-    $(".ui-tooltip").remove();
-    $("span[title]").tooltip({ track: true });
-
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
@@ -534,6 +533,9 @@ Search.filterDataTable = function(val, startReload) {
     Search.startedGetData = false;
     Search.backgroundReload = true;
     Search.getContent();
+
+	$(".ui-tooltip").remove();
+	$("span[title]").tooltip({ track: true });
 }
 Search.recheckIcons = function() {
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
@@ -1895,6 +1897,7 @@ Search.resetAgo = function() {
 	Search.startAgo();
 }
 Search.startAgo = function() {
+	$('#updatedTimestamp').text(moment().unix());
 	Search.agoInterval = setInterval(function(){ Search.addToAgo(); }, 1000);
 }
 selectTimer = null;
@@ -3510,6 +3513,8 @@ Grouping = {
         this.countHosts();
         this.countServices();
         this.prepareData(data.data);
+        $(".ui-tooltip").remove();
+        $("span[title]").tooltip({ track: true });
 
         return this.listReturn;
     },
@@ -3579,7 +3584,8 @@ Grouping = {
             'comment':        null,
             'groupBy':        null,
             'isHost':         null,
-            'state':          null
+            'state':          null,
+            'tz':             null
         };
     },
     prepareData: function(data) {
@@ -3603,6 +3609,7 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'host';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.tz      = data[i].last.tz;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3628,6 +3635,7 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'service';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.tz      = data[i].last.tz;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3718,6 +3726,7 @@ Grouping = {
         this.listGroups[key].data.state          = childrenNewData.state;
         this.listGroups[key].data.status         = childrenNewData.status;
         this.listGroups[key].data.statusOrder    = childrenNewData.statusOrder;
+        this.listGroups[key].data.tz             = childrenNewData.tz;
     },
     sortChildren: function() {
         for (var key in this.listGroups) {
@@ -3749,6 +3758,7 @@ Grouping = {
                 childrenNewData.information    = item.info;
                 childrenNewData.isHost         = item.host.host;
                 childrenNewData.state          = item.state;
+                childrenNewData.tz             = item.last.tz;
                 childrenNewData.comment        = (Search.currentTab == 'acked') ? item.comment.ack : ((Search.currentTab == 'sched') ? item.comment.sched : '');
                 childrenNewData.groupBy        = (Number.isInteger(this.listGroups[key].data.service)) ? item.service.name.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : item.host.name.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
                 childrenNewData.greyText       = false;
@@ -3863,7 +3873,8 @@ Grouping = {
             subRowsInfo    = ((subRowsBlue + subRowsBrown) == subRows) ? true : false,
             subRowsClass   = (subRowsInfo) ? ((subRowsBrown) ? ' brown-text' : ' blue-text') : '',
             ackIconBlock   = '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
+            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>',
+            lastCheckText  = (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + rowData.tz + '">'+ rowData.lastCheck +'</span>') : rowData.lastCheck;
 
         if (avatar) {
             var quickAck = '<li><img class="icons" src="https://www.gravatar.com/avatar/'+ avatar +'?size=20"></li>';
@@ -3886,7 +3897,7 @@ Grouping = {
             '		</div>' +
             '	</td>' +
             '	<td class="status '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.status +'</td>' +
-            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.lastCheck +'</td>' +
+            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ lastCheckText +'</td>' +
             '	<td class="duration-sec" style="display: none;"></td>' +
             '	<td class="duration '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.duration +'</td>' +
             '	<td class="status_information '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.information.name +'</td>' +
@@ -3915,7 +3926,8 @@ Grouping = {
                     greyTextClass = (item.service.sched) ? ' grey-text' : '',
                     blueTextClass = (item.service.info && (item.state == 'WARNING' || item.state == 'UNKNOWN')) ? ' blue-text' : '',
                     brownTextClass = (item.service.info && item.state == 'CRITICAL') ? ' brown-text' : '',
-                    colorClass = greyTextClass + blueTextClass + brownTextClass;
+                    colorClass = greyTextClass + blueTextClass + brownTextClass,
+                    lastCheckText  = (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + item.last.tz + '">'+ item.last.name +'</span>') : item.last.name;
 
                 prevHost = item.host.name;
 
@@ -3969,7 +3981,7 @@ Grouping = {
                 result += '<td class="status '+ item.state + colorClass + ' ' + item.status.origin +'">'+ item.status.name +'</td>';
 
                 //last check
-                result += '<td class="last_check '+ item.state + colorClass +'">'+ item.last.name +'</td>';
+                result += '<td class="last_check '+ item.state + colorClass +'">' + lastCheckText + '</td>';
 
                 //duration
                 result += '<td class="duration '+ item.state + colorClass +'">';
@@ -4042,6 +4054,8 @@ Grouping = {
 
             Search.recheckIcons();
             Search.checkResizedIcons();
+            $(document).find("span[title]").tooltip({ track: true });
+            $(document).find(".ui-tooltip").remove();
         }
     },
     removeChildHtml: function(key) {
@@ -4080,6 +4094,9 @@ Grouping = {
                 localStorage.setItem(Search.currentTab + '_' + attr, true);
                 Grouping.returnChildHtml(attr);
             }
+
+            $(document).find("span[title]").tooltip({ track: true });
+            $(document).find(".ui-tooltip").remove();
         });
         $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
         $('#grouping').selectmenu({
@@ -4855,6 +4872,7 @@ Stats = {
     refreshArray: [],
     statsData: null,
     lastPeriod: null,
+    tz: null,
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
@@ -4879,11 +4897,11 @@ Stats = {
             }
 
             if (!Stats.selectedFrom) {
-                alert('Please select at least one user.');
+                alert('Please select date from.');
             }
 
             if (!Stats.selectedTo) {
-                alert('Please select at least one user.');
+                alert('Please select date to.');
             }
 
             if (Stats.selectedFrom && Stats.selectedTo && Stats.selectedUsers) {
@@ -4918,7 +4936,8 @@ Stats = {
     drawStatsHtml: function() {
         $('.historyText').html('');
 
-        var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59. ('+ Stats.selectedUsers.join(', ') +')</h4>';
+        var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59 ('+ Stats.tz +'). ('+ Stats.selectedUsers.join(', ') +')</h4>';
+        html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="width: 330px; vertical-align: top;">';
         $(Stats.selectedUsers).each(function (key, value) {
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
                 html += '<p><br />'+ value +' ('+ Search.currentServerTab +')</p>';
@@ -4932,8 +4951,77 @@ Stats = {
                 html += '<p><br />No stats for: '+ value +'</p>';
             }
         });
+        html += '</td><td style="width: 30px;">&nbsp;</td><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
 
         $('.historyText').html(html);
+        Stats.drawChart();
+    },
+    getChartData: function() {
+        var result = {
+            users: [],
+            all: [],
+            warning: [],
+            critical: [],
+            unknown: [],
+            info: [],
+        };
+
+        $(Stats.selectedUsers).each(function (key, value) {
+            if (value == 'Summary report' || value == 'Nobody\'s shift') {
+                return;
+            }
+
+            result.users.push(value.split(" ").join("\n"));
+
+            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
+                result.all.push(
+                    Stats.statsData[value][Search.currentServerTab]['warning_count'] +
+                    Stats.statsData[value][Search.currentServerTab]['critical_count'] +
+                    Stats.statsData[value][Search.currentServerTab]['unknown_count'] +
+                    Stats.statsData[value][Search.currentServerTab]['info_count']
+                );
+                result.warning.push(Stats.statsData[value][Search.currentServerTab]['warning_count']);
+                result.critical.push(Stats.statsData[value][Search.currentServerTab]['critical_count']);
+                result.unknown.push(Stats.statsData[value][Search.currentServerTab]['unknown_count']);
+                result.info.push(Stats.statsData[value][Search.currentServerTab]['info_count']);
+            } else {
+                result.warning.push(0);
+                result.critical.push(0);
+                result.unknown.push(0);
+                result.info.push(0);
+                result.all.push(0);
+            }
+        });
+
+        return result;
+    },
+    drawChart: function() {
+        var cfg = Stats.getChartData();
+
+        let StatsChartConfig = {
+            type: 'bar',
+            title: { text: 'Statistic by user', fontSize: 20 },
+            legend: { draggable: false },
+            scaleX: {
+                labels: cfg.users
+            },
+            plot: {
+                animation: { effect: 'ANIMATION_EXPAND_BOTTOM', method: 'ANIMATION_STRONG_EASE_OUT', sequence: 'ANIMATION_BY_NODE',  speed: 275 },
+                tooltip: { text: "%kl <br>%v %t", padding: "10%", 'border-radius': "5px" }
+            },
+            series: [
+                { values: cfg.all,      text: 'All'      , 'background-color': '#00FF9B'},
+                { values: cfg.critical, text: 'Critical' , 'background-color': '#F83838'},
+                { values: cfg.warning,  text: 'Warning'  , 'background-color': '#FFFF00'},
+                { values: cfg.unknown,  text: 'Unknown'  , 'background-color': '#FF9900'},
+                { values: cfg.info,     text: 'Info'     , 'background-color': '#67A4FF'},
+            ]
+        };
+
+        zingchart.render({
+            id: 'statsChart',
+            data: StatsChartConfig,
+        });
     },
     returnDayHour: function(seconds) {
         var result  = '';
@@ -4978,6 +5066,7 @@ Stats = {
                 Stats.groupByService = data.groupByService;
                 Stats.groupByHost    = data.groupByHost;
                 Stats.refreshArray   = data.refreshArray;
+                Stats.tz             = data.timeZone;
                 Stats.drawTabsList();
                 Stats.drawSelects();
             }
