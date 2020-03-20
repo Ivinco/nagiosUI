@@ -4,9 +4,7 @@ class json
 {
     function __construct()
     {
-        global $serversList;
-
-        $this->serversList = $serversList;
+        $this->utils = new utils();
 
         global $infoRecordMark;
 
@@ -23,9 +21,6 @@ class json
         $this->user       = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
         $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
-
-        $this->timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
-        $this->timeCorrectionDiff = ($this->timeCorrectionType == 'browser' && isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
 
         if (!$this->fullData) {
             http_response_code(404);
@@ -51,8 +46,6 @@ class json
     }
 
     private function formatJson() {
-        global $serversList;
-
         if (!isset($this->fullData['alert'])) {
             return;
         }
@@ -94,13 +87,10 @@ class json
             $showInNormal    = false;
             $schedPlanned    = true;
             $serviceOriginal = $service;
-            $tz = (isset($serversList[$tab]) && isset($serversList[$tab]['timeZone'])) ? $serversList[$tab]['timeZone'] : '';
 
-            if ($this->timeCorrectionType && $this->timeCorrectionType != 'server') {
-                $lastCheck = $this->returnCorrectedDate($lastCheck, $this->timeCorrectionType, $tab, $this->timeCorrectionDiff, 'm-d-Y H:i:s');
-                $ackComment = $this->returnCorrectedComments($ackComment, $tab);
-                $schComment = $this->returnCorrectedComments($schComment, $tab);
-            }
+            $lastCheck  = $this->utils->returnCorrectedDate($lastCheck, $tab);
+            $ackComment = $this->returnCorrectedComments($ackComment, $tab);
+            $schComment = $this->returnCorrectedComments($schComment, $tab);
 
             if (!$this->ac->verifyUser($service, $this->user)) {
                 continue;
@@ -183,7 +173,6 @@ class json
                 'last'      => array(
                     'name'  => ($pending) ? '' : $lastCheck,
                     'order' => $lastCheckS,
-                    'tz'    => $tz,
                 ),
                 'duration'  => array(
                     'name'  => ($pending) ? '' : $duration,
@@ -224,61 +213,11 @@ class json
 
         foreach ($commentTmp as $key => $value) {
             $parts = explode('<br />added: ', $value);
-            $parts[1] = $this->returnCorrectedDate($parts[1], $this->timeCorrectionType, $tab, $this->timeCorrectionDiff, 'M j H:i');
+            $parts[1] = $this->utils->returnCorrectedDate($parts[1], $tab, 'M j H:i', true);
             $commentTmp[$key] = implode('<br />added: ', $parts);
         }
 
         return implode('<br /><br />', $commentTmp);
-    }
-    private function returnCorrectedDate($date, $type, $server, $diff = 0, $format = 'm-d-Y H:i:s') {
-        $timeDiff = $this->returnDiff($type, $server, $diff);
-
-        if ($timeDiff) {
-            $timestamp = $this->returnTimestamp($date, $format);
-            $timestamp += $timeDiff;
-            $date = date($format, $timestamp);
-
-            return $date;
-        }
-
-        return $date;
-    }
-    private function returnTimestamp($date, $format) {
-        $date = DateTime::createFromFormat($format, $date);
-
-        if (intval($date->format('n')) > intval(date('n'))) {
-            $date->modify('-1 year');
-        }
-
-        $timestamp = strtotime($date->format('Y-m-d H:i:s'));
-
-        return $timestamp;
-    }
-    private function returnDiff($type, $server, $diff = 0) {
-        global $serversList, $timeZone;
-        $out = 0;
-
-        if (    !isset($serversList[$server])
-            || !isset($serversList[$server]['timeZone'])
-            || ($type == 'server' && $serversList[$server]['timeZone'] == $timeZone)
-        ) {
-            return 0;
-        }
-
-        if (in_array($type, ['browser', 'utc'])) {
-            date_default_timezone_set($serversList[$server]['timeZone']);
-            $out = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
-            date_default_timezone_set($timeZone);
-        }
-
-        if ($type == 'server') {
-            $serverTS = strtotime(gmdate("Y-m-d H:i:s"));
-            date_default_timezone_set($serversList[$server]['timeZone']);
-            $out = strtotime(gmdate("Y-m-d H:i:s")) - $serverTS;
-            date_default_timezone_set($timeZone);
-        }
-
-        return $diff * 60 + $out;
     }
 
     private function formatAdditional() {
@@ -300,8 +239,9 @@ class json
             'infoCritical'      => 0,
             'infoWarnings'      => 0,
             'total'             => count($this->returnJson),
-            'tabsList'          => $this->returnTabsList(),
+            'tabsList'          => $this->utils->getServerTabsList(),
             'tabCurrent'        => $this->xml->getCurrentTab(),
+            'timeZonesList'     => $this->utils->getTimeZonesList(),
         );
     }
     private function filterByTab() {
@@ -551,13 +491,5 @@ class json
         $search = (trim($search)) ? trim($search) : '';
 
         return $search;
-    }
-
-    private function returnTabsList() {
-        $servers = array_keys($this->serversList);
-        sort($servers);
-        $servers = implode(',', $servers);
-
-        return 'All,'. $servers;
     }
 }

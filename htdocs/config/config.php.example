@@ -2,6 +2,25 @@
 
 /* you need to change htdocs/config/config.php.example file content and rename file to config.php: */
 
+
+//Server time zone
+$timeZone = "America/New_York";
+date_default_timezone_set($timeZone);
+
+//Time zones select values for UI
+//except Browser time and UTC
+//full list: https://www.php.net/manual/en/timezones.php
+$timeZonesList = [
+    'America/New_York',
+    'Asia/Novosibirsk',
+    'Australia/Brisbane',
+    'Pacific/Fiji',
+    'America/Argentina/Buenos_Aires',
+];
+
+// ID for the shift calendar - used by stats
+$calendarId = "googleCalendarId@group.calendar.google.com";
+
 /*
     nagios-api servers list:
          - array key: will be used as button name in UI, as 'server' in DB for storing/retrieving data

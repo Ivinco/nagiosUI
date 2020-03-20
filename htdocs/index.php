@@ -127,11 +127,7 @@
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
     <div style="display: none; float: left; margin: 10px 0 0 0;" id="timeZoneBlock">
         <form>
-            <select name="timeZone" id="timeZoneSelect">
-                <option value="browser">Time: local browser</option>
-                <option value="server">Time: server</option>
-                <option value="utc">Time: default (utc)</option>
-            </select>
+            <select name="timeZone" id="timeZoneSelect"></select>
         </form>
     </div>
     <table id="mainTable">

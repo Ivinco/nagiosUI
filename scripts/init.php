@@ -1,6 +1,7 @@
 <?php
 
 include_once __DIR__ . '/../htdocs/config/config.php';
+include_once __DIR__ . '/utils.class.php';
 include_once __DIR__ . '/accessControl.php';
 include_once __DIR__ . '/planned.php';
 include_once __DIR__ . '/xml.php';

@@ -41,15 +41,14 @@ globalTime = 0;
 globalReload = true;
 
 Search = {
-    serversList: '',
+    additional: null,
+    currentServerTab: localStorage.getItem('currentServerTab'),
     timeZone: localStorage.getItem('timeZone'),
-    drawTabsList: function() {
+    drawServersList: function() {
         var tabsList = '';
-        var tabsData = this.serversList.split(',');
 
-        $(tabsData).each(function (key, value) {
+        $(this.additional.tabsList).each(function (key, value) {
             var selected = (Search.currentServerTab == value) ? 'selected="selected"' : '';
-
             tabsList += '<option value="'+ value +'" '+ selected +'>Server: '+ value +'</option>';
         });
 
@@ -61,12 +60,32 @@ Search = {
                     localStorage.setItem('currentServerTab', Search.currentServerTab);
                     $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
                     $('#tabsSelect').selectmenu('refresh');
-
                     Search.getNewData();
                 }
             }
         });
     },
+    drawTimeZonesList: function() {
+        var tzList = '';
+
+        $(this.additional.timeZonesList).each(function (key, value) {
+            var selected = (Search.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>Server: '+ value +'</option>';
+        });
+
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect').html(tzList);
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                if (Search.timeZone != data.item.value) {
+                    Search.stopReloads();
+                    localStorage.setItem('timeZone', data.item.value);
+                    Search.timeZone = localStorage.getItem('timeZone');
+                    Search.getNewData();
+                }
+            }
+        });
+    }
 }
 
 Search.whatWeChangeObject      = [{}];
@@ -75,7 +94,6 @@ Search.hideMoreArray           = [];
 Search.currentTab              = localStorage.getItem('currentTabNew');
 Search.currentGroup            = localStorage.getItem('currentGroup');
 Search.currentReload           = localStorage.getItem('currentReloadNew');
-Search.currentServerTab        = localStorage.getItem('currentServerTab');
 Search.reloadCustomText        = 'Refresh: Custom';
 Search.autoRefresh             = true;
 Search.backgroundReload        = true;
@@ -220,7 +238,7 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
                     sort:  'last.order',
                     type:  'string',
                     display: function ( data, type, full, meta ) {
-                        return (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + data.tz + '">' + data.name + '</span>') : data.name;
+                        return data.name;
                     },
                 }
             },
@@ -325,14 +343,13 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
             $('#mainTable').show();
-			$(".ui-tooltip").remove();
-			$("span[title]").tooltip({ track: true });
 		},
 		'initComplete': function(settings, json) {
 			$('#loading').hide();
 			$('#infoHolder').show();
 
 			if (Search.firstLoad) {
+                Search.additional = json.additional;
                 $('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
 				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);
@@ -340,8 +357,8 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 				$('#groupByHost').text(json.additional.groupByHost);
 				$('#refreshArray').text(json.additional.refreshArray);
 
-                Search.serversList = json.additional.tabsList;
-                Search.drawTabsList(json.additional.tabsList);
+                Search.drawServersList();
+                Search.drawTimeZonesList();
                 Planned.getPlanned();
 
 				var refreshData = $('#refreshArray').text().split(';');
@@ -386,19 +403,6 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 				} else {
 					$('#refreshTime select option[value="custom"]').text(Search.reloadCustomText + ' ('+ parseInt(Search.currentReload) / 60 +'min)').attr('selected', 'selected');
 				}
-
-                $('#timeZoneBlock').show();
-                $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
-                $('#timeZoneSelect').selectmenu({
-                    select: function (event, data) {
-                        Search.stopReloads();
-
-                        localStorage.setItem('timeZone', data.item.value);
-                        Search.timeZone = localStorage.getItem('timeZone');
-
-                        Search.getNewData();
-                    }
-                });
 
 				$('#refreshTimeSelect').selectmenu({
 					select: function (event, data) {
@@ -507,6 +511,9 @@ Search.filterDataTable = function(val, startReload) {
         $(this).html(Search.changeNagiosComment($(this).text()));
     });
 
+    $(".ui-tooltip").remove();
+    $("span[title]").tooltip({ track: true });
+
 	Search.tableLength = Search.allDataTable.rows({ page:'current', search:'applied' }).count();
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
@@ -533,9 +540,6 @@ Search.filterDataTable = function(val, startReload) {
     Search.startedGetData = false;
     Search.backgroundReload = true;
     Search.getContent();
-
-	$(".ui-tooltip").remove();
-	$("span[title]").tooltip({ track: true });
 }
 Search.recheckIcons = function() {
 	$('.icons.quickAck, .icons.quickUnAck').closest('li').toggle(Search.currentTab != 'acked' && Search.currentTab != 'sched');
@@ -1897,7 +1901,7 @@ Search.resetAgo = function() {
 	Search.startAgo();
 }
 Search.startAgo = function() {
-	$('#updatedTimestamp').text(moment().unix());
+	$('#updatedTimestamp').text(moment().format('YYYY-MM-DD HH:mm:ss'));
 	Search.agoInterval = setInterval(function(){ Search.addToAgo(); }, 1000);
 }
 selectTimer = null;
@@ -3513,8 +3517,6 @@ Grouping = {
         this.countHosts();
         this.countServices();
         this.prepareData(data.data);
-        $(".ui-tooltip").remove();
-        $("span[title]").tooltip({ track: true });
 
         return this.listReturn;
     },
@@ -3585,7 +3587,6 @@ Grouping = {
             'groupBy':        null,
             'isHost':         null,
             'state':          null,
-            'tz':             null
         };
     },
     prepareData: function(data) {
@@ -3609,7 +3610,6 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'host';
                     this.listGroups[key].data.tab     = tab;
-                    this.listGroups[key].data.tz      = data[i].last.tz;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3635,7 +3635,6 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'service';
                     this.listGroups[key].data.tab     = tab;
-                    this.listGroups[key].data.tz      = data[i].last.tz;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3726,7 +3725,6 @@ Grouping = {
         this.listGroups[key].data.state          = childrenNewData.state;
         this.listGroups[key].data.status         = childrenNewData.status;
         this.listGroups[key].data.statusOrder    = childrenNewData.statusOrder;
-        this.listGroups[key].data.tz             = childrenNewData.tz;
     },
     sortChildren: function() {
         for (var key in this.listGroups) {
@@ -3758,7 +3756,6 @@ Grouping = {
                 childrenNewData.information    = item.info;
                 childrenNewData.isHost         = item.host.host;
                 childrenNewData.state          = item.state;
-                childrenNewData.tz             = item.last.tz;
                 childrenNewData.comment        = (Search.currentTab == 'acked') ? item.comment.ack : ((Search.currentTab == 'sched') ? item.comment.sched : '');
                 childrenNewData.groupBy        = (Number.isInteger(this.listGroups[key].data.service)) ? item.service.name.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase() : item.host.name.replace(/[^a-z0-9 ]/gi,'').replace(/\s/g, '-').toLowerCase();
                 childrenNewData.greyText       = false;
@@ -3873,8 +3870,7 @@ Grouping = {
             subRowsInfo    = ((subRowsBlue + subRowsBrown) == subRows) ? true : false,
             subRowsClass   = (subRowsInfo) ? ((subRowsBrown) ? ' brown-text' : ' blue-text') : '',
             ackIconBlock   = '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>',
-            lastCheckText  = (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + rowData.tz + '">'+ rowData.lastCheck +'</span>') : rowData.lastCheck;
+            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
 
         if (avatar) {
             var quickAck = '<li><img class="icons" src="https://www.gravatar.com/avatar/'+ avatar +'?size=20"></li>';
@@ -3897,7 +3893,7 @@ Grouping = {
             '		</div>' +
             '	</td>' +
             '	<td class="status '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.status +'</td>' +
-            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ lastCheckText +'</td>' +
+            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.lastCheck +'</td>' +
             '	<td class="duration-sec" style="display: none;"></td>' +
             '	<td class="duration '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.duration +'</td>' +
             '	<td class="status_information '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.information.name +'</td>' +
@@ -3926,8 +3922,7 @@ Grouping = {
                     greyTextClass = (item.service.sched) ? ' grey-text' : '',
                     blueTextClass = (item.service.info && (item.state == 'WARNING' || item.state == 'UNKNOWN')) ? ' blue-text' : '',
                     brownTextClass = (item.service.info && item.state == 'CRITICAL') ? ' brown-text' : '',
-                    colorClass = greyTextClass + blueTextClass + brownTextClass,
-                    lastCheckText  = (Search.timeZone == 'server') ? ('<span title="Nagios time zone: ' + item.last.tz + '">'+ item.last.name +'</span>') : item.last.name;
+                    colorClass = greyTextClass + blueTextClass + brownTextClass;
 
                 prevHost = item.host.name;
 
@@ -3981,7 +3976,7 @@ Grouping = {
                 result += '<td class="status '+ item.state + colorClass + ' ' + item.status.origin +'">'+ item.status.name +'</td>';
 
                 //last check
-                result += '<td class="last_check '+ item.state + colorClass +'">' + lastCheckText + '</td>';
+                result += '<td class="last_check '+ item.state + colorClass +'">' + item.last.name + '</td>';
 
                 //duration
                 result += '<td class="duration '+ item.state + colorClass +'">';
@@ -4054,8 +4049,6 @@ Grouping = {
 
             Search.recheckIcons();
             Search.checkResizedIcons();
-            $(document).find("span[title]").tooltip({ track: true });
-            $(document).find(".ui-tooltip").remove();
         }
     },
     removeChildHtml: function(key) {
@@ -4094,9 +4087,6 @@ Grouping = {
                 localStorage.setItem(Search.currentTab + '_' + attr, true);
                 Grouping.returnChildHtml(attr);
             }
-
-            $(document).find("span[title]").tooltip({ track: true });
-            $(document).find(".ui-tooltip").remove();
         });
         $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
         $('#grouping').selectmenu({
@@ -4275,7 +4265,8 @@ Grouping = {
 History = {
     timeZone: localStorage.getItem('timeZone'),
     tableData: {},
-    serversList: '',
+    serversList: [],
+    timeZonesList: [],
     groupByService: 0,
     groupByHost: 0,
     refreshArray: [],
@@ -4310,7 +4301,7 @@ History = {
             var value = $('#history_date').val();
 
             if (value.length > 10 && Date.parse(value) != 'NaN') {
-                window.location = window.location.href.split('?')[0] + "?t=" + (Date.parse(value) / 1000);
+                window.location = window.location.href.split('?')[0] + "?t=" + (moment.utc(value).unix());
             }
         });
         $('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
@@ -4382,21 +4373,6 @@ History = {
         }
 
         $('#refreshTimeSelect').selectmenu({ disabled: true });
-
-        $('#timeZoneBlock').css('clear', 'both').show();
-        $('#timeZoneSelect option[value="'+ Search.timeZone +'"]').attr('selected', 'selected');
-        $('#timeZoneSelect').selectmenu({
-            select: function (event, data) {
-                localStorage.setItem('timeZone', data.item.value);
-                History.timeZone = localStorage.getItem('timeZone');
-
-                var value = $('#history_date').val();
-
-                if (value.length > 10 && Date.parse(value) != 'NaN') {
-                    window.location = window.location.href.split('?')[0] + "?t=" + (Date.parse(value) / 1000);
-                }
-            }
-        });
     },
     drawDatePickers: function() {
         this.getTimestamp();
@@ -4417,11 +4393,9 @@ History = {
     },
     drawTabsList: function() {
         var tabsList = '';
-        var tabsData = this.serversList.split(',');
 
-        $(tabsData).each(function (key, value) {
+        $(History.serversList).each(function (key, value) {
             var selected = (Search.currentServerTab == value) ? 'selected="selected"' : '';
-
             tabsList += '<option value="'+ value +'" '+ selected +'>Server: '+ value +'</option>';
         });
 
@@ -4435,6 +4409,30 @@ History = {
                     $('#tabsSelect').selectmenu('refresh');
 
                     History.drawTable();
+                }
+            }
+        });
+    },
+    drawTimeZonesList: function() {
+        var tzList = '';
+
+        $(History.timeZonesList).each(function (key, value) {
+            var selected = (History.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>Server: '+ value +'</option>';
+        });
+
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect').html(tzList);
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                if (History.timeZone != data.item.value) {
+                    localStorage.setItem('timeZone', data.item.value);
+                    History.timeZone = localStorage.getItem('timeZone');
+                    var value = $('#history_date').val();
+
+                    if (value.length > 10 && Date.parse(value) != 'NaN') {
+                        window.location = window.location.href.split('?')[0] + "?t=" + (moment.utc(value).unix());
+                    }
                 }
             }
         });
@@ -4482,9 +4480,6 @@ History = {
                 History.drawChildRow(History.listReturn[server][severity][i], true, false, '');
             }
         }
-
-        $("span[title]").tooltip({ track: true });
-        $(".ui-tooltip").remove();
 
         History.setCounts();
     },
@@ -4536,13 +4531,7 @@ History = {
         row += "<td class='host "+ state + info +"'>"+ data['host'] +"</td>";
         row += "<td class='service "+ state + info +"'>"+ service +"</td>";
         row += "<td class='status "+ state + info +"'>"+ state.toUpperCase() +"</td>";
-
-        if (History.timeZone == 'server') {
-            row += "<td class='last_check "+ state + info +"'><span title='Nagios time zone: " + data['tz'] + "'>" + data['date'] + "</span></td>";
-        } else {
-            row += "<td class='last_check "+ state + info +"'>"+ data['date'] +"</td>";
-        }
-
+        row += "<td class='last_check "+ state + info +"'>"+ data['date'] +"</td>";
         row += "<td class='severity "+ state + info +"'>"+ severityTmp +"</td>";
         row += "<td class='user "+ state + info +"'>"+ ((data['user']) ? data['user'] : '') +"</td>";
         row += "<td class='status_information "+ state + info +"'>"+ data['output'] +"</td>";
@@ -4566,11 +4555,11 @@ History = {
             if (date.length == 10 && parseInt(date).toString() == date) {
                 this.timestamp = parseInt(date);
             } else if (date.length > 10 && Date.parse(date) != 'Nan') {
-                this.timestamp = Date.parse(date) / 1000;
+                this.timestamp = moment.utc(value).unix();
             }
         }
 
-        this.date = this.returnMysqlDate(new Date(this.timestamp * 1000));
+        this.date = moment.unix(this.timestamp).utc().format('YYYY-MM-DD HH:mm');
     },
     getServersList: function() {
         $.ajax({
@@ -4579,12 +4568,14 @@ History = {
             data:    {'list': 'servers'},
             success: function(data){
                 History.serversList    = data.serversList;
+                History.timeZonesList  = data.timeZonesList;
                 History.groupByService = parseInt(data.groupByService);
                 History.groupByHost    = parseInt(data.groupByHost);
                 History.refreshArray   = data.refreshArray;
 
                 History.drawTabsList();
                 History.drawSelects();
+                History.drawTimeZonesList();
             }
         });
     },
@@ -4599,7 +4590,7 @@ History = {
             data:    {
                 'server': 'All',
                 'date': this.timestamp,
-                'time_correction_type': this.timeZone,
+                'time_correction_type': History.timeZone,
                 'time_correction_diff': moment().utcOffset()
             },
             success: function(data){
@@ -4831,21 +4822,6 @@ History = {
             }
         }
     },
-    returnMysqlDate: function(d) {
-        if (!d) {
-            return "";
-        }
-
-        return [
-                d.getFullYear(),
-                (d.getMonth()+1).padLeft(),
-                d.getDate().padLeft()
-            ].join('-') + ' ' +
-            [
-                d.getHours().padLeft(),
-                d.getMinutes().padLeft()
-            ].join(':');
-    },
     setCounts: function() {
         $('#normal-label .xs-hide').show();
         $('#normal-label .xs-hide em').text(History.tableData[Search.currentServerTab]['normal'].length);
@@ -4857,7 +4833,7 @@ History = {
         $('#sched-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
 
         $('#EMERGENCY-label .xs-hide').show();
-        $('#EMERGENCY-label .xs-hide em').text(History.tableData[Search.currentServerTab]['sched'].length);
+        $('#EMERGENCY-label .xs-hide em').text(History.tableData[Search.currentServerTab]['EMERGENCY'].length);
     }
 };
 Stats = {
