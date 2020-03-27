@@ -2,10 +2,8 @@
 
 class stats
 {
-    private $dateTimeFormat = "Y-m-d H:i:s";
     private $history = [];
     private $results = [];
-    private $fullResults = [];
     private $calendar;
     private $timeZone;
     private $usersShifts = [];
@@ -22,9 +20,6 @@ class stats
         $this->servers     = $this->setServers($this->server, $this->serversList);
         $this->timeZone    = $timeZone;
         $this->calendar    = new calendar;
-
-        $this->timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
-        $this->timeCorrectionDiff = (isset($_GET['time_correction_diff'])) ? $_GET['time_correction_diff'] : 0;
     }
 
     public function returnTabsList()
@@ -57,7 +52,7 @@ class stats
 
     public function returnStats()
     {
-        $this->setFormatedDates();
+        $this->setFormattedDates();
         $this->validate();
         $this->runCalendar();
         $this->getStats();
@@ -108,20 +103,17 @@ class stats
     {
         $this->history = [];
         $this->getStatsDataFromDb();
-        $this->results = $this->getStatsByUser();
-
-        $this->results['Summary report'] = $this->calculateByServer($this->from, $this->to, 'Summary report', []);
+        $this->results['Summary report'] = $this->calculateByServer($this->from, $this->to, 'Summary report', [], $this->history, true);
         $this->results['Nobody\'s shift'] = $this->results['Summary report'];
-
-        return $this->results;
+        $this->getStatsByUser();
     }
-    private function calculateByServer($from, $to, $user, $stats)
+    private function calculateByServer($from, $to, $user, $stats, $alertsList, $saveUsersData = false)
     {
         if (!isset($stats[$user])) {
             $stats[$user] = [];
         }
 
-        foreach ($this->history as $server => $data) {
+        foreach ($alertsList as $server => $data) {
             if (!isset($stats[$user][$server])) {
                 $stats[$user][$server] = [
                     'alerts_count'     => 0,
@@ -142,6 +134,10 @@ class stats
 
                 foreach ($dataList as $key => $record) {
                     $ts = $record['ts'];
+
+                    if ($saveUsersData) {
+                        $this->findUser($ts, $server, $check_id, $record, $lastAlert);
+                    }
 
                     if ($ts > $from && $ts < $to) {
                         if (!$alerts && $lastAlert) {
@@ -176,17 +172,49 @@ class stats
 
         return $stats[$user];
     }
+    private function findUser($ts, $server, $check_id, $record, $lastAlert)
+    {
+        foreach ($this->usersShifts as $user => $dates) {
+            foreach ($dates as $key => $date) {
+                if ($ts >= $date['start'] && $ts <= $date['finish']) {
+                    if (!isset($this->usersShifts[$user][$key]['alerts'])) {
+                        $this->usersShifts[$user][$key]['alerts'] = [];
+                    }
+
+                    if (!isset($this->usersShifts[$user][$key]['alerts'][$server])) {
+                        $this->usersShifts[$user][$key]['alerts'][$server] = [];
+                    }
+
+                    if (!isset($this->usersShifts[$user][$key]['alerts'][$server][$check_id])) {
+                        $this->usersShifts[$user][$key]['alerts'][$server][$check_id] = [];
+                    }
+
+                    if ($lastAlert && !$this->usersShifts[$user][$key]['alerts'][$server][$check_id]) {
+                        $this->usersShifts[$user][$key]['alerts'][$server][$check_id][] = $lastAlert;
+                    }
+
+                    $this->usersShifts[$user][$key]['alerts'][$server][$check_id][] = $record;
+
+                    break 2;
+                }
+            }
+        }
+    }
     private function getStatsByUser()
     {
         $stats = [];
 
         foreach ($this->usersShifts as $user => $dates) {
-            foreach ($dates as $date) {
-                $stats[$user] = $this->calculateByServer($date['start'], $date['finish'], $user, $stats);
-            }
-        }
+            $stats[$user] = [];
 
-        return $stats;
+            foreach ($dates as $key => $date) {
+                if (isset($this->usersShifts[$user][$key]['alerts']) && $this->usersShifts[$user][$key]['alerts']) {
+                    $stats[$user] = $this->calculateByServer($date['start'], $date['finish'], $user, $stats, $this->usersShifts[$user][$key]['alerts'], false);
+                }
+            }
+
+            $this->results[$user] = $stats[$user];
+        }
     }
     private function calculateByCheckId($stats, $alerts, $from, $to)
     {
@@ -369,7 +397,7 @@ class stats
         http_response_code(400);
         die($message);
     }
-    private function setFormatedDates()
+    private function setFormattedDates()
     {
         $this->from = $this->getTs('from');
         $this->to   = $this->getTs('to');
@@ -392,12 +420,9 @@ class stats
     }
     private function getStatsDataFromDb()
     {
-        foreach ($this->servers as $item) {
-            $from = $this->returnDateForDb($this->from);
-            $to   = $this->returnDateForDb($this->to);
-
-            $this->history[$item] = $this->db->historyGetUnfinishedAlertsWithPeriod($item, $from, $to);
-        }
+        $from = $this->returnDateForDb($this->from);
+        $to   = $this->returnDateForDb($this->to);
+        $this->history = $this->db->historyGetUnfinishedAlertsWithPeriod($from, $to);
 
         return $this->groupByCheckId();
     }

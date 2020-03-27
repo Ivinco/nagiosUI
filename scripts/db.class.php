@@ -853,9 +853,8 @@ class db
 
         return $return;
     }
-    public function historyGetUnfinishedAlertsWithPeriod($server, $dateFrom, $dateTo)
+    public function historyGetUnfinishedAlertsWithPeriod($dateFrom, $dateTo)
     {
-        $server   = $this->mysql->real_escape_string($server);
         $dateTo   = $this->mysql->real_escape_string($dateTo);
         $dateFrom = $this->mysql->real_escape_string($dateFrom);
 
@@ -880,8 +879,6 @@ class db
                   `history1`.`state` != 'ok'
                 AND
                   (`history1`.`severity` = 'unhandled' OR `history1`.`severity` = 'quick_acked')
-                AND
-                  `checks`.`server` = '{$server}'
         ";
 
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
@@ -901,7 +898,7 @@ class db
                 $row['date'] = $dateFrom;
             }
 
-            $list[$row['check_id'].$row['date']] = $row;
+            $list[$row['server']][$row['check_id'].$row['date']] = $row;
         }
 
         $sql = "
@@ -914,9 +911,7 @@ class db
                 ON
                   `history`.`check_id` = `checks`.`id`
             WHERE
-                  `checks`.`server` = '{$server}'
-                AND
-                  `history`.`date` > '{$dateFrom}'
+                `history`.`date` > '{$dateFrom}'
                 {$dateTo}
         ";
 
@@ -932,12 +927,17 @@ class db
                 $row['output']  = $infoRecord['status'];
             }
 
-            $list[$row['check_id'].$row['date']] = $row;
+            $list[$row['server']][$row['check_id'].$row['date']] = $row;
         }
 
-        ksort($list);
-        $list = array_values($list);
+        $orderedList = [];
 
-        return $list;
+        foreach ($list as $server => $data) {
+            ksort($data);
+            $data = array_values($data);
+            $orderedList[$server] = $data;
+        }
+
+        return $orderedList;
     }
 }
