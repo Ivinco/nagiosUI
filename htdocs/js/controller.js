@@ -4865,8 +4865,8 @@ Stats = {
         });
         $('#filterStats').on('click', function() {
             Stats.selectedUsers = $('#usersFilter').val();
-            Stats.selectedFrom  = $("#calendar_switch option:selected").attr('data-from');
-            Stats.selectedTo    = $("#calendar_switch option:selected").attr('data-to');
+            Stats.selectedFrom  = $('#stats_from_date').val();
+            Stats.selectedTo    = $('#stats_to_date').val();
 
             if (!Stats.selectedUsers) {
                 alert('Please select at least one user.');
@@ -4889,6 +4889,13 @@ Stats = {
                 }
             }
         });
+        $('#calendar_switch').on('change', function() {
+            Stats.changePeriodDates();
+            Stats.checkCalendarSwitch();
+        });
+        $('#stats_from_date, #stats_to_date').on('change', function() {
+            Stats.checkCalendarSwitch();
+        });
     },
     drawStats: function() {
         $('.historyText').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
@@ -4896,12 +4903,12 @@ Stats = {
             type:    'GET',
             url:     'stats.php',
             data:    {
-                'date_from': Stats.selectedFrom + ' 00:00:00',
-                'date_to': Stats.selectedTo + ' 23:59:59',
+                'date_from': Stats.selectedFrom,
+                'date_to': Stats.selectedTo,
                 'time_correction_type': this.timeZone,
                 'time_correction_diff': moment().utcOffset(),
-                'from': moment.utc(Stats.selectedFrom + ' 00:00:00').unix(),
-                'to': moment.utc(Stats.selectedTo + ' 23:59:59').unix(),
+                'from': moment.utc(Stats.selectedFrom).unix(),
+                'to': moment.utc(Stats.selectedTo).unix(),
             },
             success: function(data){
                 Stats.statsData = data;
@@ -4912,7 +4919,7 @@ Stats = {
     drawStatsHtml: function() {
         $('.historyText').html('');
 
-        var html = '<h4>Stats for period: '+ Stats.selectedFrom +' 00:00:00 - '+ Stats.selectedTo +' 23:59:59 ('+ Stats.tz +'). ('+ Stats.selectedUsers.join(', ') +')</h4>';
+        var html = '<h4>Stats for period: '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +' ('+ Stats.tz +'). ('+ Stats.selectedUsers.join(', ') +')</h4>';
         html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="width: 330px; vertical-align: top;">';
         $(Stats.selectedUsers).each(function (key, value) {
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
@@ -5123,8 +5130,55 @@ Stats = {
         }
 
         $('#refreshTimeSelect').selectmenu({ disabled: true });
+        Stats.changePeriodDates();
+        Stats.drawDatePickers();
+    },
+    drawDatePickers: function() {
+        var dateTimePickerFromSettings = {
+            timeFormat: 'HH:mm:ss',
+            dateFormat: 'yy-mm-dd',
+            controlType: 'select',
+            oneLine: true,
+            defaultValue: $('#stats_from_date').val(),
+        };
+
+        dateTimePickerToSettings = dateTimePickerFromSettings;
+        dateTimePickerToSettings.defaultValue = $('#stats_to_date').val();
+
+        $('#stats_from_date').datetimepicker(dateTimePickerFromSettings);
+        $('#stats_to_date').datetimepicker(dateTimePickerToSettings);
+    },
+    changePeriodDates: function() {
+        item = $("#calendar_switch option:selected");
+
+        if (item.val() != 'Custom') {
+            $('#stats_from_date').val(item.attr('data-from'));
+            $('#stats_to_date').val(item.attr('data-to'));
+        }
+    },
+    checkCalendarSwitch: function() {
+        var from     = $('#stats_from_date').val(),
+            to       = $('#stats_to_date').val(),
+            selected = 'Custom';
+
+        $('#calendar_switch option').each(function (key, value) {
+            if (from == $(value).attr('data-from') && to == $(value).attr('data-to')) {
+                selected = $(value).val();
+
+                return false;
+            }
+        });
+
+        if ($('#calendar_switch').val() != selected) {
+            $('#calendar_switch option[value="'+ $('#calendar_switch').val() +'"]').removeAttr('selected');
+            $('#calendar_switch option[value="'+ selected +'"]').prop('selected', 'selected');
+        }
     },
     returnPeriod: function(period) {
+        if (period == 'custom') {
+            return { from: 'custom', to: 'custom' };
+        }
+
         var from = moment(),
             to   = moment();
 
@@ -5156,7 +5210,7 @@ Stats = {
             to.subtract(1, 'months').endOf('month');
         }
 
-        return { from: from.format('Y-MM-DD'), to: to.format('Y-MM-DD') };
+        return { from: from.format('Y-MM-DD') + ' 00:00:00', to: to.format('Y-MM-DD') + ' 23:59:59' };
     },
     returnSelectList: function() {
         return [
@@ -5169,6 +5223,7 @@ Stats = {
             { name: 'This Month',   value: this.returnPeriod('thisMonth') },
             { name: 'Last 30 Days', value: this.returnPeriod('last30days') },
             { name: 'Last Month',   value: this.returnPeriod('lastMonth') },
+            { name: 'Custom',       value: this.returnPeriod('custom') },
         ];
     },
 };

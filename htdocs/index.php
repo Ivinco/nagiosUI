@@ -248,6 +248,12 @@
                 </td>
             </tr>
             <tr>
+                <td style="padding: 12px 0; font-size: 13px;">
+                    From: <input type="text" name="stats_from_date" id="stats_from_date" class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                    To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                </td>
+            </tr>
+            <tr>
                 <td><input type="button" value="show" name="filterStats" id="filterStats"></td>
             </tr>
         </table>
@@ -262,7 +268,7 @@
     <script src="js/datetimepicker.min.js"></script>
     <script src="js/zingchart.min.js"></script>
 <?php
-if (isset($_GET['t']) && trim($_GET['t'])) { ?>
+if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_GET['stats']))) { ?>
     <script src="js/jquery-ui-timepicker-addon.js"></script>
 <?php } ?>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
