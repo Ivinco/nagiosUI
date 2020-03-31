@@ -85,6 +85,35 @@ Search = {
                 }
             }
         });
+    },
+    calculateAgoText: function(from) {
+        var to = moment.utc().unix(),
+            from = parseInt(from),
+            diff = to - from;
+
+        var hours = diff/3600;
+        hours = parseInt(hours);
+        diff = diff % (3600);
+
+        var min = parseInt(diff/60);
+        min = parseInt(min);
+        diff = diff % (60);
+
+        var sec = parseInt(diff);
+
+        var text = "";
+
+        if (hours) {
+            text += hours + "h ";
+        }
+
+        if (min) {
+            text += min + "m ";
+        }
+
+        text += sec + "s";
+
+        return text;
     }
 }
 
@@ -238,7 +267,7 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
                     sort:  'last.order',
                     type:  'string',
                     display: function ( data, type, full, meta ) {
-                        return data.name;
+                        return '<span title="'+ Search.calculateAgoText(data.order) +' ago">'+ data.name +'</span>';
                     },
                 }
             },
@@ -3870,7 +3899,8 @@ Grouping = {
             subRowsInfo    = ((subRowsBlue + subRowsBrown) == subRows) ? true : false,
             subRowsClass   = (subRowsInfo) ? ((subRowsBrown) ? ' brown-text' : ' blue-text') : '',
             ackIconBlock   = '<li><span class="icons acknowledgeItGroup list-ack-icon" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
-            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>';
+            schedIconBlock = '<li><span class="icons scheduleItGroup list-sched-icon" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>',
+            lastCheckText  = ('<span title="' + Search.calculateAgoText(rowData.lastCheckOrder) + ' ago">'+ rowData.lastCheck +'</span>');
 
         if (avatar) {
             var quickAck = '<li><img class="icons" src="https://www.gravatar.com/avatar/'+ avatar +'?size=20"></li>';
@@ -3893,7 +3923,7 @@ Grouping = {
             '		</div>' +
             '	</td>' +
             '	<td class="status '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.status +'</td>' +
-            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.lastCheck +'</td>' +
+            '	<td class="last_check '+ trClass + mainGreyClass + subRowsClass +'">'+ lastCheckText +'</td>' +
             '	<td class="duration-sec" style="display: none;"></td>' +
             '	<td class="duration '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.duration +'</td>' +
             '	<td class="status_information '+ trClass + mainGreyClass + subRowsClass +'">'+ rowData.information.name +'</td>' +
@@ -3922,7 +3952,8 @@ Grouping = {
                     greyTextClass = (item.service.sched) ? ' grey-text' : '',
                     blueTextClass = (item.service.info && (item.state == 'WARNING' || item.state == 'UNKNOWN')) ? ' blue-text' : '',
                     brownTextClass = (item.service.info && item.state == 'CRITICAL') ? ' brown-text' : '',
-                    colorClass = greyTextClass + blueTextClass + brownTextClass;
+                    colorClass = greyTextClass + blueTextClass + brownTextClass,
+                    lastCheckText  = ('<span title="' + Search.calculateAgoText(item.last.order) + ' ago">'+ item.last.name +'</span>');
 
                 prevHost = item.host.name;
 
@@ -3976,7 +4007,7 @@ Grouping = {
                 result += '<td class="status '+ item.state + colorClass + ' ' + item.status.origin +'">'+ item.status.name +'</td>';
 
                 //last check
-                result += '<td class="last_check '+ item.state + colorClass +'">' + item.last.name + '</td>';
+                result += '<td class="last_check '+ item.state + colorClass +'">' + lastCheckText + '</td>';
 
                 //duration
                 result += '<td class="duration '+ item.state + colorClass +'">';
@@ -4049,6 +4080,8 @@ Grouping = {
 
             Search.recheckIcons();
             Search.checkResizedIcons();
+            $(document).find("span[title]").tooltip({ track: true });
+            $(document).find(".ui-tooltip").remove();
         }
     },
     removeChildHtml: function(key) {
@@ -4086,6 +4119,8 @@ Grouping = {
             } else {
                 localStorage.setItem(Search.currentTab + '_' + attr, true);
                 Grouping.returnChildHtml(attr);
+                $(document).find("span[title]").tooltip({ track: true });
+                $(document).find(".ui-tooltip").remove();
             }
         });
         $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
