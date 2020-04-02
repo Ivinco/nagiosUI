@@ -547,7 +547,7 @@ Search.filterDataTable = function(val, startReload) {
 	Search.ajaxData    = Search.allDataTable.ajax.json().additional;
 
 	Search.extension();
-	Search.emptyHosts();
+	//Search.emptyHosts();
 
 	if ($(window).width() > 560) {
 		$('.comment').toggle(Search.currentTab == 'acked' || Search.currentTab == 'sched');
@@ -2353,7 +2353,7 @@ Search.init = function() {
 	Search.allDataTable.on('order.dt', function(e, settings) {
 		Search.orderBy[Search.currentTab] = settings.aaSorting;
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
-		Search.emptyHosts();
+		//Search.emptyHosts();
 	});
 	$('img').error(function() { $(this).attr('src', 'images/empty.jpeg'); });
 	Date.prototype.format   = function(mask, utc) { return dateFormat(this, mask, utc); };
@@ -3948,7 +3948,7 @@ Grouping = {
 
             for (var i = 0; i < this.listGroups[key].children.length; i++) {
                 var item = this.listGroups[key].children[i].full,
-                    hostVisibility = (prevHost != item.host.name) ? 'visible' : 'hidden',
+                    hostVisibility = 'visible';//(prevHost != item.host.name) ? 'visible' : 'hidden',
                     greyTextClass = (item.service.sched) ? ' grey-text' : '',
                     blueTextClass = (item.service.info && (item.state == 'WARNING' || item.state == 'UNKNOWN')) ? ' blue-text' : '',
                     brownTextClass = (item.service.info && item.state == 'CRITICAL') ? ' brown-text' : '',
