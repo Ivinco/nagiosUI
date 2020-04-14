@@ -498,7 +498,7 @@ class xml
     {
         $state = (int)$data['current_state'];
 
-        if ($state && (int) $data['last_hard_state']) {
+        if ($state && (int) $data['last_hard_state'] && (int)$data['current_attempt'] > 1) {
             if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
                 $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], false);
             } else {
@@ -627,8 +627,7 @@ class xml
 
     private function prepareHosts()
     {
-        $unfinishedAlerts = $this->db->historyGetUnfinishedAlerts($this->currentTabTmp);
-        foreach ($unfinishedAlerts as $tab => $data) {
+        foreach ($this->unfinishedAlerts as $tab => $data) {
             foreach ($data as $alert) {
                 if ($alert['service'] == 'SERVER IS UP') {
                     if (isset($this->statusFile['content']) && isset($this->statusFile['content'][$alert['host']])) {
