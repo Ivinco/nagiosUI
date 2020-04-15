@@ -496,10 +496,6 @@ class xml
     }
     private function addHistoryData($host, $service, $data)
     {
-        if ((int)$data['current_attempt'] <= 1) {
-            return;
-        }
-
         $state = (int)$data['current_state'];
 
         if ($state && (int) $data['last_hard_state']) {
@@ -631,6 +627,10 @@ class xml
 
     private function prepareHosts()
     {
+        if (!isset($this->statusFile['content']) || !count($this->statusFile['content'])) {
+            return;
+        }
+
         foreach ($this->unfinishedAlerts as $tab => $data) {
             foreach ($data as $alert) {
                 if ($alert['service'] == 'SERVER IS UP') {
