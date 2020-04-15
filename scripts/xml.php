@@ -496,9 +496,13 @@ class xml
     }
     private function addHistoryData($host, $service, $data)
     {
+        if ((int)$data['current_attempt'] <= 1) {
+            return;
+        }
+
         $state = (int)$data['current_state'];
 
-        if ($state && (int) $data['last_hard_state'] && (int)$data['current_attempt'] > 1) {
+        if ($state && (int) $data['last_hard_state']) {
             if (isset($this->unfinishedAlerts[$host]) && isset($this->unfinishedAlerts[$host][$service])) {
                 $this->insertOrUpdateHistory($data, $host, $service, $this->statesArray[$state], false);
             } else {

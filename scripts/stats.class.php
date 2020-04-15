@@ -424,7 +424,7 @@ class stats
         $to   = $this->returnDateForDb($this->to);
         $this->history = $this->db->historyGetUnfinishedAlertsWithPeriod($from, $to);
 
-        return $this->groupByCheckId();
+        $this->groupByCheckId();
     }
     private function groupByCheckId() {
         $results = [];
