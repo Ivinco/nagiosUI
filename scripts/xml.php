@@ -572,7 +572,7 @@ class xml
         while ($i < 5) {
             $data = $this->curlRequest("/state");
 
-            if ($data) {
+            if ($data && !empty($data) && isset($data['content']) && !empty($data['content']) && count($data['content'])) {
                 $this->statusFile = $data;
                 break;
             }
