@@ -2,17 +2,19 @@
 
 class utils
 {
-    const BROWSER_TYPE_NAME = 'Local_Browser';
+    const BROWSER_TYPE_NAME = 'Local Browser';
     public $timeCorrectionDiff;
     public $timeCorrectionType;
     public $default_time_zone;
 
     function __construct() {
         global $timeZonesList;
+        global $timeZonesListAliases;
         global $serversList;
         global $timeZone;
 
         $this->default_time_zone = $timeZone;
+        $this->timeZonesListAliases = $timeZonesListAliases;
 
         $this->setTimeZonesList($timeZonesList);
         $this->setServerTabsList($serversList);
@@ -57,11 +59,26 @@ class utils
     private function setTimeCorrection()
     {
         $this->timeCorrectionType = (isset($_GET['time_correction_type'])) ? $_GET['time_correction_type'] : '';
+        $this->timeCorrectionType = urldecode($this->timeCorrectionType);
+        $this->timeCorrectionType = $this->getTimeZoneWithAliases($this->timeCorrectionType);
         $this->timeCorrectionDiff = 0;
 
         if ($this->timeCorrectionType == self::BROWSER_TYPE_NAME && isset($_GET['time_correction_diff'])) {
             $this->timeCorrectionDiff = (int) $_GET['time_correction_diff'];
         }
+    }
+
+    private function getTimeZoneWithAliases($tz)
+    {
+        if (isset($this->timeZonesListAliases) && $this->timeZonesListAliases) {
+            foreach ($this->timeZonesListAliases as $key => $value) {
+                if ($value == $tz) {
+                    return $key;
+                }
+            }
+        }
+
+        return $tz;
     }
 
     public function getTimeZonesList()
@@ -70,7 +87,12 @@ class utils
     }
     private function setTimeZonesList($timeZonesList)
     {
-        $this->timeZonesList = $timeZonesList;
+        if (isset($this->timeZonesListAliases) && $this->timeZonesListAliases) {
+            $this->timeZonesList = array_values($this->timeZonesListAliases);
+        } else {
+            $this->timeZonesList = $timeZonesList;
+        }
+
         $this->timeZonesList[] = 'UTC';
         $this->timeZonesList[] = self::BROWSER_TYPE_NAME;
         sort($this->timeZonesList);

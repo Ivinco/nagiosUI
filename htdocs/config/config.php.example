@@ -7,15 +7,16 @@
 $timeZone = "America/New_York";
 date_default_timezone_set($timeZone);
 
-//Time zones select values for UI
+//Time zones select values for UI with aliases
 //except Browser time and UTC
 //full list: https://www.php.net/manual/en/timezones.php
-$timeZonesList = [
-    'America/New_York',
-    'Asia/Novosibirsk',
-    'Australia/Brisbane',
-    'Pacific/Fiji',
-    'America/Argentina/Buenos_Aires',
+//key: timezone, value: what show in UI select
+$timeZonesListAliases = [
+    'America/New_York'               => 'EST/ETD',
+    'Asia/Novosibirsk'               => 'Novosibirsk',
+    'Australia/Brisbane'             => 'Brisbane',
+    'Pacific/Fiji'                   => 'Fiji',
+    'America/Argentina/Buenos_Aires' => 'Buenos Aires',
 ];
 
 // ID for the shift calendar - used by stats

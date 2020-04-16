@@ -4985,10 +4985,6 @@ Stats = {
         };
 
         $(Stats.selectedUsers).each(function (key, value) {
-            if (value == 'Summary report' || value == 'Nobody\'s shift') {
-                return;
-            }
-
             result.users.push(value.split(" ").join("\n"));
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {

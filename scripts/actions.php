@@ -5,7 +5,11 @@ class actions
     function __construct()
     {
         global $serversList;
+        global $debug;
+        global $debugPath;
 
+        $this->debug = $debug;
+        $this->debugPath = $debugPath;
         $this->serversList = $serversList;
 
         $this->db = new db;
@@ -146,6 +150,11 @@ class actions
 
     private function curlRequest($url, $data)
     {
+        if (isset($this->debug) && $this->debug) {
+            file_put_contents($this->debugPath, json_encode([$url, $data]) . "\n", FILE_APPEND | LOCK_EX);
+            return;
+        }
+
         $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
         $curl = curl_init();
