@@ -70,7 +70,7 @@ Search = {
 
         $(this.additional.timeZonesList).each(function (key, value) {
             var selected = (Search.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
-            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>Timezone: '+ value +'</option>';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>TZ: '+ value +'</option>';
         });
 
         $('#timeZoneBlock').css('clear', 'both').show();
@@ -4453,7 +4453,7 @@ History = {
 
         $(History.timeZonesList).each(function (key, value) {
             var selected = (History.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
-            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>Timezone: '+ value +'</option>';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>TZ: '+ value +'</option>';
         });
 
         $('#timeZoneBlock').css('clear', 'both').show();

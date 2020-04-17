@@ -63,6 +63,11 @@
 </div>
 <div id="infoHolder" style="display: none;">
 	<form>
+        <div style="display: none; float: right;" id="timeZoneBlock">
+            <form>
+                <select name="timeZone" id="timeZoneSelect"></select>
+            </form>
+        </div>
 		<div id="refreshTime">
 			<select name="files" id="refreshTimeSelect"></select>
 		</div>
@@ -125,11 +130,6 @@
         </div>
     </form>
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
-    <div style="display: none; float: left; margin: 10px 0 0 0;" id="timeZoneBlock">
-        <form>
-            <select name="timeZone" id="timeZoneSelect"></select>
-        </form>
-    </div>
     <table id="mainTable">
         <thead>
             <tr>

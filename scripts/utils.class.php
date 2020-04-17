@@ -2,7 +2,7 @@
 
 class utils
 {
-    const BROWSER_TYPE_NAME = 'Local Browser';
+    const BROWSER_TYPE_NAME = 'Browser';
     public $timeCorrectionDiff;
     public $timeCorrectionType;
     public $default_time_zone;
