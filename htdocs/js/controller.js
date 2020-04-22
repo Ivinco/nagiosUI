@@ -2889,6 +2889,7 @@ Planned = {
     plannedTimer: null,
     showHidePlanned: function() {
         if (Search.currentTab == 'planned') {
+            Search.stopReloads(true);
             $('#planned-maintenance').show();
             $('#mainTable_wrapper').hide();
         } else {

@@ -109,4 +109,26 @@ class utils
         array_unshift($this->serverTabsList, 'All');
     }
 
+    private function getCommentUrl($server)
+    {
+        if (isset($this->serversList[$server]) && isset($this->serversList[$server]['commentUrl'])) {
+            return $this->serversList[$server]['commentUrl'];
+        }
+
+        return "";
+    }
+
+    public function parseUrls($string, $server) {
+        $commentUrl = $this->getCommentUrl($server);
+
+        $url = '@(http(s)?)?(://)?(([a-zA-Z])([-\w]+\.)+([^\s\.]+[^\s]*)+[^,.\s])@';
+        $string = preg_replace($url, '<a href="http$2://$4" target="_blank" title="$0">$0</a>', $string);
+
+        if ($commentUrl) {
+            $string = preg_replace('/(([A-Z]{2,4}-\d+))/', $commentUrl, $string);
+        }
+
+        return $string;
+    }
+
 }

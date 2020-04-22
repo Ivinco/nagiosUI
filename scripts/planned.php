@@ -21,6 +21,7 @@ class planned
         $this->serversList = $serversList;
         $this->actions     = new actions;
         $this->db          = new db;
+        $this->utils       = new utils();
     }
 
     public function verifyPostData() {
@@ -156,7 +157,7 @@ class planned
         return [implode('<br /><br />', $comments), implode(',', $downtimes)];
     }
     public function formatScheduledComment($comment, $author, $time) {
-        $return  = $this->parseUrls($comment);
+        $return  = $this->utils->parseUrls($comment, $this->server);
         $return  = "'{$return}' by {$author}";
         $return .= ($time) ? '<br />added: '. date('M j H:i', intval($time)) : '';
 
@@ -357,12 +358,5 @@ class planned
     }
     private function pregMatchStatus($commandStatus, $status) {
         return preg_match("/$commandStatus/iu", " " . $status . " ");
-    }
-
-    private function parseUrls($string) {
-        $url = '@(http(s)?)?(://)?(([a-zA-Z])([-\w]+\.)+([^\s\.]+[^\s]*)+[^,.\s])@';
-        $string = preg_replace($url, '<a href="http$2://$4" target="_blank" title="$0">$0</a>', $string);
-
-        return $string;
     }
 }

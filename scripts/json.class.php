@@ -113,7 +113,7 @@ class json
             }
 
             $returnType = '';
-            $returnType.= ((!$acked && !$sched) || ($acked && $tempCommen == 'temp') || ($showInNormal && $state != 'OK')) ? '__normal__' : '';
+            $returnType.= (($state != 'OK') && ((!$acked && !$sched && $state != 'OK') || ($acked && $tempCommen == 'temp') || ($showInNormal))) ? '__normal__' : '';
             $returnType.= ($acked && $tempCommen != 'temp') ? '__acked__' : '';
             $returnType.= ($sched) ? '__sched__' : '';
 

@@ -38,6 +38,7 @@ class xml
         $this->statesArray              = [0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN'];
         $this->actions                  = new actions;
         $this->db                       = new db;
+        $this->utils                    = new utils();
         $this->statusFile               = [];
 
         if ($this->memcacheEnabled) {
@@ -342,7 +343,7 @@ class xml
     }
     private function prepareAckSchedComment($comment, $author, $date)
     {
-        $result  = $this->parseUrls($comment);
+        $result  = $this->utils->parseUrls($comment, $this->currentTabTmp);
         $result  = "'{$result}' by {$author}";
         $result .= (intval($date)) ? ('<br />added: '. $this->getLastCheckDate($date, 'M j H:i')) : '';
 
@@ -833,12 +834,5 @@ class xml
         $result['downtime_id']     = (!empty($result['downtime_id']))     ? implode(',', $result['downtime_id'])  : '';
 
         return $result;
-    }
-
-    private function parseUrls($string) {
-        $url = '@(http(s)?)?(://)?(([a-zA-Z])([-\w]+\.)+([^\s\.]+[^\s]*)+[^,.\s])@';
-        $string = preg_replace($url, '<a href="http$2://$4" target="_blank" title="$0">$0</a>', $string);
-
-        return $string;
     }
 }
