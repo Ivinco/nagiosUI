@@ -113,7 +113,7 @@ class planned
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
-                        $this->removeSchedulePlanned($downtime);
+                        $this->removeSchedulePlanned($downtime, $server);
                     }
 
                     $sched = 0;
@@ -315,6 +315,7 @@ class planned
                 $status     = (!is_array($item['status_information']))   ? $item['status_information']   : implode(' ', $item['status_information']);
                 $downtimeId = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(',', $item['downtime_id']);
                 $schComment = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
+                $server     = (!is_array($item['tab']))                  ? $item['tab']                  : implode(' ', $item['tab']);
 
                 list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
 
@@ -327,7 +328,7 @@ class planned
                                 foreach ($serviceCommands as $commandService) {
                                     foreach ($statusCommands as $commandStatus) {
                                         if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                            $this->removeSchedulePlanned($downtime);
+                                            $this->removeSchedulePlanned($downtime, $server);
                                         }
                                     }
                                 }
@@ -338,10 +339,10 @@ class planned
             }
         }
     }
-    private function removeSchedulePlanned($downtimeId) {
+    private function removeSchedulePlanned($downtimeId, $server) {
         if ($downtimeId != 4) {
             $this->actions->setType('downtime');
-            $this->actions->setServer($this->server);
+            $this->actions->setServer($server);
             $this->actions->runActions([[
                 'down_id' => $downtimeId,
                 'isHost'  => 'service',
