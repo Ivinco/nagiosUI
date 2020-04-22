@@ -100,7 +100,7 @@ class planned
         $this->db->removePlanned($this->line, $this->server);
         $this->removePlannedMaintenance($this->line);
     }
-    public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId) {
+    public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId, $server) {
         $return = [];
 
         if ($planned = $this->findPlannedRecord($host, $service, $status)) {
@@ -119,7 +119,7 @@ class planned
                     $sched = 0;
                 }
 
-                $this->setPlanned($host, $service, $status, $hostOrService);
+                $this->setPlanned($host, $service, $status, $hostOrService, $server);
             }
 
             $return = [
@@ -216,7 +216,7 @@ class planned
 
         return $return;
     }
-    private function setPlanned($host, $service, $status, $hostOrService) {
+    private function setPlanned($host, $service, $status, $hostOrService, $server) {
         $planned = $this->db->returnPlanned($this->server);
         $return  = $this->findPlannedRecord($host, $service, $status);
 
@@ -247,11 +247,11 @@ class planned
 
                         $results[$plannedKey]['list'][$host][$service][$status] = time() + 10;
 
-                        $this->db->editPlannedList($results[$plannedKey]['list'], $host, $service, $status, $this->server);
+                        $this->db->editPlannedList($results[$plannedKey]['list'], $host, $service, $status, $server);
                     }
                 }
 
-                $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService);
+                $this->schedulePlanned($host, $service, $return['end'], $return['author'], $return['comment'], $hostOrService, $server);
 
                 return $return['author'];
             }
@@ -269,9 +269,9 @@ class planned
 
         return $pattern;
     }
-    private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService) {
+    private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService, $server) {
         $this->actions->setType('scheduleItTime');
-        $this->actions->setServer($this->server);
+        $this->actions->setServer($server);
         $this->actions->runActions([[
             'start_time' => time(),
             'end_time'   => $end,
