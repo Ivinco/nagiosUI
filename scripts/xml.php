@@ -125,11 +125,11 @@ class xml
             $this->verifyNagiosApi();
 
             if (!in_array($this->currentTabTmp, $this->errorTabs)) {
+                $this->retry = 0;
                 $this->otherFiles();
                 $this->getHistoryChecks();
                 $this->getHistoryUnfinishedAlerts();
                 $this->getStatusFile();
-                $this->prepareHosts();
                 $this->prepareOtherData();
             }
         }
@@ -568,7 +568,14 @@ class xml
         while ($i < 5) {
             $data = $this->curlRequest("/state");
 
-            if ($data && !empty($data) && isset($data['content']) && !empty($data['content']) && count($data['content'])) {
+            if (    $data
+                && !empty($data)
+                && isset($data['content'])
+                && !empty($data['content'])
+                && count($data['content'])
+                && isset($data['success'])
+                && $data['success']
+            ) {
                 $this->statusFile = $data;
                 break;
             }
@@ -580,7 +587,10 @@ class xml
             http_response_code(404);
             die(date("Y-m-d H:i:s") . " Status file not found.\n");
         }
+
+        $this->prepareHosts();
     }
+
     private function verifyNagiosApi()
     {
         $path = $this->serversList[$this->currentTabTmp]['url'] . '/status';
@@ -611,7 +621,6 @@ class xml
     private function curlRequest($url)
     {
         $path = $this->serversList[$this->currentTabTmp]['url'] . $url;
-
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_PORT, $this->serversList[$this->currentTabTmp]['port']);
         curl_setopt($curl, CURLOPT_URL,            $path);
@@ -620,13 +629,45 @@ class xml
 
         $result = curl_exec($curl);
 
-        curl_close($curl);
+        if (curl_errno($curl)) {
+            curl_close($curl);
+            return '';
+        }
 
-        return json_decode($result, true);
+        curl_close($curl);
+        $result = json_decode($result, true);
+
+        if (json_last_error()) {
+            return '';
+        }
+
+        return $result;
     }
 
     private function prepareHosts()
     {
+        if ($this->retry < 2) {
+            $notOkAlerts = 0;
+
+            foreach ($this->statusFile['content'] as $host => $data) {
+                if ((int)$data['current_state']) {
+                    $notOkAlerts++;
+                }
+
+                foreach ($data['services'] as $service => $serviceData) {
+                    if ((int)$serviceData['current_state']) {
+                        $notOkAlerts++;
+                    }
+                }
+            }
+
+            if (!$notOkAlerts) {
+                $this->retry++;
+                return $this->getStatusFile();
+
+            }
+        }
+
         if (!isset($this->statusFile['content']) || !count($this->statusFile['content'])) {
             return;
         }
