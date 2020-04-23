@@ -150,8 +150,12 @@ class actions
 
     private function curlRequest($url, $data)
     {
+        if ($this->server == 'All') {
+            return;
+        }
+        
         if (isset($this->debug) && $this->debug) {
-            file_put_contents($this->debugPath, json_encode([$url, $data]) . "\n", FILE_APPEND | LOCK_EX);
+            file_put_contents($this->debugPath, json_encode([$this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url, $data]) . "\n", FILE_APPEND | LOCK_EX);
             return;
         }
 

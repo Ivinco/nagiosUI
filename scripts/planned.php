@@ -272,10 +272,11 @@ class planned
     private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService, $server) {
         $this->actions->setType('scheduleItTime');
         $this->actions->setServer($server);
+
         $this->actions->runActions([[
             'start_time' => time(),
             'end_time'   => $end,
-            'hours'      => 1,
+            'hours'      => ((int) $end - time()),
             'isHost'     => $hostOrService,
             'host'       => $host,
             'service'    => $service,
