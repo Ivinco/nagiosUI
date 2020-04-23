@@ -118,6 +118,19 @@ class utils
         return "";
     }
 
+    public function getCommentUrlList()
+    {
+        $return = [];
+
+        foreach ($this->serversList as $server => $data) {
+            if (isset($this->serversList[$server]['commentUrl'])) {
+                $return[$server] = $this->serversList[$server]['commentUrl'];
+            }
+        }
+
+        return $return;
+    }
+
     public function parseUrls($string, $server) {
         $commentUrl = $this->getCommentUrl($server);
 

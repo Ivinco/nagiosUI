@@ -242,6 +242,7 @@ class json
             'tabsList'          => $this->utils->getServerTabsList(),
             'tabCurrent'        => $this->xml->getCurrentTab(),
             'timeZonesList'     => $this->utils->getTimeZonesList(),
+            'comentUrl'         => $this->utils->getCommentUrlList(),
         );
     }
     private function filterByTab() {

@@ -126,7 +126,7 @@ class planned
                 'author'     => $planned['author'],
                 'avatar'     => md5(strtolower(trim($planned['email']))),
                 'commentRaw' => ($sched) ? $this->returnRawComment($schComment) : $planned['comment'],
-                'comment'    => ($sched) ? $schComment : $this->formatScheduledComment($planned['comment'], $planned['author'], $planned['date']),
+                'comment'    => ($sched && $planned['comment'] != $this->returnRawComment($schComment)) ? $schComment : $this->formatScheduledComment($planned['comment'], $planned['author'], $planned['date'], $server),
                 'date'       => $planned['date'],
                 'normal'     => $planned['normal'],
                 'command'    => $planned['command'],
@@ -156,8 +156,8 @@ class planned
 
         return [implode('<br /><br />', $comments), implode(',', $downtimes)];
     }
-    public function formatScheduledComment($comment, $author, $time) {
-        $return  = $this->utils->parseUrls($comment, $this->server);
+    public function formatScheduledComment($comment, $author, $time, $server) {
+        $return  = $this->utils->parseUrls($comment, $server);
         $return  = "'{$return}' by {$author}";
         $return .= ($time) ? '<br />added: '. date('M j H:i', intval($time)) : '';
 
@@ -281,6 +281,7 @@ class planned
             'service'    => $service,
             'author'     => $user,
             'com_data'   => '(planned)' . $comment,
+            'tab'        => $server,
         ]]);
 
         return true;
