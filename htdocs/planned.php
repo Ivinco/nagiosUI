@@ -19,6 +19,7 @@ if (!empty($_POST)) {
     $planned->user    = (isset($_POST['user'])) ? trim($_POST['user']) : '';
     $planned->normal  = (isset($_POST['normal']) && $_POST['normal']) ? 1 : 0;
     $planned->xserver = (isset($_POST['xserver']) && $_POST['xserver']) ? trim($_POST['xserver']) : '';
+    $planned->postServer = (isset($_POST['server']) && $_POST['server']) ? trim($_POST['server']) : '';
 
     $action = (isset($_POST['text'])) ? trim($_POST['text']) : '';
     $old    = (isset($_POST['old'])) ? trim($_POST['old']) : '';

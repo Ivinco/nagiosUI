@@ -287,6 +287,7 @@ class db
         $oldHost    = $this->mysql->real_escape_string($id[0]);
         $oldService = $this->mysql->real_escape_string($id[1]);
         $oldStatus  = $this->mysql->real_escape_string($id[2]);
+        $oldServer  = $this->mysql->real_escape_string($id[3]);
 
         $host    = $this->mysql->real_escape_string($host);
         $service = $this->mysql->real_escape_string($service);
@@ -303,7 +304,8 @@ class db
                 `service` = '{$service}',
                 `status`  = '{$status}',
                 `comment` = '{$comment}',
-                `normal`  = '{$normal}'
+                `normal`  = '{$normal}',
+                `server`  = '{$server}'
             WHERE
                 `host` = '{$oldHost}'
               AND
@@ -311,7 +313,7 @@ class db
               AND
                 `status` = '{$oldStatus}'
               AND
-                `server` = '{$server}'
+                `server` = '{$oldServer}'
         ";
 
         $this->mysql->query($sql);

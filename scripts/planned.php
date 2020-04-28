@@ -13,6 +13,7 @@ class planned
     public $normal;
     public $server;
     public $xserver;
+    public $postServer;
 
     function __construct()
     {
@@ -91,8 +92,7 @@ class planned
         print_r(json_encode(['file' => $json, 'templates' => $templates, 'servers' => implode(',', $serversList)], true));
     }
     public function editData($id) {
-        $server = explode('___', $id);
-        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $server[3]);
+        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->postServer);
     }
     public function removeData() {
         $record = $this->db->returnPlannedRecord($this->line, $this->server);

@@ -374,6 +374,10 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
             $('#mainTable').show();
 		},
 		'initComplete': function(settings, json) {
+            if (Search.currentTab == 'planned') {
+                Search.stopReloads();
+            }
+
 			$('#loading').hide();
 			$('#infoHolder').show();
 
@@ -479,7 +483,7 @@ Search.stopReloads = function(stop) {
     globalReload            = false;
 }
 Search.startReloads = function() {
-	if (localStorage.getItem('canceledReloads') == '0') {
+	if (localStorage.getItem('canceledReloads') == '0' && Search.currentTab != 'planned') {
         if (Search.currentReload == 'auto') {
 			reloadTimer             = setTimeout(function () { Search.getContent(); }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
 			Search.backgroundReload = true;
@@ -487,6 +491,10 @@ Search.startReloads = function() {
 			reloadTimer        = setTimeout(function () { Search.autoReloadData(); }, Search.currentReload*1000);
 			Search.autoRefresh = true;
 		}
+    }
+
+    if (Search.currentTab == 'planned') {
+        Search.stopReloads();
     }
 
     globalReload = true;
