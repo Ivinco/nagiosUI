@@ -11,6 +11,8 @@ class json
         $this->xml         = new xml;
         $this->ac          = new accessControl((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
         $this->plannedData = new planned;
+        $this->db          = new db;
+        $this->utils       = new utils;
 
         $this->xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
         $this->plannedData->server  = (isset($_GET['server_tab'])) ? $_GET['server_tab'] : '';
@@ -21,6 +23,7 @@ class json
         $this->user       = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
         $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
+        $this->latestActions = $this->db->getLatestActions();
 
         if (!$this->fullData) {
             http_response_code(404);
@@ -110,6 +113,17 @@ class json
                 $showInNormal   = $plannedRecord['normal'];
                 $plannedComment = [$plannedRecord['command'], $plannedRecord['commentRaw']];
                 $schedEnd       = $plannedRecord['end'];
+            }
+
+            $changedComments = $this->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab);
+            $sched           = $changedComments['sched'];
+            $schComment      = $changedComments['schComment'];
+            $acked           = $changedComments['acked'];
+            $ackComment      = $changedComments['ackComment'];
+            if ($changedComments['quickAckAu']) {
+                $tempCommen = $changedComments['ackComment'];
+                $quickAckAu = $changedComments['quickAckAu'];
+                $tempAuthor = $changedComments['quickAckAu'];
             }
 
             $returnType = '';
@@ -202,6 +216,57 @@ class json
                 'search'    => strtolower(implode('_', [$host, $service, $state, $lastCheck, $duration, $ackComment, $schComment, $state, $statusInfo])),
             );
         }
+    }
+
+    private function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
+    {
+        $return = [
+            'acked'      => $acked,
+            'ackComment' => $ackComment,
+            'sched'      => $sched,
+            'schComment' => $schComment,
+            'quickAckAu' => '',
+        ];
+
+        foreach ($this->latestActions as $last) {
+            if ($last['host'] == $host && $last['service'] == $service && $last['server'] == $tab) {
+                if ($last['command'] == 'ack' && !$return['acked']) {
+                    $return['acked'] = 1;
+                    if ($last['comment'] == 'temp') {
+                        $return['ackComment'] = $last['comment'];
+
+                        $usersList = $this->db->usersList($tab);
+                        $photo = (isset($usersList[$data['author']])) ? $usersList[$last['author']] : '';
+                        $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
+                        $return['quickAckAu'] = md5($photo);
+
+                    } else {
+                        $return['ackComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
+                    }
+                }
+
+                if ($last['command'] == 'unack' && $return['acked']) {
+                    $return['acked'] = 0;
+                    $return['ackComment'] = '';
+                    $return['quickAckAu'] = '';
+                }
+
+                if ($last['command'] == 'sched') {
+                    $return['acked'] = 0;
+                    $return['ackComment'] = '';
+                    $return['quickAckAu'] = '';
+                    $return['sched'] = 1;
+                    $return['schComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
+                }
+
+                if ($last['command'] == 'unsched') {
+                    $return['sched'] = 0;
+                    $return['schComment'] = '';
+                }
+            }
+        }
+
+        return $return;
     }
 
     private function returnCorrectedComments($comment, $tab) {

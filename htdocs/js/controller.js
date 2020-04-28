@@ -2419,6 +2419,8 @@ Search.init = function() {
 			$('#mainTable tr').each(function() {
 				var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
 					isHost  = $(this).find('.host a').attr('data-host'),
+                    host    = $(this).find('.host a').text(),
+                    service = $(this).find('.service .service-name').text(),
                     tab     = $(this).closest('tr').find('.host a').attr('data-tab');
 					
 				if (down_id) {
@@ -2426,7 +2428,7 @@ Search.init = function() {
 					
                     for (var a = 0; a < down_id.length; a++) {
 						if (ids.indexOf(down_id[a]) === -1) {
-							request.push({ 'down_id': down_id[a], 'isHost': isHost, 'tab': tab });
+							request.push({ 'down_id': down_id[a], 'isHost': isHost, 'tab': tab, 'host': host, 'service': service });
 							ids.push(down_id[a]);
 						}
 					}
@@ -2448,6 +2450,8 @@ Search.init = function() {
 					for (var i = 0; i < headerRows.length; i++) {
 						var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
 							isHost  = headerRows[i].find('.host a').attr('data-host'),
+                            host    = headerRows[i].find('.host a').text(),
+                            service = headerRows[i].find('.service .service-name').text(),
                             tab     = headerRows[i].find('.host [data-tab]').attr('data-tab');
 							
 						if (down_id) {
@@ -2455,7 +2459,7 @@ Search.init = function() {
 							
 							for (var b = 0; b < down_id.length; b++) {
 								if (ids.indexOf(down_id[b]) === -1) {
-									request.push({ 'down_id': down_id[b], 'isHost': isHost, 'tab': tab });
+									request.push({ 'down_id': down_id[b], 'isHost': isHost, 'tab': tab, 'host': host, 'service': service });
 									ids.push(down_id[b]);
 								}
 							}
@@ -2483,6 +2487,8 @@ Search.init = function() {
 				down_id  = rows.find('.service .unScheduleIt').attr('data-id'),
 				isHost   = rows.find('.host a').attr('data-host'),
 				hasGroup = rows.attr('data-group'),
+                host     = rows.find('.host a').text(),
+                service  = rows.find('.service .service-name').text(),
                 tab      = rows.find('.host [data-tab]').attr('data-tab');
 					
 			if (down_id) {
@@ -2490,7 +2496,7 @@ Search.init = function() {
 				
 				for (var i = 0; i < down_id.length; i++) {
 					if (ids.indexOf(down_id[i]) === -1) {
-						request.push({ 'down_id': down_id[i], 'isHost': isHost, 'tab': tab });
+						request.push({ 'down_id': down_id[i], 'isHost': isHost, 'tab': tab, 'host': host, 'service': service });
 						ids.push(down_id[i]);
 					}
 				}
@@ -4095,13 +4101,15 @@ Grouping = {
         for (var i = 0; i < this.listGroups[key].children.length; i++) {
             var down_id = this.listGroups[key].children[i].full.service.downId;
             var tab     = this.listGroups[key].children[i].full.host.tab;
+            var host    = this.listGroups[key].children[i].full.host.name;
+            var service = this.listGroups[key].children[i].full.service.name;
 
             if (down_id) {
                 down_id = down_id.split(',');
 
                 for (var a = 0; a < down_id.length; a++) {
                     if (ids.indexOf(down_id[a]) === -1) {
-                        requests.push({ 'down_id': down_id[a], 'isHost': this.listGroups[key].children[i].isHost, 'tab': tab });
+                        requests.push({ 'down_id': down_id[a], 'isHost': this.listGroups[key].children[i].isHost, 'tab': tab, 'host': host, 'service': service });
                         ids.push(down_id[a]);
                     }
                 }

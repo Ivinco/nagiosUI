@@ -42,7 +42,7 @@ class db
                 `logged`  TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
                 `host`    VARCHAR(255) NOT NULL,
                 `service` VARCHAR(255) NOT NULL,
-                `command` ENUM('ack', 'sched', 're-check', 'planned') DEFAULT NULL,
+                `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') DEFAULT NULL,
                 `author`  VARCHAR(255) NOT NULL,
                 `comment` VARCHAR(255) NOT NULL,
                 `server`  VARCHAR(255) NOT NULL
@@ -52,6 +52,14 @@ class db
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
+
+        $nagios_external_commands_log_alter = "
+            ALTER TABLE
+                {$this->nagios_external_commands_log}
+            CHANGE
+                `command` `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') NULL DEFAULT NULL;
+        ";
+        $this->mysql->query($nagios_external_commands_log_alter);
 
         $this->planned_log = $this->database['prefix'] . "planned_log";
         $planned_log = "
@@ -181,6 +189,18 @@ class db
         ";
         $this->mysql->query($history_alter);
     }
+    public function getLatestActions()
+    {
+        $list   = [];
+        $sql    = "SELECT * FROM {$this->nagios_external_commands_log} WHERE `logged` > '". date('Y-m-d H:i:s', strtotime('-5 minutes')) ."' ORDER BY `logged`";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
     public function logAction($data, $command, $server, $insertToDb = false) {
         $host    = (isset($data['host']))    ? $data['host']    : '';
         $service = (isset($data['service'])) ? $data['service'] : '';
@@ -207,10 +227,10 @@ class db
             }
         }
 
-        if (in_array($command, ['ack', 'sched', 'unack', 'unsched'])) {
+        /*if (in_array($command, ['ack', 'sched', 'unack', 'unsched'])) {
             $xml = new xml;
             $xml->updateMemcache($server, $data, $command);
-        }
+        }*/
     }
 
     public function returnPlanned($server) {

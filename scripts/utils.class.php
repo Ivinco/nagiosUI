@@ -144,4 +144,17 @@ class utils
         return $string;
     }
 
+    public function prepareAckSchedComment($comment, $author, $date, $server)
+    {
+        $date = $this->returnCorrectedDate($date, $server, $format = 'Y-m-d H:i:s');
+        $date = date_create($date);
+        $date = date_format($date,'M j H:i');
+
+        $result  = $this->parseUrls($comment, $server);
+        $result  = "'{$result}' by {$author}";
+        $result .= '<br />added: '. $date;
+
+        return $result;
+    }
+
 }

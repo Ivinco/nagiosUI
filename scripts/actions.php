@@ -48,6 +48,7 @@ class actions
 
             if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
                 $this->unAcknowledgeProblem($post);
+                sleep(1);
                 $this->acknowledgeProblem($post);
             }
 
@@ -57,6 +58,7 @@ class actions
 
             if (in_array($this->type, ['scheduleIt'])) {
                 $this->unAcknowledgeProblem($post);
+                sleep(1);
                 $this->scheduleProblem($post);
             }
 
@@ -99,7 +101,7 @@ class actions
         }
 
         $this->curlRequest('/remove_acknowledgement', $data);
-        $this->db->logAction($data, 'unack', $this->server, false);
+        $this->db->logAction($data, 'unack', $this->server, true);
     }
     public function scheduleProblem($post)
     {
@@ -131,7 +133,7 @@ class actions
         }
 
         $this->curlRequest('/cancel_downtime/' . $post['down_id'], $data);
-        $this->db->logAction($data, 'unsched', $this->server, false);
+        $this->db->logAction($data, 'unsched', $this->server, true);
     }
     public function recheckProblem($post)
     {
@@ -145,7 +147,7 @@ class actions
         }
 
         $this->curlRequest('/schedule_check', $data);
-        $this->db->logAction($data, 're-check', $this->server);
+        $this->db->logAction($data, 're-check', $this->server, true);
     }
 
     private function curlRequest($url, $data)
