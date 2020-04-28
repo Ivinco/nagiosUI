@@ -75,13 +75,25 @@ class db
                 `user`    VARCHAR(255)  NOT NULL,
                 `normal`  INT           NOT NULL,
                 `list`    TEXT          NOT NULL,
-                `server`  VARCHAR(255)  NOT NULL
+                `server`  VARCHAR(255)  NOT NULL,
+                `enabled` TINYINT       NOT NULL DEFAULT 1,
+                `deleted` TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00'
             )
         ";
         if ($this->mysql->query($planned_log) !== true) {
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
+
+        $planned_log_alter = "
+            ALTER TABLE
+                {$this->planned_log}
+            ADD COLUMN
+                `enabled` TINYINT    NOT NULL DEFAULT 1,
+            ADD COLUMN 
+                `deleted` TIMESTAMP  NOT NULL DEFAULT '0000-00-00 00:00:00';
+        ";
+        $this->mysql->query($planned_log_alter);
 
         $this->planned_templates = $this->database['prefix'] . "planned_templates";
         $planned_templates = "
@@ -243,7 +255,7 @@ class db
             $serversQuery = "  AND `server` IN ('{$server}', 'All')";
         }
 
-        $sql = "SELECT * FROM `{$this->planned_log}` WHERE `end` > {$time}{$serversQuery}";
+        $sql = "SELECT * FROM `{$this->planned_log}` WHERE `end` > {$time}{$serversQuery} AND `enabled` = 1";
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){
@@ -258,7 +270,21 @@ class db
         $time = time();
         $server = $this->mysql->real_escape_string($server);
 
-        $this->mysql->query("DELETE FROM `{$this->planned_log}` WHERE `server` = '{$server}' AND `end` < {$time}");
+        $sql = "
+            UPDATE
+                `{$this->planned_log}`
+            SET 
+                `enabled` = 0,
+                `deleted` = CURRENT_TIMESTAMP()
+            WHERE
+                `end`    < {$time}
+              AND
+                `server` = '{$server}'
+              AND 
+                `enabled` = 1
+        ";
+
+        $this->mysql->query($sql);
     }
     public function addNewPlanned($host, $service, $status, $comment, $time, $end, $date, $user, $normal, $server) {
         $host    = $this->mysql->real_escape_string($host);
@@ -274,9 +300,9 @@ class db
 
         $sql = "
             INSERT INTO `{$this->planned_log}`
-                (`logged`, `host`, `service`, `status`, `comment`, `time`, `end`, `date`, `user`, `normal`, `list`, `server`) 
+                (`logged`, `host`, `service`, `status`, `comment`, `time`, `end`, `date`, `user`, `normal`, `list`, `server`, `enabled`) 
             VALUES 
-                (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$status}', '{$comment}', {$time}, {$end}, '{$date}', '{$user}', {$normal}, '', '{$server}')
+                (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$status}', '{$comment}', {$time}, {$end}, '{$date}', '{$user}', {$normal}, '', '{$server}', 1)
         ";
 
         $this->mysql->query($sql);
@@ -314,6 +340,8 @@ class db
                 `status` = '{$oldStatus}'
               AND
                 `server` = '{$oldServer}'
+              AND
+                `enabled` = 1
         ";
 
         $this->mysql->query($sql);
@@ -340,6 +368,8 @@ class db
                 `status` = '{$status}'
               AND
                 `server` = '{$server}'
+              AND 
+                `enabled` = 1
         ";
 
         $this->mysql->query($sql);
@@ -364,6 +394,8 @@ class db
                 `status` = '{$status}'
               AND
                 `server` = '{$server}'
+              AND 
+                `enabled` = 1
         ";
 
         $this->mysql->query($sql);
@@ -377,9 +409,12 @@ class db
         $server  = $this->mysql->real_escape_string($id[3]);
 
         $sql = "
-            DELETE FROM 
-                `{$this->planned_log}` 
-            WHERE 
+            UPDATE
+                `{$this->planned_log}`
+            SET 
+                `enabled` = 0,
+                `deleted` = CURRENT_TIMESTAMP()
+            WHERE
                 `host` = '{$host}'
               AND
                 `service` = '{$service}'
@@ -387,6 +422,8 @@ class db
                 `status` = '{$status}'
               AND
                 `server` = '{$server}'
+              AND
+                `enabled` = 1
         ";
 
         $this->mysql->query($sql);
@@ -412,6 +449,8 @@ class db
                 `status` = '{$status}'
               AND
                 `server` = '{$server}'
+              AND
+                `enabled` = 1
         ";
 
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
