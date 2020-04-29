@@ -11,3 +11,4 @@ include_once __DIR__ . '/json.class.php';
 include_once __DIR__ . '/db.class.php';
 include_once __DIR__ . '/stats.class.php';
 include_once __DIR__ . '/calendar.class.php';
+include_once __DIR__ . '/recheck.class.php';

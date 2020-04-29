@@ -129,7 +129,9 @@
             <label for="stats" id="stats-label">Stats</label>
         </div>
     </form>
-    <p style="clear: both; float: right; margin: 5px 5px 0 0;">Updated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
+    <p style="clear: both; float: right; margin: 5px 5px 0 0;">
+        <button type="button" class="force-recheck-button" title="reckeck all alerts in 'Unhandled' tab">Force recheck<span class="spinner" style="border: 2px solid #000; border-right-color: transparent;"></span></button>
+        Updated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
     <table id="mainTable">
         <thead>
             <tr>
@@ -291,6 +293,7 @@ if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_
                 Search.init();
                 Grouping.init();
                 Planned.init();
+                Recheck.init();
             }
         });
     </script>
