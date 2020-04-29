@@ -226,6 +226,10 @@ class db
         $command = $this->mysql->real_escape_string($command);
         $server  = $this->mysql->real_escape_string($server);
 
+        if (!$host && !$service && !$server) {
+            return;
+        }
+
         if ($insertToDb) {
             $sql = "
                 INSERT INTO `{$this->nagios_external_commands_log}`

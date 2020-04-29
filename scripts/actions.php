@@ -132,6 +132,10 @@ class actions
             $data['service'] = $post['service'];
         }
 
+        if (!intval($post['down_id']) || $this->server == 'All') {
+            return;
+        }
+        
         $this->curlRequest('/cancel_downtime/' . $post['down_id'], $data);
         $this->db->logAction($data, 'unsched', $this->server, true);
     }
