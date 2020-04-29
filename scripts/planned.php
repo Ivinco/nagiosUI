@@ -103,7 +103,7 @@ class planned
     public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId, $server) {
         $return = [];
 
-        if ($planned = $this->findPlannedRecord($host, $service, $status)) {
+        if ($service != 'FULL HOSTS LIST' && $planned = $this->findPlannedRecord($host, $service, $status)) {
             $planned = end($planned);
 
             list($schComment, $downtimeId) = $this->removeNonPlannedComments($schComment, $downtimeId);
