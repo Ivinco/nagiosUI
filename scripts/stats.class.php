@@ -234,7 +234,7 @@ class stats
                     $lastAlert = $record;
                 }
 
-                if (count($alerts) == 1 && $alerts[0]['state'] == 'ok') {
+                if (count($alerts) == 1 && isset($alerts[0]) && isset($alerts[0]['state']) && $alerts[0]['state'] == 'ok') {
                     unset($alerts[0]);
                 }
 
@@ -331,6 +331,10 @@ class stats
             }
 
             return;
+        }
+
+        if (!isset($this->usersAlerts[$this->summaryReportName])) {
+            $this->usersAlerts[$this->summaryReportName] = [];
         }
 
         if (!isset($this->usersAlerts[$this->summaryReportName][$server])) {
@@ -645,8 +649,12 @@ class stats
             $results[$key] = $item;
 
             if ($item['state'] == 'ok' && $last['severity'] == 'unhandled' && $last['state'] != 'ok' && ($item['ts'] - $last['time']) < 70) {
-                unset($results[$last['key']]);
-                unset($results[$key]);
+                if (isset($results[$last['key']])) {
+                    unset($results[$last['key']]);
+                }
+                if (isset($results[$key])) {
+                    unset($results[$key]);
+                }
             }
 
             $last = [
@@ -674,8 +682,12 @@ class stats
             $results[$key] = $item;
 
             if (in_array($item['severity'], ['acked', 'sched']) && $item['comment'] != 'temp' && $last['severity'] == 'unhandled' && $last['state'] != 'ok' && ($item['ts'] - $last['time']) < 70) {
-                unset($results[$last['key']]);
-                unset($results[$key]);
+                if (isset($results[$last['key']])) {
+                    unset($results[$last['key']]);
+                }
+                if (isset($results[$key])) {
+                    unset($results[$key]);
+                }
             }
 
             $last = [
@@ -704,8 +716,12 @@ class stats
             $results[$key] = $item;
 
             if ($item['severity'] == 'planned_downtime' && $last['severity'] == 'unhandled' && $last['state'] != 'ok' && ($item['ts'] - $last['time']) < 70) {
-                unset($results[$last['key']]);
-                unset($results[$key]);
+                if (isset($results[$last['key']])) {
+                    unset($results[$last['key']]);
+                }
+                if (isset($results[$key])) {
+                    unset($results[$key]);
+                }
             }
 
             $last = [
@@ -731,7 +747,9 @@ class stats
             $results[$key] = $item;
 
             if ($item['state'] == 'ok' && $last['state'] == 'ok') {
-                unset($results[$key]);
+                if (isset($results[$key])) {
+                    unset($results[$key]);
+                }
             }
 
             $last = [
