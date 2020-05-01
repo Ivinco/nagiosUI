@@ -119,6 +119,7 @@ class db
                 `name`   VARCHAR(255) NOT NULL,
                 `email`  VARCHAR(255) NOT NULL,
                 `server` VARCHAR(255) NOT NULL,
+                `full_name`   VARCHAR(255) NOT NULL,
                 `full_access` TINYINT DEFAULT 0 NOT NULL
             )
         ";
@@ -133,6 +134,14 @@ class db
                 `full_access` TINYINT DEFAULT 0 NOT NULL;
         ";
         $this->mysql->query($users_list_alter);
+
+        $users_list_alter1 = "
+            ALTER TABLE
+                {$this->users_list}
+            ADD
+                `full_name` VARCHAR(255) NOT NULL;
+        ";
+        $this->mysql->query($users_list_alter1);
 
         $this->access_list = $this->database['prefix'] . "access_list";
         $access_list = "
@@ -492,6 +501,23 @@ class db
         $list = [];
         while ($row = $result->fetch_assoc()){
             $list[$row['name']] = $row['email'];
+        }
+
+        return $list;
+    }
+
+    public function usersListStatsPage() {
+        $sql = "SELECT * FROM `{$this->users_list}`";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = ['All' => []];
+        while ($row = $result->fetch_assoc()){
+            if (!isset($list[$row['server']])) {
+                $list[$row['server']] = [];
+            }
+
+            $list['All'][$row['name']] = $list[$row['server']][$row['name']] = $row['full_name'];
         }
 
         return $list;

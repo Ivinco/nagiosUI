@@ -5017,6 +5017,12 @@ Stats = {
                 html += '<ul>';
                 html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
                 html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
+
+                if (value != 'Summary report' && value != 'Nobody\'s shift') {
+                    html += '<li>worked on shift: '+ Stats.statsData[value][Search.currentServerTab]['worked_on_shift'] +'</li>';
+                    html += '<li>worked total: '+ Stats.statsData[value][Search.currentServerTab]['worked_total'] +'</li>';
+                }
+
                 html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
                 html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
                 html += '</ul>';
@@ -5069,7 +5075,7 @@ Stats = {
 
         let StatsChartConfig = {
             type: 'bar',
-            title: { text: 'Statistic by user', fontSize: 20 },
+            title: { text: 'Statistic by user (alerts count during shift)', fontSize: 20 },
             legend: { draggable: false },
             scaleX: {
                 labels: cfg.users
