@@ -758,7 +758,7 @@ class stats
             ];
         }
 
-        if (count($results) == 1 && $results[array_key_first($results)]['state'] == 'ok') {
+        if (count($results) == 1 && $results[array_keys($results)[0]]['state'] == 'ok') {
             $results = [];
         }
 

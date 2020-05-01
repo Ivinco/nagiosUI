@@ -15,7 +15,7 @@
         $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
 
         $_SESSION["currentUser"] = $user;
-        $_SESSION["currentAvatar"] = md5(strtolower(trim($usersArray[$user])));
+        $_SESSION["currentAvatar"] = md5(strtolower(trim((isset($usersArray[$user]) ? $usersArray[$user] : ''))));
     }
 
     $userName   = $_SESSION["currentUser"];
