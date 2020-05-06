@@ -4939,6 +4939,7 @@ Stats = {
     statsData: null,
     lastPeriod: null,
     tz: null,
+    alertTab: 'ungrouped',
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
@@ -4986,6 +4987,193 @@ Stats = {
         $('#stats_from_date, #stats_to_date').on('change', function() {
             Stats.checkCalendarSwitch();
         });
+
+        $(document).on('click', '.show-alert-details', function() {
+            if ($(this).text() == ' [+]') {
+                Stats.redrawAlertsWithGrouping($(this));
+            } else {
+                $(this).text(' [+]');
+                $(this).closest('td').find('.alert-details').html('');
+            }
+        });
+
+        $(document).on('click', '#grouping-alerts-by-host', function() {
+            if (Stats.alertTab != 'byhost') {
+                Stats.alertTab = 'byhost';
+                Stats.redrawAlerts();
+            }
+        });
+        $(document).on('click', '#grouping-alerts-by-service', function() {
+            if (Stats.alertTab != 'byservice') {
+                Stats.alertTab = 'byservice';
+                Stats.redrawAlerts();
+            }
+        });
+        $(document).on('click', '#grouping-alerts-no-grouping', function() {
+            if (Stats.alertTab != 'ungrouped') {
+                Stats.alertTab = 'ungrouped';
+                Stats.redrawAlerts();
+            }
+        });
+
+        $(document).on('click', '.get-alert-days', function() {
+            $('.alert-days-block').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
+
+            setTimeout(function(){
+                var html = '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px;">';
+                html += '<tr><th>Date</th><th>alert-days</th></tr>';
+
+                for (var i = 13; i >= 1; i--) {
+                    var date = moment().utc().subtract(i, 'months').startOf('month').format('YYYY-MM');
+
+                    $.ajax({
+                        type:    'GET',
+                        url:     'stats.php',
+                        async:   false,
+                        data:    {
+                            'time_correction_type': this.timeZone,
+                            'time_correction_diff': moment().utcOffset(),
+                            'from': moment().utc().subtract(i, 'months').startOf('month').unix(),
+                            'to': moment().utc().subtract(i, 'months').endOf('month').unix(),
+                        },
+                        success: function(data){
+                            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(data['Summary report']['All']['unhandled_time'], data['Summary report']['All']['quick_acked_time']) +'</td></tr>';
+                        }
+                    });
+                }
+
+                html += '</table>';
+                $('.alert-days-block').html(html);
+            }, 500);
+
+        });
+    },
+    redrawAlerts: function() {
+        $(document).find('.show-alert-details').each(function (key, value) {
+            if ($(this).text() == ' [-]') {
+                Stats.redrawAlertsWithGrouping($(this));
+            }
+        });
+    },
+    redrawAlertsWithGrouping: function(item) {
+        if (Stats.alertTab == 'ungrouped') {
+            Stats.redrawAlertsUngrouped(item);
+        }
+
+        if (Stats.alertTab == 'byhost') {
+            Stats.redrawAlertsGroupedByHost(item);
+        }
+
+        if (Stats.alertTab == 'byservice') {
+            Stats.redrawAlertsGroupedByService(item);
+        }
+    },
+    redrawAlertsUngrouped: function(alert) {
+        alert.text(' [-]');
+
+        var user = alert.attr('data-user');
+        var type = alert.attr('data-type');
+        var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
+
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+
+        for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
+            var item = Stats.statsData[user][Search.currentServerTab][name][key];
+
+            html += '<tr>';
+            html += '<td style="word-break: break-all; width: 80px">'+ item.host +'</td>';
+            html += '<td>'+ item.service +'</td>';
+            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ item.comment.join('</li><li> - ') +'</li></ul></td>';
+            html += '</tr>';
+        }
+
+        html += '</table>';
+
+        alert.closest('td').find('.alert-details').html(html);
+    },
+    redrawAlertsGroupedByHost: function(alert) {
+        alert.text(' [-]');
+
+        var user = alert.attr('data-user');
+        var type = alert.attr('data-type');
+        var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
+
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+
+        var hosts = [];
+        for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
+            var item = Stats.statsData[user][Search.currentServerTab][name][key];
+
+            if (typeof hosts[item.host] === "undefined" ) {
+                hosts[item.host] = [];
+                hosts[item.host]['services'] = [];
+                hosts[item.host]['comments'] = [];
+            }
+
+            if ($.inArray(item.service, hosts[item.host]['services']) == -1) {
+                hosts[item.host]['services'].push(item.service);
+            }
+
+            $(item.comment).each(function (key, value) {
+                if ($.inArray(value, hosts[item.host]['comments']) == -1) {
+                    hosts[item.host]['comments'].push(value);
+                }
+            });
+        }
+
+        for (var key in hosts) {
+            html += '<tr>';
+            html += '<td style="word-break: break-all; width: 80px">'+ key +'</td>';
+            html += '<td align="center">'+ hosts[key]['services'].length +'</td>';
+            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ hosts[key]['comments'].join('</li><li> - ') +'</li></ul></td>';
+            html += '</tr>';
+        }
+
+        html += '</table>';
+
+        alert.closest('td').find('.alert-details').html(html);
+    },
+    redrawAlertsGroupedByService: function(alert) {
+        alert.text(' [-]');
+
+        var user = alert.attr('data-user');
+        var type = alert.attr('data-type');
+        var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
+
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+
+        var services = [];
+        for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
+            var item = Stats.statsData[user][Search.currentServerTab][name][key];
+
+            if (typeof services[item.service] === "undefined" ) {
+                services[item.service] = [];
+                services[item.service]['hosts'] = [];
+                services[item.service]['comments'] = [];
+            }
+
+            if ($.inArray(item.host, services[item.service]['hosts']) == -1) {
+                services[item.service]['hosts'].push(item.host);
+            }
+
+            $(item.comment).each(function (key, value) {
+                if ($.inArray(value, services[item.service]['comments']) == -1) {
+                    services[item.service]['comments'].push(value);
+                }
+            });
+        }
+
+        for (var key in services) {
+            html += '<tr>';
+            html += '<td style="word-break: break-all; width: 80px" align="center">'+ services[key]['hosts'].length +'</td>';
+            html += '<td>'+ key +'</td>';
+            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ services[key]['comments'].join('</li><li> - ') +'</li></ul></td>';
+            html += '</tr>';
+        }
+
+        html += '</table>';
+
+        alert.closest('td').find('.alert-details').html(html);
     },
     drawStats: function() {
         $('.historyText').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
@@ -5010,30 +5198,71 @@ Stats = {
         $('.historyText').html('');
 
         var html = '<h4>Stats for period: '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +' ('+ Stats.tz +'). ('+ Stats.selectedUsers.join(', ') +')</h4>';
-        html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="width: 330px; vertical-align: top;">';
+        html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
+
+        html += '<h4>Stats table';
+        html += '<form style="display: inline-block; float: right;">';
+        html += '<div id="grouping-alerts-switch" style="margin-left: 30px;">Group by: ';
+        html += '<input type="radio" id="grouping-alerts-by-host" name="radio">';
+        html += '<label for="grouping-alerts-by-host" id="grouping-alerts-by-host-label">host</label>';
+        html += '<input type="radio" id="grouping-alerts-by-service" name="radio">';
+        html += '<label for="grouping-alerts-by-service" id="grouping-alerts-by-service-label">service</label>';
+        html += '<input type="radio" id="grouping-alerts-no-grouping" checked="checked" name="radio">';
+        html += '<label for="grouping-alerts-no-grouping" id="grouping-alerts-no-grouping-label">no grouping</label>';
+        html += '</div>';
+        html += '</form>';
+
+        html += '</h4>';
+        html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+        html += '<tr>';
+        html += '<th></th>';
+        html += '<th>alert days</th>';
+        html += '<th># of emergencies</th>';
+        html += '<th>number of alerts</th>';
+        html += '<th>worked on shift</th>';
+        html += '<th>worked total</th>';
+        html += '<th>unhandled alerts time</th>';
+        html += '<th>\'quick ack\' alerts time</th>';
+        html += '<th>reaction time (avg)</th>';
+        html += '</tr>';
+
         $(Stats.selectedUsers).each(function (key, value) {
+            html += '<tr>';
+            html += '<td valign="top">'+ value +' ('+ Search.currentServerTab +')</td>';
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
-                html += '<p><br />'+ value +' ('+ Search.currentServerTab +')</p>';
-                html += '<ul>';
-                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
-                html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
+                html += '<td align="right" valign="top">'+ Stats.getAlertDays(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</td>';
+                html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</td>';
+                html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</td>';
 
                 if (value != 'Summary report' && value != 'Nobody\'s shift') {
-                    html += '<li>worked on shift: '+ Stats.statsData[value][Search.currentServerTab]['worked_on_shift'] +'</li>';
-                    html += '<li>worked total: '+ Stats.statsData[value][Search.currentServerTab]['worked_total'] +'</li>';
+                    html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_on_shift'] +'<span class="show-alert-details" data-type="shift" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
+                    html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_total'] +'<span class="show-alert-details" data-type="total" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
+                } else {
+                    html += '<td align="right"></td>';
+                    html += '<td align="right"></td>';
                 }
 
-                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
-                html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
-                html += '</ul>';
+                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</td>';
+                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</td>';
+                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</td>';
             } else {
-                html += '<p><br />No stats for: '+ value +'</p>';
+                html += '<td colspan="8"><b>No stats</b></td>';
             }
+            html += '</tr>';
         });
-        html += '</td><td style="width: 30px;">&nbsp;</td><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
+
+        html += '</table>';
+
+        html += '<h4 class="get-alert-days" style="cursor: pointer;"><br />Get alert days for last year. (It can take some time)</h4>';
+        html += '<div class="alert-days-block" style="padding-bottom: 30px;"></div>';
 
         $('.historyText').html(html);
+        $('#grouping-alerts-switch').buttonset();
+
         Stats.drawChart();
+    },
+    getAlertDays: function(unhandled_time, quick_acked_time) {
+        return Math.floor((unhandled_time - quick_acked_time) / 60 / 60 / 24);
     },
     getChartData: function() {
         var result = {
@@ -5043,6 +5272,7 @@ Stats = {
             critical: [],
             unknown: [],
             info: [],
+            emergency: [],
         };
 
         $(Stats.selectedUsers).each(function (key, value) {
@@ -5059,11 +5289,13 @@ Stats = {
                 result.critical.push(Stats.statsData[value][Search.currentServerTab]['critical_count']);
                 result.unknown.push(Stats.statsData[value][Search.currentServerTab]['unknown_count']);
                 result.info.push(Stats.statsData[value][Search.currentServerTab]['info_count']);
+                result.emergency.push(Stats.statsData[value][Search.currentServerTab]['emergency_count']);
             } else {
                 result.warning.push(0);
                 result.critical.push(0);
                 result.unknown.push(0);
                 result.info.push(0);
+                result.emergency.push(0);
                 result.all.push(0);
             }
         });
@@ -5090,6 +5322,7 @@ Stats = {
                 { values: cfg.warning,  text: 'Warning'  , 'background-color': '#FFFF00'},
                 { values: cfg.unknown,  text: 'Unknown'  , 'background-color': '#FF9900'},
                 { values: cfg.info,     text: 'Info'     , 'background-color': '#67A4FF'},
+                { values: cfg.emergency,text: 'Emergency', 'background-color': '#000000'},
             ]
         };
 

@@ -542,6 +542,11 @@ table.dataTable thead .no-border-th {
     background: #e8e6e6;
 }
 
+#grouping-alerts-switch .ui-button-text-only .ui-button-text {
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
 /* dateTimePicker */
 .xdsoft_datetimepicker { box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.506); background: #fff; border-bottom: 1px solid #bbb; border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-top: 1px solid #ccc; color: #333; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; padding: 8px; padding-left: 0; padding-top: 2px; position: absolute; z-index: 9999; -moz-box-sizing: border-box; box-sizing: border-box; display: none; }
 .xdsoft_datetimepicker.xdsoft_rtl { padding: 8px 0 8px 8px; }

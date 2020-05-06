@@ -127,6 +127,7 @@ class stats
                             'critical_count'   => 0,
                             'unknown_count'    => 0,
                             'info_count'       => 0,
+                            'emergency_count'  => 0,
                             'unhandled_time'   => 0,
                             'quick_acked_time' => 0,
                             'reaction_time'    => 0,
@@ -200,6 +201,7 @@ class stats
                     'critical_count'   => 0,
                     'unknown_count'    => 0,
                     'info_count'       => 0,
+                    'emergency_count'  => 0,
                     'unhandled_time'   => 0,
                     'quick_acked_time' => 0,
                     'reaction_time'    => 0,
@@ -325,7 +327,12 @@ class stats
                         $this->usersAlerts[$full_name][$server][$alert['check_id']] = [
                             'host'    => $alert['host'],
                             'service' => $alert['service'],
+                            'comment' => [],
                         ];
+                    }
+
+                    if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'])) {
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'][] = $alert['comment'];
                     }
                 }
             }
@@ -345,7 +352,12 @@ class stats
             $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']] = [
                 'host'    => $alert['host'],
                 'service' => $alert['service'],
+                'comment' => [],
             ];
+        }
+
+        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'])) {
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
         }
 
         if ($alert['user']) {
@@ -359,7 +371,12 @@ class stats
                 $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']] = [
                     'host'    => $alert['host'],
                     'service' => $alert['service'],
+                    'comment' => [],
                 ];
+            }
+
+            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'])) {
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'][] = $alert['comment'];
             }
         }
     }
@@ -370,6 +387,7 @@ class stats
         $quickAckStarted = null;
         $alertStarted    = null;
         $alertStates     = [];
+        $emergencyAlert  = 0;
 
         foreach ($alerts as $alert) {
             $ts       = $alert['ts'];
@@ -387,6 +405,12 @@ class stats
 
                 continue;
             }
+
+            if ($alertStarted && !$emergencyAlert && strpos($alert['host'] . " " . $alert['service'] . " " . $alert['output'], 'EMERGENCY') !== false) {
+                $stats['emergency_count']++;
+                $emergencyAlert++;
+            }
+
 
             if ($severity == 'unhandled' && $state != 'ok') {
                 $this->setUsersAlerts($server, $saveUsersData, $alert, $user);
@@ -487,6 +511,7 @@ class stats
                 $this->results['Nobody\'s shift'][$server]['quick_acked_time'] -= $stat['quick_acked_time'];
                 $this->results['Nobody\'s shift'][$server]['reaction_time']    -= $stat['reaction_time'];
                 $this->results['Nobody\'s shift'][$server]['reaction_alerts']  -= $stat['reaction_alerts'];
+                $this->results['Nobody\'s shift'][$server]['emergency_count']  -= $stat['emergency_count'];
             }
         }
 
@@ -507,6 +532,7 @@ class stats
                 'critical_count'   => 0,
                 'unknown_count'    => 0,
                 'info_count'       => 0,
+                'emergency_count'  => 0,
                 'unhandled_time'   => 0,
                 'quick_acked_time' => 0,
                 'reaction_time'    => 0,
@@ -527,6 +553,7 @@ class stats
                 $result['quick_acked_time'] += $stat['quick_acked_time'];
                 $result['reaction_time']    += $stat['reaction_time'];
                 $result['reaction_alerts']  += $stat['reaction_alerts'];
+                $result['emergency_count']  += $stat['emergency_count'];
 
                 foreach ($stat['worked_total_list'] as $check_id => $alert) {
                     if (!isset($result['worked_total_list'][$check_id])) {
@@ -627,7 +654,7 @@ class stats
                 $cleared = $this->clearAckedSckedFlappings($cleared);
                 $cleared = $this->clearPlannedAlerts($cleared);
                 $cleared = $this->clearOkAlerts($cleared);
-
+                
                 if ($cleared) {
                     $results[$server][$check_id] = $cleared;
                 }
