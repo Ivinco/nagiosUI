@@ -238,25 +238,38 @@
                 <td><input type="text" name="history_date" id="history_date" class="text" style="font-size: 14px; outline: none;" autocomplete="off"></td>
             </tr>
         </table>
-        <table class="statsInput" cellpadding="0" cellspacing="0" border="0">
+        <table class="statsInput" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
             <tr>
-                <td width="200">
-                    <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
+                <td valign="top" width="400">
+                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
+                        <tr>
+                            <td valign="top">
+                                <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top">
+                                <select id="calendar_switch"></select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top" style="padding: 12px 0; font-size: 13px;">
+                                From: <input type="text" name="stats_from_date" id="stats_from_date" class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                                To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td valign="top"><input type="button" value="show" name="filterStats" id="filterStats"></td>
+                        </tr>
+                    </table>
                 </td>
-            </tr>
-            <tr>
-                <td width="200">
-                    <select id="calendar_switch"></select>
+                <td valign="top" width="100">&nbsp;</td>
+                <td style="width: calc(100% - 520px)" valign="top">
+                    <div style="float:right;">
+                        <h4 class="get-alert-days" style="cursor: pointer;"><br />Get alert days for last year. <br /><small>(It can take some time)</small></h4>
+                        <div class="alert-days-block" style="padding-bottom: 30px;"></div>
+                    </div>
                 </td>
-            </tr>
-            <tr>
-                <td style="padding: 12px 0; font-size: 13px;">
-                    From: <input type="text" name="stats_from_date" id="stats_from_date" class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
-                    To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
-                </td>
-            </tr>
-            <tr>
-                <td><input type="button" value="show" name="filterStats" id="filterStats"></td>
             </tr>
         </table>
     </div>

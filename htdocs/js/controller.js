@@ -5075,15 +5075,28 @@ Stats = {
         var type = alert.attr('data-type');
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
-        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
 
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
             var item = Stats.statsData[user][Search.currentServerTab][name][key];
+            var comments = [];
+
+            for (var i = 0; i < item.comment.length; i++) {
+                if (item.comment[i] != 'temp' && $.inArray(item.comment[i], comments) == -1) {
+                    comments.push(item.comment[i]);
+                }
+            }
 
             html += '<tr>';
-            html += '<td style="word-break: break-all; width: 80px">'+ item.host +'</td>';
-            html += '<td>'+ item.service +'</td>';
-            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ item.comment.join('</li><li> - ') +'</li></ul></td>';
+            html += '<td style="word-break: break-all; width: 33%">'+ item.host +'</td>';
+            html += '<td style="width: 33%">'+ item.service +'</td>';
+            html += '<td style="word-break: break-all; width: 33%">';
+
+            if (comments.length) {
+                html += '<ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ comments.join('</li><li> - ') +'</li></ul>';
+            }
+
+            html += '</td>';
             html += '</tr>';
         }
 
@@ -5098,7 +5111,7 @@ Stats = {
         var type = alert.attr('data-type');
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
-        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
 
         var hosts = [];
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
@@ -5115,7 +5128,7 @@ Stats = {
             }
 
             $(item.comment).each(function (key, value) {
-                if ($.inArray(value, hosts[item.host]['comments']) == -1) {
+                if (value != 'temp' && $.inArray(value, hosts[item.host]['comments']) == -1) {
                     hosts[item.host]['comments'].push(value);
                 }
             });
@@ -5123,9 +5136,15 @@ Stats = {
 
         for (var key in hosts) {
             html += '<tr>';
-            html += '<td style="word-break: break-all; width: 80px">'+ key +'</td>';
-            html += '<td align="center">'+ hosts[key]['services'].length +'</td>';
-            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ hosts[key]['comments'].join('</li><li> - ') +'</li></ul></td>';
+            html += '<td style="word-break: break-all; width: 33%">'+ key +'</td>';
+            html += '<td align="center" style="width: 33%">'+ hosts[key]['services'].length +'</td>';
+            html += '<td style="word-break: break-all; width: 33%">';
+
+            if (hosts[key]['comments'].length) {
+                html += '<ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ hosts[key]['comments'].join('</li><li> - ') +'</li></ul>';
+            }
+
+            html += '</td>';
             html += '</tr>';
         }
 
@@ -5140,7 +5159,7 @@ Stats = {
         var type = alert.attr('data-type');
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
-        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; max-width:300px; border-collapse: collapse; line-height: 130%;">';
+        var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
 
         var services = [];
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
@@ -5157,7 +5176,7 @@ Stats = {
             }
 
             $(item.comment).each(function (key, value) {
-                if ($.inArray(value, services[item.service]['comments']) == -1) {
+                if (value != 'temp' && $.inArray(value, services[item.service]['comments']) == -1) {
                     services[item.service]['comments'].push(value);
                 }
             });
@@ -5165,9 +5184,15 @@ Stats = {
 
         for (var key in services) {
             html += '<tr>';
-            html += '<td style="word-break: break-all; width: 80px" align="center">'+ services[key]['hosts'].length +'</td>';
-            html += '<td>'+ key +'</td>';
-            html += '<td style="word-break: break-all; width: 100px"><ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ services[key]['comments'].join('</li><li> - ') +'</li></ul></td>';
+            html += '<td style="word-break: break-all; width: 33%" align="center">'+ services[key]['hosts'].length +'</td>';
+            html += '<td style="width: 33%">'+ key +'</td>';
+            html += '<td style="word-break: break-all; width: 33%">';
+
+            if (services[key]['comments'].length) {
+                html += '<ul style="margin: 0; padding: 0; list-style: none;"><li> - '+ services[key]['comments'].join('</li><li> - ') +'</li></ul>';
+            }
+
+            html += '</td>';
             html += '</tr>';
         }
 
@@ -5213,27 +5238,32 @@ Stats = {
         html += '</form>';
 
         html += '</h4>';
-        html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+        html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout:fixed; display: table;">';
         html += '<tr>';
-        html += '<th></th>';
-        html += '<th>alert days</th>';
-        html += '<th># of emergencies</th>';
-        html += '<th>number of alerts</th>';
-        html += '<th>worked on shift</th>';
-        html += '<th>worked total</th>';
-        html += '<th>unhandled alerts time</th>';
-        html += '<th>\'quick ack\' alerts time</th>';
-        html += '<th>reaction time (avg)</th>';
+        html += '<th style="width: 300px;"></th>';
+        html += '<th style="width: calc(50% - 160px);">worked on shift</th>';
+        html += '<th style="width: calc(50% - 160px);">worked total</th>';
         html += '</tr>';
 
         $(Stats.selectedUsers).each(function (key, value) {
             html += '<tr>';
-            html += '<td valign="top">'+ value +' ('+ Search.currentServerTab +')</td>';
-            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
-                html += '<td align="right" valign="top">'+ Stats.getAlertDays(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</td>';
-                html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</td>';
-                html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</td>';
+            html += '<td valign="top">';
+            html += '<strong>'+ value +' ('+ Search.currentServerTab +')</strong>';
 
+            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
+                html += '<ul>';
+                html += '<li>alert days: '+ Stats.getAlertDays(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
+                html += '<li># of emergencies: '+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</li>';
+                html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
+                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
+                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
+                html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
+                html += '</ul>';
+            }
+
+            html += '</td>';
+
+            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
                 if (value != 'Summary report' && value != 'Nobody\'s shift') {
                     html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_on_shift'] +'<span class="show-alert-details" data-type="shift" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
                     html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_total'] +'<span class="show-alert-details" data-type="total" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
@@ -5241,20 +5271,14 @@ Stats = {
                     html += '<td align="right"></td>';
                     html += '<td align="right"></td>';
                 }
-
-                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</td>';
-                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</td>';
-                html += '<td align="right" valign="top">'+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</td>';
             } else {
-                html += '<td colspan="8"><b>No stats</b></td>';
+                html += '<td colspan="2"><b>No stats</b></td>';
             }
+
             html += '</tr>';
         });
 
         html += '</table>';
-
-        html += '<h4 class="get-alert-days" style="cursor: pointer;"><br />Get alert days for last year. (It can take some time)</h4>';
-        html += '<div class="alert-days-block" style="padding-bottom: 30px;"></div>';
 
         $('.historyText').html(html);
         $('#grouping-alerts-switch').buttonset();
