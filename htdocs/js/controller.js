@@ -5076,6 +5076,11 @@ Stats = {
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
         var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
+        html += '<tr>';
+        html += '<th style="width: 33%">host</th>';
+        html += '<th style="width: 33%">service</th>';
+        html += '<th style="width: 33%">comment</th>';
+        html += '</tr>';
 
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
             var item = Stats.statsData[user][Search.currentServerTab][name][key];
@@ -5112,6 +5117,11 @@ Stats = {
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
         var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
+        html += '<tr>';
+        html += '<th style="width: 33%">host</th>';
+        html += '<th style="width: 33%">service</th>';
+        html += '<th style="width: 33%">comment</th>';
+        html += '</tr>';
 
         var hosts = [];
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {
@@ -5160,6 +5170,11 @@ Stats = {
         var name = (type == 'shift') ? 'worked_on_shift_list' : 'worked_total_list';
 
         var html = '<table cellpadding="3" cellspacing="0" border="1" style="width: 100%; font-size: 11px; border-collapse: collapse; line-height: 130%; table-layout:fixed; display: table;">';
+        html += '<tr>';
+        html += '<th style="width: 33%">host</th>';
+        html += '<th style="width: 33%">service</th>';
+        html += '<th style="width: 33%">comment</th>';
+        html += '</tr>';
 
         var services = [];
         for (var key in Stats.statsData[user][Search.currentServerTab][name]) {

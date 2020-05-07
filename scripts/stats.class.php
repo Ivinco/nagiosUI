@@ -8,6 +8,7 @@ class stats
     private $timeZone;
     private $usersShifts = [];
     private $summaryReportName = 'Summary report';
+    private $nobodysReportName = 'Nobody\'s shift';
 
     function __construct()
     {
@@ -32,7 +33,7 @@ class stats
         $servers = implode(',', $servers);
 
         $users = $this->calendar->usersList;
-        array_unshift($users, $this->summaryReportName, 'Nobody\'s shift');
+        array_unshift($users, $this->summaryReportName, $this->nobodysReportName);
 
         return [
             'serversList'    => 'All,'. $servers,
@@ -60,7 +61,6 @@ class stats
         $this->runCalendar();
         $this->getStats();
         $this->calculateAllData();
-        $this->calculateNobodysShift();
         $this->setAverages();
 
         return $this->results;
@@ -107,7 +107,6 @@ class stats
         $this->history = [];
         $this->getStatsDataFromDb();
         $this->results[$this->summaryReportName] = $this->calculateByServer($this->from, $this->to, $this->summaryReportName, [], $this->history, true);
-        $this->results['Nobody\'s shift'] = $this->results[$this->summaryReportName];
         $this->getStatsByUser();
         $this->addUsersAlerts();
     }
@@ -150,29 +149,6 @@ class stats
                         $this->results[$name][$server]['worked_on_shift_list'] = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
                         $this->results[$name][$server]['worked_total_list']    = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
                     }
-                } else if ($name == 'Nobody\'s shift') {
-                    $alerts = [];
-
-                    if (isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName])) {
-                        $alerts = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
-
-                        foreach ($this->usersAlerts[$this->summaryReportName][$server] as $tmpName => $tmpValue) {
-                            if ($tmpName == $this->summaryReportName) {
-                                continue;
-                            }
-
-                            foreach ($tmpValue as $tmpKey => $tmpAlert) {
-                                if (isset($alerts[$tmpKey])) {
-                                    unset($alerts[$tmpKey]);
-                                }
-                            }
-                        }
-                    }
-
-                    $this->results[$name][$server]['worked_total']         = count($alerts);
-                    $this->results[$name][$server]['worked_on_shift']      = count($alerts);
-                    $this->results[$name][$server]['worked_on_shift_list'] = $alerts;
-                    $this->results[$name][$server]['worked_total_list']    = $alerts;
                 } else {
                     if (isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName])) {
                         $this->results[$name][$server]['worked_total']      = count($this->usersAlerts[$this->summaryReportName][$server][$name]);
@@ -259,6 +235,7 @@ class stats
     }
     private function findUser($ts, $server, $check_id, $record, $lastAlert)
     {
+        $found = 0;
         foreach ($this->usersShifts as $user => $dates) {
             foreach ($dates as $key => $date) {
                 if ($ts >= $date['start'] && $ts <= $date['finish']) {
@@ -279,10 +256,36 @@ class stats
                     }
 
                     $this->usersShifts[$user][$key]['alerts'][$server][$check_id][] = $record;
+                    $found++;
 
                     break 2;
                 }
             }
+        }
+
+        if (!$found) {
+            if (!isset($this->usersShifts[$this->nobodysReportName])) {
+                $this->usersShifts[$this->nobodysReportName]    = [];
+                $this->usersShifts[$this->nobodysReportName][0] = [
+                    'start' => $this->from,
+                    'finish' => $this->to,
+                ];
+            }
+            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'])) {
+                $this->usersShifts[$this->nobodysReportName][0]['alerts'] = [];
+            }
+
+            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'][$server])) {
+                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server] = [];
+            }
+            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id])) {
+                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id] = [];
+            }
+            if ($lastAlert && !$this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id]) {
+                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id][] = $lastAlert;
+            }
+
+            $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id][] = $record;
         }
     }
     private function getStatsByUser()
@@ -312,7 +315,11 @@ class stats
     {
         if (!$saveUsersData) {
             if ($alert['user']) {
-                $full_name = $this->getUserFullName($alert['user'], $server);
+                if ($user == $this->nobodysReportName) {
+                    $full_name = $user;
+                } else {
+                    $full_name = $this->getUserFullName($alert['user'], $server);
+                }
 
                 if ($user == $full_name) {
                     if (!isset($this->usersAlerts[$full_name])) {
@@ -493,35 +500,6 @@ class stats
         }
 
         return $stats;
-    }
-    private function calculateNobodysShift()
-    {
-        foreach ($this->results as $name => $stats) {
-            if (in_array($name, [$this->summaryReportName, 'Nobody\'s shift'])) {
-                continue;
-            }
-
-            foreach ($stats as $server => $stat) {
-                $this->results['Nobody\'s shift'][$server]['alerts_count']     -= $stat['alerts_count'];
-                $this->results['Nobody\'s shift'][$server]['warning_count']    -= $stat['warning_count'];
-                $this->results['Nobody\'s shift'][$server]['critical_count']   -= $stat['critical_count'];
-                $this->results['Nobody\'s shift'][$server]['unknown_count']    -= $stat['unknown_count'];
-                $this->results['Nobody\'s shift'][$server]['info_count']       -= $stat['info_count'];
-                $this->results['Nobody\'s shift'][$server]['unhandled_time']   -= $stat['unhandled_time'];
-                $this->results['Nobody\'s shift'][$server]['quick_acked_time'] -= $stat['quick_acked_time'];
-                $this->results['Nobody\'s shift'][$server]['reaction_time']    -= $stat['reaction_time'];
-                $this->results['Nobody\'s shift'][$server]['reaction_alerts']  -= $stat['reaction_alerts'];
-                $this->results['Nobody\'s shift'][$server]['emergency_count']  -= $stat['emergency_count'];
-            }
-        }
-
-        foreach ($this->results['Nobody\'s shift'] as $server => $stats) {
-            foreach ($stats as $name => $stat) {
-                if ($stat < 0) {
-                    $this->results['Nobody\'s shift'][$server][$name] = 0;
-                }
-            }
-        }
     }
     private function calculateAllData()
     {
