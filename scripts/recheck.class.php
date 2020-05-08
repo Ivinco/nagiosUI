@@ -85,15 +85,18 @@ class recheck
     }
     private function forceCronPhp()
     {
-        while (true) {
-            exec('php ' . __DIR__ . '/cron.php', $out, $exitCode);
+        global $serversList;
 
-            if ($exitCode) {
-                sleep(1);
-            } else {
-                $this->memcache->delete($this->memcacheFullName . "_recheck");
-                break;
-            }
+        $servers = array_keys($serversList);
+        $servers[] = 'All';
+
+        foreach ($servers as $server) {
+            $xml = new xml;
+            $xml->getDataFromMemcache = false;
+            $xml->setCurrentTab($server);
+            $xml->returnXml(false);
         }
+
+        $this->memcache->delete($this->memcacheFullName . "_recheck");
     }
 }
