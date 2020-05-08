@@ -35,13 +35,6 @@ class recheck
         $checking = 0;
 
         if ($this->memcacheEnabled) {
-            if (   $this->memcache->get($this->memcacheFullName . "_recheck_key")
-                && $this->memcache->get($this->memcacheFullName . "_recheck_key") != $this->memcache->get($this->memcacheFullName . "_verify")
-            ) {
-                $this->memcache->delete($this->memcacheFullName . "_recheck");
-                $this->memcache->delete($this->memcacheFullName . "_recheck_key");
-            }
-
             if ($this->memcache->get($this->memcacheFullName . "_recheck")) {
                 $checking = 1;
             }
@@ -53,11 +46,9 @@ class recheck
     public function setRecheckStatus()
     {
         $this->memcache->set($this->memcacheFullName . "_recheck", true, 0, 600);
-        $this->memcache->set($this->memcacheFullName . "_recheck_key", null, 0, 600);
 
         $this->getUnhandledAlerts();
-
-        $this->memcache->set($this->memcacheFullName . "_recheck_key", $this->memcache->get($this->memcacheFullName . "_verify"), 0, 600);
+        $this->forceCronPhp();
     }
 
     private function getUnhandledAlerts()
@@ -91,7 +82,18 @@ class recheck
                 ]);
             }
         }
+    }
+    private function forceCronPhp()
+    {
+        while (true) {
+            exec('php ' . __DIR__ . '/cron.php', $out, $exitCode);
 
-        sleep(20);
+            if ($exitCode) {
+                sleep(1);
+            } else {
+                $this->memcache->delete($this->memcacheFullName . "_recheck");
+                break;
+            }
+        }
     }
 }

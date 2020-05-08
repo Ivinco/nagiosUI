@@ -2708,13 +2708,13 @@ $.stopPendingAjax = (function() {
 	var id = 0, Q = {};
 
 	$(document).ajaxSend(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1') {
             jqx._id = ++id;
 			Q[jqx._id] = jqx;
         }
 	});
 	$(document).ajaxComplete(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1') {
 			delete Q[jqx._id];
 		}
 	});

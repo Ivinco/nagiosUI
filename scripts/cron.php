@@ -8,14 +8,18 @@ if ($memcacheEnabled) {
     $lockFile = $lockPath . $lockName . ".lck";
 
     while (false === lock($lockFile)) {
-        die(date("Y-m-d H:i:s") . " Couldn't lock the file!\n");
+        echo date("Y-m-d H:i:s") . " Couldn't lock the file!\n";
+        exit(1);
     }
 }
 
 function lock($filename) {
 
-    $fp = fopen($filename, "w+");
-    if (!$fp) die(date("Y-m-d H:i:s") . " Unable to create lock file. Lock is already set.\n");
+    $fp = @fopen($filename, "w+");
+    if (!$fp) {
+        echo date("Y-m-d H:i:s") . " Unable to create lock file. Lock is already set.\n";
+        exit(1);
+    }
 
     $r = flock($fp, LOCK_EX | LOCK_NB,$l);
 
