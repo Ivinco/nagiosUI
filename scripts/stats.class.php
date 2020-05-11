@@ -62,10 +62,60 @@ class stats
         $this->getStats();
         $this->calculateAllData();
         $this->setAverages();
+        $this->setAdditionalInfo();
 
         return $this->results;
     }
 
+    private function setAdditionalInfo()
+    {
+        foreach ($this->results as $name => $data) {
+            if ($name != $this->summaryReportName) {
+                continue;
+            }
+
+            $additional = [];
+
+            foreach ($data as $server => $serverData) {
+                if ($server == 'All') {
+                    continue;
+                }
+
+                if (!isset($additional[$server])) {
+                    $additional[$server] = [];
+                }
+
+                if (isset($this->serversList[$server]) && isset($this->serversList[$server]['stats'])) {
+                    foreach ($this->serversList[$server]['stats'] as $commandName => $command) {
+                        $command = str_replace('__from__', date('Y-m-d', $this->from), $command);
+                        $command = str_replace('__to__', date('Y-m-d', $this->to + 1), $command);
+
+                        $return = 0;
+                        exec($command . " 2>&1", $return);
+
+                        $additional[$server][$commandName] = intval($return[0]);
+                    }
+                }
+            }
+        }
+
+        $all = [];
+        foreach ($additional as $server => $data) {
+            if ($server != 'All') {
+                $this->results[$this->summaryReportName][$server]['additional'] = $data;
+
+                foreach ($data as $name => $value) {
+                    if (!isset($all[$name])) {
+                        $all[$name] = $value;
+                    } else {
+                        $all[$name] += $value;
+                    }
+                }
+            }
+        }
+
+        $this->results[$this->summaryReportName]['All']['additional'] = $all;
+    }
     private function validate()
     {
         if (!$this->validateTimestamp($this->from)) {
@@ -261,31 +311,6 @@ class stats
                     break 2;
                 }
             }
-        }
-
-        if (!$found) {
-            if (!isset($this->usersShifts[$this->nobodysReportName])) {
-                $this->usersShifts[$this->nobodysReportName]    = [];
-                $this->usersShifts[$this->nobodysReportName][0] = [
-                    'start' => $this->from,
-                    'finish' => $this->to,
-                ];
-            }
-            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'])) {
-                $this->usersShifts[$this->nobodysReportName][0]['alerts'] = [];
-            }
-
-            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'][$server])) {
-                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server] = [];
-            }
-            if (!isset($this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id])) {
-                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id] = [];
-            }
-            if ($lastAlert && !$this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id]) {
-                $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id][] = $lastAlert;
-            }
-
-            $this->usersShifts[$this->nobodysReportName][0]['alerts'][$server][$check_id][] = $record;
         }
     }
     private function getStatsByUser()
@@ -556,6 +581,45 @@ class stats
     {
         $this->calendar->setTime($this->from, $this->to);
         $this->usersShifts = $this->calendar->getEvents();
+
+        if (!isset($this->usersShifts[$this->nobodysReportName])) {
+            $this->usersShifts[$this->nobodysReportName] = [
+                0 => [
+                    'start'  => $this->from,
+                    'finish' => $this->to,
+                ]
+            ];
+        }
+
+        foreach ($this->usersShifts as $name => $shifts) {
+            if ($name == $this->nobodysReportName) {
+                continue;
+            }
+            foreach ($shifts as $shift) {
+                foreach ($this->usersShifts[$this->nobodysReportName] as $key => $item) {
+
+                    if ($item['start'] <= $shift['start'] && $item['finish'] >= $shift['finish']) {
+                        unset($this->usersShifts[$this->nobodysReportName][$key]);
+
+                        if ($item['start'] != $shift['start']) {
+                            $this->usersShifts[$this->nobodysReportName][] = [
+                                'start'  => $item['start'],
+                                'finish' => $shift['start'],
+                            ];
+                        }
+
+                        if ($item['finish'] != $shift['finish']) {
+                            $this->usersShifts[$this->nobodysReportName][] = [
+                                'start'  => $shift['finish'],
+                                'finish' => $item['finish'],
+                            ];
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
     }
     private function setAverages()
     {

@@ -4936,6 +4936,7 @@ Stats = {
     groupByService: 0,
     groupByHost: 0,
     refreshArray: [],
+    alerDaysList: [],
     statsData: null,
     lastPeriod: null,
     tz: null,
@@ -5017,12 +5018,13 @@ Stats = {
         });
 
         $(document).on('click', '.get-alert-days', function() {
+            if (Object.keys(Stats.alerDaysList).length) {
+                return;
+            }
+
             $('.alert-days-block').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
 
             setTimeout(function(){
-                var html = '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px;">';
-                html += '<tr><th>Date</th><th>alert-days</th></tr>';
-
                 for (var i = 13; i >= 1; i--) {
                     var date = moment().utc().subtract(i, 'months').startOf('month').format('YYYY-MM');
 
@@ -5037,16 +5039,45 @@ Stats = {
                             'to': moment().utc().subtract(i, 'months').endOf('month').unix(),
                         },
                         success: function(data){
-                            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(data['Summary report']['All']['unhandled_time'], data['Summary report']['All']['quick_acked_time']) +'</td></tr>';
+                            Stats.setAlertDays(data, date);
                         }
                     });
                 }
 
-                html += '</table>';
-                $('.alert-days-block').html(html);
+                Stats.drawAlertDaysTable();
             }, 500);
 
         });
+    },
+    drawAlertDaysTable: function() {
+        var html = '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px;">';
+        html += '<tr><th>Date</th><th>alert-days</th></tr>';
+
+        for (var date in Stats.alerDaysList) {
+            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(Stats.alerDaysList[date][Search.currentServerTab]['unhandled_time'], Stats.alerDaysList[date][Search.currentServerTab]['quick_acked_time']) +'</td></tr>';
+        }
+
+        html += '</table>';
+
+        $('.alert-days-block').html(html);
+    },
+    setAlertDays: function(data, date) {
+        Stats.alerDaysList[date] = {};
+
+        for (var name in data) {
+            if (name != 'Summary report') {
+                continue;
+            }
+
+            for (var server in data[name]) {
+                if (typeof Stats.alerDaysList[date][server] === 'undefined') {
+                    Stats.alerDaysList[date][server] = {};
+                }
+
+                Stats.alerDaysList[date][server]['unhandled_time']   = data[name][server]['unhandled_time'];
+                Stats.alerDaysList[date][server]['quick_acked_time'] = data[name][server]['quick_acked_time'];
+            }
+        }
     },
     redrawAlerts: function() {
         $(document).find('.show-alert-details').each(function (key, value) {
@@ -5255,9 +5286,9 @@ Stats = {
         html += '</h4>';
         html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout:fixed; display: table;">';
         html += '<tr>';
-        html += '<th style="width: 300px;"></th>';
-        html += '<th style="width: calc(50% - 160px);">worked on shift</th>';
-        html += '<th style="width: calc(50% - 160px);">worked total</th>';
+        html += '<th style="width: 400px;"></th>';
+        html += '<th style="width: calc(50% - 210px);">worked on shift</th>';
+        html += '<th style="width: calc(50% - 210px);">worked total</th>';
         html += '</tr>';
 
         $(Stats.selectedUsers).each(function (key, value) {
@@ -5269,6 +5300,13 @@ Stats = {
                 html += '<ul>';
                 html += '<li>alert days: '+ Stats.getAlertDays(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
                 html += '<li># of emergencies: '+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</li>';
+
+                if (value == 'Summary report') {
+                    for (var name in Stats.statsData[value][Search.currentServerTab]['additional']){
+                        html += '<li>'+ name +': '+ Stats.statsData[value][Search.currentServerTab]['additional'][name] +'</li>';
+                    }
+                }
+
                 html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
                 html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
                 html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
@@ -5438,6 +5476,7 @@ Stats = {
                     $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
                     $('#tabsSelect').selectmenu('refresh');
                     $('#filterStats').trigger( "click" );
+                    Stats.drawAlertDaysTable();
                 }
             }
         });
