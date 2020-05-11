@@ -5054,7 +5054,19 @@ Stats = {
         html += '<tr><th>Date</th><th>alert-days</th></tr>';
 
         for (var date in Stats.alerDaysList) {
-            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(Stats.alerDaysList[date][Search.currentServerTab]['unhandled_time'], Stats.alerDaysList[date][Search.currentServerTab]['quick_acked_time']) +'</td></tr>';
+            var unhandled_time   = 0;
+            var quick_acked_time = 0;
+
+            if (typeof Stats.alerDaysList[date][Search.currentServerTab] !== 'undefined') {
+                if (typeof Stats.alerDaysList[date][Search.currentServerTab]['unhandled_time'] !== 'undefined') {
+                    unhandled_time = Stats.alerDaysList[date][Search.currentServerTab]['unhandled_time'];
+                }
+                if (typeof Stats.alerDaysList[date][Search.currentServerTab]['quick_acked_time'] !== 'undefined') {
+                    quick_acked_time = Stats.alerDaysList[date][Search.currentServerTab]['quick_acked_time'];
+                }
+            }
+
+            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(unhandled_time, quick_acked_time) +'</td></tr>';
         }
 
         html += '</table>';
@@ -5475,7 +5487,11 @@ Stats = {
                     localStorage.setItem('currentServerTab', Search.currentServerTab);
                     $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
                     $('#tabsSelect').selectmenu('refresh');
-                    $('#filterStats').trigger( "click" );
+
+                    if (Stats.statsData) {
+                        $('#filterStats').trigger( "click" );
+                    }
+                    
                     Stats.drawAlertDaysTable();
                 }
             }
