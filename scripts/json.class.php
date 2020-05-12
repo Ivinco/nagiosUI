@@ -236,7 +236,7 @@ class json
                         $return['ackComment'] = $last['comment'];
 
                         $usersList = $this->db->usersList($tab);
-                        $photo = (isset($usersList[$data['author']])) ? $usersList[$last['author']] : '';
+                        $photo = (isset($usersList[$last['author']])) ? $usersList[$last['author']] : '';
                         $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
                         $return['quickAckAu'] = md5($photo);
 
