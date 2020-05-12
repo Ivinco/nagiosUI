@@ -92,7 +92,17 @@ class planned
         print_r(json_encode(['file' => $json, 'templates' => $templates, 'servers' => implode(',', $serversList)], true));
     }
     public function editData($id) {
-        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->postServer);
+        $time = null;
+        $end  = null;
+        $date = null;
+
+        if ($this->time > 1) {
+            $time = $this->time;
+            $end  = (time() + $time * 60);
+            $date = date('Y-m-d H:i:s', $end);
+        }
+
+        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->postServer, $time, $end, $date);
     }
     public function removeData() {
         $record = $this->db->returnPlannedRecord($this->line, $this->server);

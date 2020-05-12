@@ -320,7 +320,7 @@ class db
 
         $this->mysql->query($sql);
     }
-    public function editPlanned($id, $host, $service, $status, $comment, $normal, $server) {
+    public function editPlanned($id, $host, $service, $status, $comment, $normal, $server, $time, $end, $date) {
         $id = explode('___', $id);
 
         $oldHost    = $this->mysql->real_escape_string($id[0]);
@@ -335,6 +335,15 @@ class db
         $normal  = $this->mysql->real_escape_string($normal);
         $server  = $this->mysql->real_escape_string($server);
 
+        $changeEnd = '';
+        if ($time && $end && $date) {
+            $time = $this->mysql->real_escape_string($time);
+            $end  = $this->mysql->real_escape_string($end);
+            $date = $this->mysql->real_escape_string($date);
+
+            $changeEnd = " , `time`  = '{$time}', `end`  = '{$end}', `date`  = '{$date}'";
+        }
+
         $sql = "
             UPDATE
                 `{$this->planned_log}`
@@ -345,6 +354,7 @@ class db
                 `comment` = '{$comment}',
                 `normal`  = '{$normal}',
                 `server`  = '{$server}'
+                {$changeEnd}
             WHERE
                 `host` = '{$oldHost}'
               AND

@@ -3150,6 +3150,8 @@ Planned = {
             comment = $('#edit_planned_comment').val(),
             server  = $('#edit_planned_server').val(),
             normal  = +$('#edit_planned_normal').prop('checked'),
+            time    = parseInt($('#edit_planned_downtime').val()),
+            time    = (time > 1) ? time : 1,
             user    = $('#userName').text();
 
         if ((!host && !service && !status) || !comment) {
@@ -3174,7 +3176,7 @@ Planned = {
             $.ajax({
                 url:    'planned.php?server=' + Search.currentServerTab,
                 method: 'POST',
-                data:   { text: 'edit', time: 1, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal, server: server },
+                data:   { text: 'edit', time: time, line: 'edit', user: user, old: command, host: host, service: service, status: status, comment: comment, normal: normal, server: server },
             })
                 .always(function(data) {
                     if ($('#plannedDialog').html()) {
@@ -3309,6 +3311,10 @@ Planned = {
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Status information</td>';
             html+= '<td><input type="text" name="edit_planned_status" id="edit_planned_status" class="text ui-widget-content" value="'+ status +'" style="width: 100%; font-size: 14px;"></td>';
+            html+= '</tr>';
+            html+= '<tr>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Downtime <small>(minutes)</small></td>';
+            html+= '<td><input type="text" name="edit_planned_downtime" id="edit_planned_downtime" class="text ui-widget-content" value="" style="width: 100%; font-size: 14px;"></td>';
             html+= '</tr>';
             html+= '<tr>';
             html+= '<td style="font-size: 13px; white-space: nowrap;">Comment</td>';
