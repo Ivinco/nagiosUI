@@ -12,7 +12,8 @@ class actions
         $this->debugPath = $debugPath;
         $this->serversList = $serversList;
 
-        $this->db = new db;
+        $this->db    = new db;
+        $this->utils = new utils();
     }
     public function verifyType()
     {
@@ -43,12 +44,18 @@ class actions
     }
     public function runActions($data)
     {
+        if (in_array($this->type, ['quickAck', 'acknowledgeIt', 'scheduleIt'])) {
+            foreach ($data as $post) {
+                $this->server = $post['tab'];
+                $this->unAcknowledgeProblem($post);
+            }
+
+            sleep(1);
+        }
         foreach ($data as $post) {
             $this->server = $post['tab'];
 
             if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
-                $this->unAcknowledgeProblem($post);
-                sleep(1);
                 $this->acknowledgeProblem($post);
             }
 
@@ -56,13 +63,7 @@ class actions
                 $this->unAcknowledgeProblem($post);
             }
 
-            if (in_array($this->type, ['scheduleIt'])) {
-                $this->unAcknowledgeProblem($post);
-                sleep(1);
-                $this->scheduleProblem($post);
-            }
-
-            if (in_array($this->type, ['scheduleItTime'])) {
+            if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
                 $this->scheduleProblem($post);
             }
 
@@ -72,6 +73,16 @@ class actions
 
             if (in_array($this->type, ['recheckIt'])) {
                 $this->recheckProblem($post);
+            }
+        }
+
+        if ($this->type != 'recheckIt') {
+            $memcache = $this->utils->getMemcache();
+            $servers  = $this->utils->getServerTabsList();
+
+            foreach ($servers as $server) {
+                $memcacheName = $this->utils->getMemcacheFullName($server);
+                $memcache->set("{$memcacheName}_verify", md5(time()), 0, 1200);
             }
         }
     }

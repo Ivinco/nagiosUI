@@ -7,7 +7,7 @@
 
     include_once __DIR__ . '/../scripts/init.php';
 
-    if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar']) {
+    if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar'] || $_SESSION['currentAvatar'] == 'd41d8cd98f00b204e9800998ecf8427e') {
         $db = new db;
         $usersArray = $db->usersList('All');
         $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');

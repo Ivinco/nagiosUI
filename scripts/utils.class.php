@@ -12,6 +12,20 @@ class utils
         global $timeZonesListAliases;
         global $serversList;
         global $timeZone;
+        global $memcacheEnabled;
+        global $memcacheHost;
+        global $memcachePort;
+        global $memcacheName;
+
+        $this->memcacheEnabled = $memcacheEnabled;
+        $this->memcacheHost    = $memcacheHost;
+        $this->memcachePort    = $memcachePort;
+        $this->memcacheName    = $memcacheName;
+
+        if ($this->memcacheEnabled) {
+            $this->memcache = new Memcache;
+            $this->memcache->connect($this->memcacheHost, $this->memcachePort);
+        }
 
         $this->default_time_zone = $timeZone;
         $this->timeZonesListAliases = $timeZonesListAliases;
@@ -21,6 +35,21 @@ class utils
         $this->setTimeCorrection();
     }
 
+    public function getMemcache()
+    {
+        if ($this->memcacheEnabled) {
+            return $this->memcache;
+        }
+
+        return null;
+    }
+    public function getMemcacheFullName($server) {
+        if ($this->memcacheEnabled) {
+            return "nagiosUI_{$this->memcacheName}_{$server}";
+        }
+
+        return null;
+    }
 
     public function getTimeZone($server)
     {

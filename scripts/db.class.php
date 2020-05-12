@@ -503,7 +503,7 @@ class db
 
     public function usersList($server) {
         $server = $this->mysql->real_escape_string($server);
-        $where = ($server == 'All') ? "" : " WHERE `server` = '{$server}'";
+        $where = (!$server || $server == 'All') ? "" : " WHERE `server` = '{$server}'";
         $sql = "SELECT * FROM `{$this->users_list}` {$where}";
 
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
