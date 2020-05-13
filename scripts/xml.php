@@ -24,16 +24,6 @@ class xml
         $this->memcacheName             = $memcacheName;
         $this->groupByService           = 2;
         $this->groupByHost              = 11;
-        $this->refreshArray             = [
-                                            [ 'value' =>  '10', 'name' => '10 sec' ],
-                                            [ 'value' =>  '20', 'name' => '20 sec' ],
-                                            [ 'value' =>  '40', 'name' => '40 sec' ],
-                                            [ 'value' =>  '60', 'name' =>  '1 min' ],
-                                            [ 'value' => '120', 'name' =>  '2 min' ],
-                                            [ 'value' => '180', 'name' =>  '3 min' ],
-                                            [ 'value' => '300', 'name' =>  '5 min' ],
-                                            [ 'value' => '600', 'name' => '10 min' ],
-        ];
         $this->verificateCheck          = '';
         $this->statesArray              = [0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN'];
         $this->actions                  = new actions;
@@ -296,7 +286,6 @@ class xml
 	<nagios-full-list-url>'. $this->parseToXML($this->serversList[$this->currentTabTmp]['fullHostUrl']) .'</nagios-full-list-url>
 	<group-by-service>'.     $this->parseToXML($this->groupByService)           .'</group-by-service>
 	<group-by-host>'.        $this->parseToXML($this->groupByHost)              .'</group-by-host>
-	<refresh-array>'.        $this->parseToXML($this->returnRefreshArray())     .'</refresh-array>
 	<backend_status>'.       $this->backendStatus                               .'</backend_status>
 </alerts>';
 
@@ -472,15 +461,6 @@ class xml
         }
 
         return str_replace('___host___', $host, str_replace('___service___', $service, $this->serversList[$this->currentTabTmp]['serviceUrl']));
-    }
-    private function returnRefreshArray()
-    {
-        $refreshArrayData = [];
-        foreach ($this->refreshArray as $item) {
-            $refreshArrayData[] = intval($item['value']) .','. $item['name'];
-        }
-
-        return implode(';', $refreshArrayData);
     }
     private function checkBackendStatus($lastCheck)
     {

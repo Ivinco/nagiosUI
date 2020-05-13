@@ -173,17 +173,13 @@ copy
 #tabsSelect-button { width: 150px !important; }
 #tabsSelect-menu { width: 150px !important; }
 
-#refreshTime label.main { font-size: 15px; line-height: 32px; float: left; margin-right: 8px; font-weight: bold; text-transform: uppercase; }
-#refreshTimeSelect-button { width: auto !important; min-width: 122px; }
 #tabsSelect-button { width: auto !important; min-width: 146px; }
 
-#refreshTime, #normalGrouping, #tabs { float: right; }
-#refreshTimeSelect-button, #grouping-button, #info-show-button, #tabsSelect-button { outline: none; }
-#refreshTimeSelect-menu li, #grouping-menu li, #info-show-menu li, #tabsSelect-menu { font-size: 12px; line-height: 16px; }
-#refreshTimeSelect-menu li.ui-selectmenu-optgroup, #grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup, #tabsSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
-#refreshTime .ui-selectmenu-button span.ui-selectmenu-text,
+#normalGrouping, #tabs { float: right; }
+#grouping-button, #info-show-button, #tabsSelect-button { outline: none; }
+#grouping-menu li, #info-show-menu li, #tabsSelect-menu { font-size: 12px; line-height: 16px; }
+#grouping-menu li.ui-selectmenu-optgroup, #info-show-menu li.ui-selectmenu-optgroup, #tabsSelect-menu li.ui-selectmenu-optgroup { font-size: 12px; line-height: 1; margin: 0; text-align: center; }
 #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text,
-#refreshTime .ui-selectmenu-button span.ui-icon,
 #normalGrouping .ui-selectmenu-button span.ui-icon,
 #tabsSelect .ui-selectmenu-button span.ui-icon { right: 0; }
 
@@ -216,7 +212,7 @@ copy
 .ui-selectmenu-menu.ui-front.ui-selectmenu-open { left: auto; right: 8px; }
 .ui-button-text-only .ui-button-text { padding: .4em .5em; }
 
-#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash, #userAvatar, #mainTable .hide-more, #mainTable .for-order, #mainTable .type-th, #serviceDialog, #commentDialog, #groupByService, #groupByHost, #refreshArray { display: none; }
+#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash, #userAvatar, #mainTable .hide-more, #mainTable .for-order, #mainTable .type-th, #serviceDialog, #commentDialog, #groupByService, #groupByHost { display: none; }
 
 table.dataTable thead .no-border-th {
   background: #fff !important;
@@ -312,8 +308,8 @@ table.dataTable thead .no-border-th {
     #radio { font-size: 12px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon { width: 13px; height: 13px; }
     #radio .small-hide { display: none; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 25px; }
-    #grouping-menu li, #refreshTimeSelect-menu li { font-size: 12px; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 12px; line-height: 25px; }
+    #grouping-menu li { font-size: 12px; }
     .ui-button-text-only .ui-button-text { padding: 6px 7px; }
     #radio .top-ack-icon, #radio .top-downtime-icon, #radio .top-normal-icon, #radio .top-emergency-icon, #radio .top-planned-icon { margin-top: 0px; }
     #radio .top-planned-icon { padding: 2px; }
@@ -324,9 +320,8 @@ table.dataTable thead .no-border-th {
     #mainTable .comment { width: 107px !important; }
     #mainTable .service, #mainTable .service-th { width: 297px !important; }
     #grouping-button, #grouping-menu { width: 143px !important; }
-    #refreshTimeSelect-button { min-width: 130px !important; width: 130px !important; }
-    #grouping-button .ui-selectmenu-text, #refreshTimeSelect-button .ui-selectmenu-text { padding: 0 14px 0 3px !important; } 
-    #grouping-button .ui-selectmenu-button span.ui-icon, #refreshTimeSelect-button .ui-selectmenu-button span.ui-icon { right: 0 !important; }
+    #grouping-button .ui-selectmenu-text { padding: 0 14px 0 3px !important; }
+    #grouping-button .ui-selectmenu-button span.ui-icon { right: 0 !important; }
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
@@ -338,11 +333,9 @@ table.dataTable thead .no-border-th {
     #mainTable .last_check, #mainTable .last_check-th { display: none; }
     #mainTable .likeTable ul li:first-child { float: left; display: block; width: 100%; margin: 2px 0 12px 0; text-align: left; }
     #mainTable .likeTable ul li:not(:first-child) { float: left; display: inline-block; margin: 0 2px 5px 2px; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; padding: 0 12px 0 3px; }
-    #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { right: -1px; }
-    #refreshTimeSelect-button { width: 110px !important; min-width: 110px; }
-    #refreshTimeSelect-menu { width: 110px !important; }
-    #grouping-menu li, #refreshTimeSelect-menu li { font-size: 11px; padding: 3px; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; padding: 0 12px 0 3px; }
+    #normalGrouping .ui-selectmenu-button span.ui-icon { right: -1px; }
+    #grouping-menu li { font-size: 11px; padding: 3px; }
     #grouping-button { width: 128px !important; }
     #grouping-menu { width: 128px !important; }
 }
@@ -361,11 +354,10 @@ table.dataTable thead .no-border-th {
     #planned-maintenance .holder { width: auto; display: block; margin-bottom: 30px; }
     #radio .top-planned-icon { padding: 0px; }
     
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; line-height: 22px; padding: 0 9px 0 0; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { font-size: 11px; line-height: 22px; padding: 0 9px 0 0; }
     #info-show-button, #info-show-menu { width: 80px !important; }
     #grouping-button, #grouping-menu { width: 116px !important; }
-    #refreshTime .ui-selectmenu-button span.ui-icon, #normalGrouping .ui-selectmenu-button span.ui-icon { right: -2px; }
-    #refreshTimeSelect-button { width: 105px !important; min-width: 105px; }
+    #normalGrouping .ui-selectmenu-button span.ui-icon { right: -2px; }
     #info-show-menu li { font-size: 11px; padding: 3px; }
 }
 
@@ -375,12 +367,10 @@ table.dataTable thead .no-border-th {
     #mainTable .status_information, #mainTable .status_information-th, #mainTable .comment, #mainTable .comment-th { display: none; }
     #hosts, #hosts-label { display: none; }
     .ui-buttonset { margin-right: 0; }
-    #normalGrouping .ui-selectmenu-button span.ui-icon, #refreshTime .ui-selectmenu-button span.ui-icon { display: none; }
-    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text, #refreshTime .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }
+    #normalGrouping .ui-selectmenu-button span.ui-icon { display: none; }
+    #normalGrouping .ui-selectmenu-button span.ui-selectmenu-text { padding: 0 3px; }
     #grouping-button { width: 113px !important; }
     #grouping-menu { width: 113px !important; }
-    #refreshTimeSelect-button { width: 98px !important; min-width: 98px; }
-    #refreshTimeSelect-menu { width: 98px !important; }
     #mainTable .more-th, #mainTable .more { display: table-cell; }
     #mainTable .likeTable ul li:first-child { float: none; display: table-cell; width: 100%; margin: auto; text-align: left; }
     #mainTable .likeTable ul li:not(:first-child) { float: none; display: none; margin: auto; }

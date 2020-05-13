@@ -292,7 +292,6 @@ class json
             'updateHash'        => $this->fullData['hash'],
             'groupByService'    => $this->fullData['group-by-service'],
             'groupByHost'       => $this->fullData['group-by-host'],
-            'refreshArray'      => $this->fullData['refresh-array'],
             'normal'            => 0,
             'hosts'             => 0,
             'acked'             => 0,

@@ -68,9 +68,6 @@
                 <select name="timeZone" id="timeZoneSelect"></select>
             </form>
         </div>
-		<div id="refreshTime">
-			<select name="files" id="refreshTimeSelect"></select>
-		</div>
 		<div id="normalGrouping">
 			<select name="files" id="grouping">
 				<option value="0">Grouping: Disabled</option>
@@ -216,7 +213,6 @@
 	<div id="updateHash"></div>
 	<div id="groupByService"></div>
 	<div id="groupByHost"></div>
-	<div id="refreshArray"></div>
 	<div id="serviceDialog" title="Status Information"></div>
 	<div id="commentDialog" title="Comment"></div>
 	<div id="plannedDialog" title="Planned Templates"></div>
