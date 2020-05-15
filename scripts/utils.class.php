@@ -50,6 +50,14 @@ class utils
 
         return null;
     }
+    public function getMemcacheRecheckName($tab, $host, $service, $isHost)
+    {
+        $end = implode('_', [$tab, $host, $service, $isHost]);
+        $end = md5($end);
+        $name = $this->getMemcacheFullName($tab);
+
+        return $name . "_" . $end;
+    }
 
     public function getTimeZone($server)
     {

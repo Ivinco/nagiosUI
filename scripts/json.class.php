@@ -90,6 +90,7 @@ class json
             $showInNormal    = false;
             $schedPlanned    = true;
             $serviceOriginal = $service;
+            $recheckValue    = $this->getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS);
 
             $lastCheck  = $this->utils->returnCorrectedDate($lastCheck, $tab);
             $ackComment = $this->returnCorrectedComments($ackComment, $tab);
@@ -178,6 +179,7 @@ class json
                     'pending' => $pending,
                     'schedPlanned' => $schedPlanned,
                     'original' => $serviceOriginal,
+                    'recheck' => $recheckValue,
                 ),
                 'status'    => array(
                     'name'  => $statusName,
@@ -218,6 +220,21 @@ class json
         }
     }
 
+    private function getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS)
+    {
+        $memcache     = $this->utils->getMemcache();
+        $memcacheName = $this->utils->getMemcacheRecheckName($tab, $host, $service, $hostOrService);
+
+        if ($memcache && $memcache->get($memcacheName) && $memcache->get($memcacheName) != $lastCheckS) {
+            $memcache->delete($memcacheName);
+        }
+
+        if ($memcache && $memcache->get($memcacheName) && $memcache->get($memcacheName) == $lastCheckS) {
+            return true;
+        }
+
+        return false;
+    }
     private function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
     {
         $return = [

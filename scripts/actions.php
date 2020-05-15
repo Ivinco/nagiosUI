@@ -52,6 +52,11 @@ class actions
 
             sleep(1);
         }
+
+        if ($this->type == 'recheckIt') {
+            $this->setRecheckActions($data);
+        }
+
         foreach ($data as $post) {
             $this->server = $post['tab'];
 
@@ -76,13 +81,50 @@ class actions
             }
         }
 
-        if ($this->type != 'recheckIt') {
-            $memcache = $this->utils->getMemcache();
-            $servers  = $this->utils->getServerTabsList();
+        $memcache = $this->utils->getMemcache();
+        $servers  = $this->utils->getServerTabsList();
 
-            foreach ($servers as $server) {
-                $memcacheName = $this->utils->getMemcacheFullName($server);
+        foreach ($servers as $server) {
+            $memcacheName = $this->utils->getMemcacheFullName($server);
+            if ($memcache) {
                 $memcache->set("{$memcacheName}_verify", md5(time()), 0, 1200);
+            }
+        }
+    }
+    private function findAlert($posts, $tab, $host, $service, $isHost)
+    {
+        foreach ($posts as $post) {
+            if ($post['tab'] == $tab && $post['host'] == $host && $post['service'] == $service && $post['isHost'] == $isHost) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    private function setRecheckActions($posts)
+    {
+        $xml = new xml;
+        $xml->setCurrentTab('All');
+        $alerts = json_decode(json_encode(simplexml_load_string($xml->returnXml(false))),TRUE);
+
+        if (!isset($alerts['alert'])) {
+            return;
+        }
+
+        foreach ($alerts['alert'] as $item) {
+            $last_check_sec = (!is_array($item['last_check_sec']))       ? $item['last_check_sec']       : implode(' ', $item['last_check_sec']);
+            $tab            = (!is_array($item['tab']))                  ? $item['tab']                  : implode(' ', $item['tab']);
+            $host           = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
+            $service        = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
+            $isHost         = $item['host_or_service'];
+
+            if ($this->findAlert($posts, $tab, $host, $service, $isHost)) {
+                $memcache     = $this->utils->getMemcache();
+                $memcacheName = $this->utils->getMemcacheRecheckName($tab, $host, $service, $isHost);
+
+                if ($memcache) {
+                    $memcache->set($memcacheName, $last_check_sec, 0, 300);
+                }
             }
         }
     }

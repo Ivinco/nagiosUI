@@ -212,12 +212,20 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 							ack   = '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
 							sched = (data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
+                        var recheckStyle = '';
+                        var recheckTitle = 'Refresh Service Status';
+                        if (data.recheck) {
+                            recheckStyle = ' style="opacity: 0.4; cursor: default;"';
+                            recheckTitle += ' in progress'
+                        }
+                        var recheck = '<li><span class="list-recheck-icon icons recheckIt" data-recheck="'+ data.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
+
 						if (data.pending) {
                             return '' +
                                 '<div class="likeTable">' +
                                 '	<ul>' +
                                 '		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
-                                '		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
+                                recheck +
                                 notes  +
                                 '	</ul>' +
                                 '</div>';
@@ -235,7 +243,7 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 							'		</li>' +
 									ack +
 									sched +
-							'		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
+                                    recheck +
 							'	</ul>' +
 							'</div>';
 					},
@@ -759,10 +767,16 @@ Search.addParameterToUrl = function(parameter, value) {
 
 
 Search.tmpHideIcon = function(item, type) {
-	item.find('.icons.'+ type).hide();
+    if (type == 'recheckIt') {
+        item.find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
+    } else {
+        item.find('.icons.'+ type).hide();
+    }
 }
 Search.tmpShowIcon = function(item, type) {
-	item.find('.icons.'+ type).show();
+    if (type != 'recheckIt' && type != 'recheckItGroup') {
+        item.find('.icons.'+ type).show();
+    }
 }
 Search.tempHideButtons = function (key) {
     Search.stopReloads(true);
@@ -787,15 +801,27 @@ Search.tempHideButtons = function (key) {
                     downId      = item[i].full.service.down,
                     start       = item[i].full.comment.start,
                     end         = item[i].full.comment.end,
+                    recheck     = item[i].full.service.recheck,
                     duration    = item[i].full.comment.duration;
                 var tab = item[i].full.host.tab;
 
-                returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
+                if (type == 'recheckIt') {
+                    if (!recheck) {
+                        returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
+                    }
+                } else {
+                    returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
+                }
             }
         }
 
-        $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).hide();
-        $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').hide();
+        if (type == 'recheckIt') {
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
+        } else {
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).hide();
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').hide();
+        }
     }
 	else if (Search.whatWeChangeObject[key].what == 'all') {
 		var returnArray = [],
@@ -1168,6 +1194,9 @@ Search.restoreAllData = function(key) {
                         Grouping.listGroups[mainObj.key].children[i].full.service.unAck = true;
                         Grouping.listGroups[mainObj.key].children[i].full.service.qAck  = true;
                     }
+                    else if (mainObj.type == 'recheckIt') {
+                        Grouping.listGroups[mainObj.key].children[i].full.service.recheck  = true;
+                    }
                     else if (mainObj.type == 'scheduleIt' && Search.editComment) {
                         var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
 
@@ -1214,6 +1243,8 @@ Search.restoreAllData = function(key) {
                         Grouping.listGroups[mainObj.key].children[i].full.comment.ack   = newComment;
                         Grouping.listGroups[mainObj.key].children[i].full.service.unAck = true;
                         Grouping.listGroups[mainObj.key].children[i].full.service.qAck  = true;
+                    } else if (mainObj.type == 'recheckIt') {
+                        Grouping.listGroups[mainObj.key].children[i].full.service.recheck  = true;
                     }
                     else if (mainObj.type == 'scheduleIt' && Search.editComment) {
                         var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
@@ -1388,6 +1419,8 @@ Search.restoreAllData = function(key) {
                                 $('#radio label[for="acked"] em').text(oldCount + newCount);
                             }
                         }
+                    } else if (mainObj.type == 'recheckIt') {
+                        d.service.recheck  = true;
                     }
                     else if (mainObj.type == 'scheduleIt') {
                         var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
@@ -2005,7 +2038,7 @@ Search.init = function() {
     $('#mainTable_filter input').val(localStorage.getItem('searchValue')).focus();
 
 
-    $('#mainTable').on('click', '.recheckIt', function () {
+    $('#mainTable').on('click', '.recheckIt:not([data-recheck="true"])', function () {
         var key = Search.changeWhatWeChangeObject({
             'type':    'recheckIt',
             'what':    'this',
@@ -2851,8 +2884,10 @@ Recheck = {
             method: 'GET',
         })
         .always(function(data) {
-            Recheck.recheckStatus = parseInt(data.checking);
-            Recheck.changeButton();
+            if (Recheck.recheckStatus != parseInt(data.checking)) {
+                Recheck.recheckStatus = parseInt(data.checking);
+                Recheck.changeButton();
+            }
             Recheck.recheckTimer = setTimeout(function(){ Recheck.getStatus() }, 3000);
         });
     },
@@ -2860,9 +2895,33 @@ Recheck = {
         if (Recheck.recheckStatus) {
             $('.force-recheck-button .spinner').show();
             $('.force-recheck-button').attr('disabled', 'disabled');
+            Search.allDataTable.rows({ page:'current', search:'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
+                var d = this.data();
+                d.service.recheck  = true;
+                this.invalidate();
+            });
+
+            for (var key in Grouping.listGroups) {
+                for (var i = 0; i < Grouping.listGroups[key].children.length; i++) {
+                    Grouping.listGroups[key].children[i].full.service.recheck = true;
+                }
+            }
+            Grouping.redrawInfo();
         } else {
             $('.force-recheck-button .spinner').hide();
             $('.force-recheck-button').removeAttr('disabled');
+            Search.allDataTable.rows({ page:'current', search:'applied' }).every(function (rowIdx, tableLoop, rowLoop) {
+                var d = this.data();
+                d.service.recheck  = false;
+                this.invalidate();
+            });
+
+            for (var key in Grouping.listGroups) {
+                for (var i = 0; i < Grouping.listGroups[key].children.length; i++) {
+                    Grouping.listGroups[key].children[i].full.service.recheck = false;
+                }
+            }
+            Grouping.redrawInfo();
         }
     }
 };
@@ -3503,6 +3562,7 @@ Grouping = {
         this.sortChildren();
         this.prepareParents();
         this.checkQuickAckIcons();
+        this.checkRecheckIcons();
 
         Search.filterDataTable(localStorage.getItem('searchValue'));
     },
@@ -3527,6 +3587,21 @@ Grouping = {
 
         if (count && icon && count == this.listGroups[key].children.length) {
             $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .quickAckUnAckIcon').html('<img class="icons quickUnAckGroup" src="https://www.gravatar.com/avatar/'+ icon +'?size=20" width="19" height="19" alt="'+ name +' unack" title="'+ name +' unack" />');
+        }
+    },
+    checkRecheckIcons: function() {
+        for (var key in this.listGroups) {
+            var recheck = 0;
+
+            for (var i = 0; i < this.listGroups[key].children.length; i++) {
+                if (this.listGroups[key].children[i].full.service.recheck === true) {
+                    recheck++;
+                }
+            }
+
+            if (recheck == this.listGroups[key].children.length) {
+                $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .recheckItGroup').css("opacity", 0.4).css("cursor", "default").attr("title", "Refresh Service Status in progress").attr("alt", "Refresh Service Status in progress").attr('data-recheck', 'true');
+            }
         }
     },
     setInfo: function(data) {
@@ -3629,6 +3704,7 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'host';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.recheck = data[i].service.recheck;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3654,6 +3730,7 @@ Grouping = {
                     this.listGroups[key].data.count   = count;
                     this.listGroups[key].data.type    = 'service';
                     this.listGroups[key].data.tab     = tab;
+                    this.listGroups[key].data.recheck = data[i].service.recheck;
                     this.listGroups[key].data.abbreviation_name = data[i].abbreviation.name;
                     this.listGroups[key].data.abbreviation_abb = data[i].abbreviation.abb;
                 }
@@ -3673,6 +3750,7 @@ Grouping = {
         this.setAbbreviation();
         this.prepareParents();
         this.checkQuickAckIcons();
+        this.checkRecheckIcons();
 
         for (var key in this.listGroups) {
             $('#mainTable thead tr[data-group="' + key + '"][data-group-type="parent"] .status_information').text(Grouping.returnStatusInformation(key));
@@ -3963,13 +4041,21 @@ Grouping = {
                     ack   = '<li><span class="list-ack-icon icons acknowledgeIt" alt="Acknowledge this Service" title="Acknowledge this Service"></span></li>',
                     sched = (item.service.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ item.service.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
+                var recheckStyle = '';
+                var recheckTitle = 'Refresh Service Status';
+                if (item.service.recheck) {
+                    recheckStyle = ' style="opacity: 0.4; cursor: default;"';
+                    recheckTitle += ' in progress'
+                }
+                var recheck = '<li><span class="list-recheck-icon icons recheckIt" data-recheck="'+ item.service.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
+
                 result += '<td class="service '+ item.state + colorClass +'">';
                 if (item.service.pending) {
                     result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
                         '		<li><a href="'+ item.service.url +'" class="service-name">'+ item.service.name +'</a></li>' +
-                        '		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
+                        recheck +
                         notes  +
                         '	</ul>' +
                         '</div>';
@@ -3987,7 +4073,7 @@ Grouping = {
                         '		</li>' +
                         ack +
                         sched +
-                        '		<li><span class="list-recheck-icon icons recheckIt" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
+                        recheck +
                         '	</ul>' +
                         '</div>';
                 }
@@ -4160,7 +4246,7 @@ Grouping = {
 
             return false;
         });
-        $('#mainTable').on('click', 'thead .recheckItGroup', function () {
+        $('#mainTable').on('click', 'thead .recheckItGroup:not([data-recheck="true"])', function () {
             var host    = $(this).closest('tr').find('.host').text(),
                 service = $(this).closest('tr').find('.service ul li:first').text(),
                 key     = Search.changeWhatWeChangeObject({
