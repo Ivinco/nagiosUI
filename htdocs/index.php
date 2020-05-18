@@ -127,7 +127,7 @@
         </div>
     </form>
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">
-        <button type="button" class="force-recheck-button" title="reckeck all alerts in 'Unhandled' tab">Force recheck<span class="spinner" style="border: 2px solid #000; border-right-color: transparent;"></span></button>
+        <button type="button" class="force-recheck-button" title="reckeck all alerts in 'Unhandled' tab">Refresh statuses<span class="spinner" style="border: 2px solid #000; border-right-color: transparent;"></span></button>
         New data from nagios-api was aggregated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
     <table id="mainTable">
         <thead>
