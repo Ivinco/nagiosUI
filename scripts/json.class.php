@@ -247,7 +247,7 @@ class json
 
         foreach ($this->latestActions as $last) {
             if ($last['host'] == $host && $last['service'] == $service && $last['server'] == $tab) {
-                if ($last['command'] == 'ack' && !$return['acked']) {
+                if ($last['command'] == 'ack') {
                     $return['acked'] = 1;
                     if ($last['comment'] == 'temp') {
                         $return['ackComment'] = $last['comment'];
@@ -256,7 +256,6 @@ class json
                         $photo = (isset($usersList[$last['author']])) ? $usersList[$last['author']] : '';
                         $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
                         $return['quickAckAu'] = md5($photo);
-
                     } else {
                         $return['ackComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
                     }

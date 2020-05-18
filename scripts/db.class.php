@@ -213,7 +213,7 @@ class db
     public function getLatestActions()
     {
         $list   = [];
-        $sql    = "SELECT * FROM {$this->nagios_external_commands_log} WHERE `logged` > '". date('Y-m-d H:i:s', strtotime('-5 minutes')) ."' ORDER BY `logged`";
+        $sql    = "SELECT * FROM (SELECT * FROM {$this->nagios_external_commands_log} WHERE `logged` > '". date('Y-m-d H:i:s', strtotime('-5 minutes')) ."' ORDER BY logged DESC) as tbl GROUP BY tbl.host, tbl.service, tbl.server;";
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){

@@ -220,6 +220,10 @@ table.dataTable thead .no-border-th {
   border-bottom: 0 !important;
 }
 
+.dataTables_empty {
+    display: none;
+}
+
 #planned-maintenance { padding: 5px 0 50px 0; font-size: 15px; display: none; }
 #planned-maintenance label { font-weight: bold; line-height: 32px; }
 #planned-maintenance button { font-size: 15px; line-height: 20px; margin-top: 12px; }
