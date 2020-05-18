@@ -259,8 +259,7 @@
                         </tr>
                     </table>
                 </td>
-                <td valign="top" width="100">&nbsp;</td>
-                <td style="width: calc(100% - 520px)" valign="top">
+                <td style="width: 300px;" valign="top">
                     <div style="float:right;">
                         <h4 class="get-alert-days" style="cursor: pointer;"><br />Get alert days for last year. <br /><small>(It can take some time)</small></h4>
                         <div class="alert-days-block" style="padding-bottom: 30px;"></div>
