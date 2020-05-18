@@ -5292,8 +5292,8 @@ Stats = {
         html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout:fixed; display: table;">';
         html += '<tr>';
         html += '<th style="width: 400px;"></th>';
-        html += '<th style="width: calc(50% - 210px);">worked on shift</th>';
-        html += '<th style="width: calc(50% - 210px);">worked total</th>';
+        html += '<th style="width: calc(50vw - 210px);">worked on shift</th>';
+        html += '<th style="width: calc(50vw - 210px);">worked total</th>';
         html += '</tr>';
 
         $(Stats.selectedUsers).each(function (key, value) {
