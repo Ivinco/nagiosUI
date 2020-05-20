@@ -265,7 +265,7 @@ class json
                     }
                 }
 
-                if ($last['command'] == 'unack' && $return['acked']) {
+                if ($last['command'] == 'unack') {
                     $return['acked'] = 0;
                     $return['ackComment'] = '';
                     $return['quickAckAu'] = '';
