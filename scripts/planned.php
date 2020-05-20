@@ -23,6 +23,8 @@ class planned
         $this->actions     = new actions;
         $this->db          = new db;
         $this->utils       = new utils();
+        $this->removeAlerts = [];
+        $this->addAlerts    = [];
     }
 
     public function verifyPostData() {
@@ -105,10 +107,12 @@ class planned
         $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->postServer, $time, $end, $date);
     }
     public function removeData() {
+        $this->removeAlerts = [];
         $record = $this->db->returnPlannedRecord($this->line, $this->server);
         $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
         $this->db->removePlanned($this->line, $this->server);
         $this->removePlannedMaintenance($this->line);
+        $this->removeMultiSchedulePlanned();
     }
     public function findPlannedRecords($host, $service, $status, $hostOrService, $sched, $schComment, $downtimeId, $server) {
         $return = [];
@@ -123,7 +127,10 @@ class planned
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
-                        $this->removeSchedulePlanned($downtime, $server);
+                        if (!isset($this->removeAlerts[$server])) {
+                            $this->removeAlerts[$server] = [];
+                        }
+                        $this->removeAlerts[$server][] = $downtime;
                     }
 
                     $sched = 0;
@@ -280,10 +287,11 @@ class planned
         return $pattern;
     }
     private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService, $server) {
-        $this->actions->setType('scheduleItTime');
-        $this->actions->setServer($server);
+        if (!isset($this->addAlerts[$server])) {
+            $this->addAlerts[$server] = [];
+        }
 
-        $this->actions->runActions([[
+        $this->addAlerts[$server][] = [
             'start_time' => time(),
             'end_time'   => $end,
             'hours'      => ((int) $end - time()),
@@ -293,9 +301,7 @@ class planned
             'author'     => $user,
             'com_data'   => '(planned)' . $comment,
             'tab'        => $server,
-        ]]);
-
-        return true;
+        ];
     }
     public function changeComment() {
         $this->db->editPlannedComment($this->line, $this->comment, $this->server);
@@ -340,7 +346,10 @@ class planned
                                 foreach ($serviceCommands as $commandService) {
                                     foreach ($statusCommands as $commandStatus) {
                                         if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                            $this->removeSchedulePlanned($downtime, $server);
+                                            if (!isset($this->removeAlerts[$server])) {
+                                                $this->removeAlerts[$server] = [];
+                                            }
+                                            $this->removeAlerts[$server][] = $downtime;
                                         }
                                     }
                                 }
@@ -351,17 +360,36 @@ class planned
             }
         }
     }
-    private function removeSchedulePlanned($downtimeId, $server) {
-        if ($downtimeId != 4) {
-            $this->actions->setType('downtime');
+    public function runActionsFromJson()
+    {
+        $this->removeMultiSchedulePlanned();
+        $this->scheduleMultiPlanned();
+    }
+    private function scheduleMultiPlanned()
+    {
+        foreach ($this->addAlerts as $server => $alerts) {
+            $this->actions->setType('scheduleItTimePlanned');
             $this->actions->setServer($server);
-            $this->actions->runActions([[
-                'down_id' => $downtimeId,
-                'isHost'  => 'service',
-            ]]);
+            $this->actions->runActions($alerts);
         }
+    }
+    private function removeMultiSchedulePlanned()
+    {
+        foreach ($this->removeAlerts as $server => $alerts) {
+            $this->actions->setType('downtimePlanned');
+            $this->actions->setServer($server);
 
-        return true;
+            $data = [];
+
+            foreach ($alerts as $alert) {
+                $data[] = [
+                    'down_id' => $alert,
+                    'isHost'  => 'service',
+                ];
+            }
+
+            $this->actions->runActions($data);
+        }
     }
     private function pregMatchHost($commandHost, $host) {
         return preg_match("/^$commandHost$/iu", $host);

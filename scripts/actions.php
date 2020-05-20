@@ -22,7 +22,7 @@ class actions
             $this->returnError('type is empty', 404);
         }
 
-        if (!in_array($_REQUEST['type'], array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime', 'scheduleItTime'))) {
+        if (!in_array($_REQUEST['type'], array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime', 'scheduleItTime', 'downtimePlanned', 'scheduleItTimePlanned'))) {
             $this->returnError('type not in array', 404);
         }
 
@@ -62,11 +62,11 @@ class actions
             $this->acknowledgeMultiProblems($data);
         }
 
-        if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
+        if (in_array($this->type, ['scheduleIt', 'scheduleItTime', 'scheduleItTimePlanned'])) {
             $this->scheduleMultiProblems($data);
         }
 
-        if (in_array($this->type, ['downtime'])) {
+        if (in_array($this->type, ['downtime', 'downtimePlanned'])) {
             $this->unScheduleMultiProblems($data);
         }
 
@@ -74,13 +74,15 @@ class actions
             $this->recheckMultiProblems($data);
         }
 
-        $memcache = $this->utils->getMemcache();
-        $servers  = $this->utils->getServerTabsList();
+        if (!in_array($this->type, ['downtimePlanned', 'scheduleItTimePlanned'])) {
+            $memcache = $this->utils->getMemcache();
+            $servers  = $this->utils->getServerTabsList();
 
-        foreach ($servers as $server) {
-            $memcacheName = $this->utils->getMemcacheFullName($server);
-            if ($memcache) {
-                $memcache->set("{$memcacheName}_verify", md5(time()), 0, 1200);
+            foreach ($servers as $server) {
+                $memcacheName = $this->utils->getMemcacheFullName($server);
+                if ($memcache) {
+                    $memcache->set("{$memcacheName}_verify", md5(time()), 0, 1200);
+                }
             }
         }
     }

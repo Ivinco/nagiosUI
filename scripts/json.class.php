@@ -216,6 +216,8 @@ class json
                 'search'    => strtolower(implode('_', [$host, $service, $state, $lastCheck, $duration, $ackComment, $schComment, $state, $statusInfo])),
             );
         }
+
+        $this->plannedData->runActionsFromJson();
     }
 
     private function getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS)
