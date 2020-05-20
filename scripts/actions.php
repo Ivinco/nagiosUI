@@ -11,6 +11,7 @@ class actions
         $this->debug = $debug;
         $this->debugPath = $debugPath;
         $this->serversList = $serversList;
+        $this->requests = [];
 
         $this->db    = new db;
         $this->utils = new utils();
@@ -45,11 +46,7 @@ class actions
     public function runActions($data)
     {
         if (in_array($this->type, ['quickAck', 'acknowledgeIt', 'scheduleIt'])) {
-            foreach ($data as $post) {
-                $this->server = $post['tab'];
-                $this->unAcknowledgeProblem($post);
-            }
-
+            $this->unAcknowledgeMultiProblems($data);
             sleep(1);
         }
 
@@ -57,28 +54,24 @@ class actions
             $this->setRecheckActions($data);
         }
 
-        foreach ($data as $post) {
-            $this->server = $post['tab'];
+        if (in_array($this->type, ['quickUnAck', 'unAck', 'unAcknowledgeIt'])) {
+            $this->unAcknowledgeMultiProblems($data);
+        }
 
-            if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
-                $this->acknowledgeProblem($post);
-            }
+        if (in_array($this->type, ['quickAck', 'acknowledgeIt'])) {
+            $this->acknowledgeMultiProblems($data);
+        }
 
-            if (in_array($this->type, ['quickUnAck', 'unAck', 'unAcknowledgeIt'])) {
-                $this->unAcknowledgeProblem($post);
-            }
+        if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
+            $this->scheduleMultiProblems($data);
+        }
 
-            if (in_array($this->type, ['scheduleIt', 'scheduleItTime'])) {
-                $this->scheduleProblem($post);
-            }
+        if (in_array($this->type, ['downtime'])) {
+            $this->unScheduleMultiProblems($data);
+        }
 
-            if (in_array($this->type, ['downtime'])) {
-                $this->unScheduleProblem($post);
-            }
-
-            if (in_array($this->type, ['recheckIt'])) {
-                $this->recheckProblem($post);
-            }
+        if (in_array($this->type, ['recheckIt'])) {
+            $this->recheckMultiProblems($data);
         }
 
         $memcache = $this->utils->getMemcache();
@@ -128,106 +121,186 @@ class actions
             }
         }
     }
-    public function acknowledgeProblem($post)
+    public function acknowledgeMultiProblems($alerts)
     {
-        $data = [
-            'host' => $post['host'],
-            'comment' => $post['com_data'],
-            'author' => $post['author'],
-        ];
+        $url = '/acknowledge_problem';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
 
-        if ($post['isHost'] == 'service') {
-            $data['service'] = $post['service'];
+        foreach ($alerts as $key => $post) {
+            $this->server = $post['tab'];
+
+            $data = [
+                'host' => $post['host'],
+                'comment' => $post['com_data'],
+                'author' => $post['author'],
+            ];
+
+            if ($post['isHost'] == 'service') {
+                $data['service'] = $post['service'];
+            }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $data)) {
+                $this->curlMultiRequest($key, $path, $data);
+                $this->db->logAction($data, 'ack', $this->server, true);
+            }
         }
 
-        $this->curlRequest('/acknowledge_problem', $data);
-        $this->db->logAction($data, 'ack', $this->server, true);
+        $this->runCurlMultiRequest();
     }
-    public function unAcknowledgeProblem($post)
+    public function unAcknowledgeMultiProblems($alerts) {
+        $url = '/remove_acknowledgement';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
+
+        foreach ($alerts as $key => $post) {
+            $this->server = $post['tab'];
+
+            $data = [
+                'host' => $post['host'],
+            ];
+
+            if ($post['isHost'] == 'service') {
+                $data['service'] = $post['service'];
+            }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $data)) {
+                $this->curlMultiRequest($key, $path, $data);
+                $this->db->logAction($data, 'unack', $this->server, true);
+            }
+        }
+        $this->runCurlMultiRequest();
+    }
+    public function scheduleMultiProblems($alerts)
     {
-        $data = [
-            'host' => $post['host'],
-        ];
+        $url = '/schedule_downtime';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
 
-        if ($post['isHost'] == 'service') {
-            $data['service'] = $post['service'];
+        foreach ($alerts as $key => $post) {
+            $this->server = $post['tab'];
+
+            $duration = ($this->type != 'scheduleItTime') ? (intval($post['hours']) * 3600) : $post['hours'];
+
+            $data = [
+                'host' => $post['host'],
+                'comment' => $post['com_data'],
+                'author' => $post['author'],
+                'duration' => $duration,
+            ];
+
+            if ($post['isHost'] == 'service') {
+                $data['service'] = $post['service'];
+            }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $data)) {
+                $this->curlMultiRequest($key, $path, $data);
+                $this->db->logAction($data, 'sched', $this->server, true);
+            }
         }
-
-        $this->curlRequest('/remove_acknowledgement', $data);
-        $this->db->logAction($data, 'unack', $this->server, true);
+        $this->runCurlMultiRequest();
     }
-    public function scheduleProblem($post)
+    public function unScheduleMultiProblems($alerts)
     {
-        $duration = ($this->type != 'scheduleItTime') ? (intval($post['hours']) * 3600) : $post['hours'];
+        $url = '/cancel_downtime';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
 
-        $data = [
-            'host' => $post['host'],
-            'comment' => $post['com_data'],
-            'author' => $post['author'],
-            'duration' => $duration,
-        ];
+        foreach ($alerts as $key => $post) {
+            $this->server = $post['tab'];
 
-        if ($post['isHost'] == 'service') {
-            $data['service'] = $post['service'];
+            $data = [
+                'host' => $post['host'],
+                'down_id' => $post['down_id'],
+            ];
+
+            if ($post['isHost'] == 'service') {
+                $data['service'] = $post['service'];
+            }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $data) && intval($post['down_id'])) {
+                $this->curlMultiRequest($key, $path, $data);
+                $this->db->logAction($data, 'unsched', $this->server, true);
+            }
         }
-
-        $this->curlRequest('/schedule_downtime', $data);
-        $this->db->logAction($data, 'sched', $this->server, true);
+        $this->runCurlMultiRequest();
     }
-    public function unScheduleProblem($post)
+    public function recheckMultiProblems($alerts)
     {
-        $data = [
-            'host' => $post['host'],
-            'down_id' => $post['down_id'],
-        ];
+        $url = '/schedule_check';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
 
-        if ($post['isHost'] == 'service') {
-            $data['service'] = $post['service'];
+        foreach ($alerts as $key => $post) {
+            $this->server = $post['tab'];
+
+            $data = [
+                'host' => $post['host'],
+                'forced' => true
+            ];
+
+            if ($post['isHost'] == 'service') {
+                $data['service'] = $post['service'];
+            }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $data) && intval($post['down_id'])) {
+                $this->curlMultiRequest($key, $path, $data);
+                $this->db->logAction($data, 're-check', $this->server, true);
+            }
         }
-
-        if (!intval($post['down_id']) || $this->server == 'All') {
-            return;
-        }
-        
-        $this->curlRequest('/cancel_downtime/' . $post['down_id'], $data);
-        $this->db->logAction($data, 'unsched', $this->server, true);
-    }
-    public function recheckProblem($post)
-    {
-        $data = [
-            'host' => $post['host'],
-            'forced' => true
-        ];
-
-        if ($post['isHost'] == 'service') {
-            $data['service'] = $post['service'];
-        }
-
-        $this->curlRequest('/schedule_check', $data);
-        $this->db->logAction($data, 're-check', $this->server, true);
+        $this->runCurlMultiRequest();
     }
 
-    private function curlRequest($url, $data)
+    private function needToProcess($path, $data)
     {
         if ($this->server == 'All') {
-            return;
+            return false;
         }
-        
+
         if (isset($this->debug) && $this->debug) {
-            file_put_contents($this->debugPath, json_encode([$this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url, $data]) . "\n", FILE_APPEND | LOCK_EX);
-            return;
+            file_put_contents($this->debugPath, json_encode([$path, $data]) . "\n", FILE_APPEND | LOCK_EX);
+            return false;
         }
 
-        $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+        return true;
+    }
+    private function curlMultiRequest($key, $path, $data)
+    {
+        $this->requests[$key] = array();
+        $this->requests[$key]['url'] = $path;
+        $this->requests[$key]['curl_handle'] = curl_init($path);
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_PORT,           $this->serversList[$this->server]['port']);
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_URL,            $path);
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_HTTPHEADER,     array('Content-Type: application/json'));
+        curl_setopt($this->requests[$key]['curl_handle'], CURLOPT_POSTFIELDS,     json_encode($data));
+        curl_multi_add_handle($this->mh, $this->requests[$key]['curl_handle']);
+    }
+    private function runCurlMultiRequest()
+    {
+        $stillRunning = false;
+        do {
+            curl_multi_exec($this->mh, $stillRunning);
+        } while ($stillRunning);
 
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_PORT,           $this->serversList[$this->server]['port']);
-        curl_setopt($curl, CURLOPT_URL,            $path);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_HTTPHEADER,     array('Content-Type: application/json'));
-        curl_setopt($curl, CURLOPT_POSTFIELDS,     json_encode($data));
-        curl_exec($curl);
-        curl_close($curl);
+        foreach($this->requests as $k => $request){
+            curl_multi_remove_handle($this->mh, $request['curl_handle']);
+            $this->requests[$k]['content'] = curl_multi_getcontent($request['curl_handle']);
+            $this->requests[$k]['http_code'] = curl_getinfo($request['curl_handle'], CURLINFO_HTTP_CODE);
+            curl_close($this->requests[$k]['curl_handle']);
+        }
+
+        curl_multi_close($this->mh);
     }
 }
