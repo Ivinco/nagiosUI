@@ -412,6 +412,7 @@ class planned
 
             foreach ($alerts as $alert) {
                 $data[] = [
+                    'tab'     => $server,
                     'down_id' => $alert,
                     'isHost'  => 'service',
                 ];
