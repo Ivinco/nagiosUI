@@ -128,7 +128,7 @@ class planned
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
-                        $this->addToRemoveAlerts($server, $downtime);
+                        $this->addToRemoveAlerts($server, $downtime, false);
                     }
 
                     $sched = 0;
@@ -381,9 +381,9 @@ class planned
             }
         }
     }
-    private function addToRemoveAlerts($server, $downtime)
+    private function addToRemoveAlerts($server, $downtime, $store = true)
     {
-        if ($this->memcache) {
+        if ($this->memcache && $store) {
             $downtimeKey   = $server . "_" . $downtime;
             $alertsList    = [];
             $memcacheName  = $this->utils->getMemcacheFullName($server);
