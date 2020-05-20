@@ -260,6 +260,7 @@ class json
                         $return['quickAckAu'] = md5($photo);
                     } else {
                         $return['ackComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
+                        $return['quickAckAu'] = '';
                     }
                 }
 

@@ -140,11 +140,11 @@ class actions
                 $data['service'] = $post['service'];
             }
 
-            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
-
             if ($this->server != 'All') {
                 $this->db->logAction($data, 'ack', $this->server, true);
             }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
             if ($this->needToProcess($path, $data)) {
                 $this->curlMultiRequest($key, $path, $data);
@@ -169,11 +169,11 @@ class actions
                 $data['service'] = $post['service'];
             }
 
-            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
-
             if ($this->server != 'All') {
                 $this->db->logAction($data, 'unack', $this->server, true);
             }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
             if ($this->needToProcess($path, $data)) {
                 $this->curlMultiRequest($key, $path, $data);
@@ -203,11 +203,11 @@ class actions
                 $data['service'] = $post['service'];
             }
 
-            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
-
             if ($this->server != 'All') {
                 $this->db->logAction($data, 'sched', $this->server, true);
             }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
             if ($this->needToProcess($path, $data)) {
                 $this->curlMultiRequest($key, $path, $data);
@@ -233,11 +233,11 @@ class actions
                 $data['service'] = $post['service'];
             }
 
-            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
-
             if ($this->server != 'All') {
                 $this->db->logAction($data, 'unsched', $this->server, true);
             }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
             if ($this->needToProcess($path, $data) && intval($post['down_id'])) {
                 $this->curlMultiRequest($key, $path, $data);
@@ -263,11 +263,11 @@ class actions
                 $data['service'] = $post['service'];
             }
 
-            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
-
             if ($this->server != 'All') {
                 $this->db->logAction($data, 're-check', $this->server, true);
             }
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
             if ($this->needToProcess($path, $data) && intval($post['down_id'])) {
                 $this->curlMultiRequest($key, $path, $data);

@@ -63,6 +63,8 @@ class recheck
             return;
         }
 
+        $commands = [];
+
         foreach ($alerts['alert'] as $item) {
             $state           = (!is_array($item['@attributes']['state'])) ? $item['@attributes']['state'] : implode(' ', $item['@attributes']['state']);
             $acked           = (!is_array($item['acked']))                ? $item['acked']                : implode(' ', $item['acked']);
@@ -73,16 +75,24 @@ class recheck
             $service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
             $hostOrService   = $item['host_or_service'];
 
-
             if (($state != 'OK') && ((!$acked && !$sched && $state != 'OK') || ($acked && $tempCommen == 'temp'))) {
-                $this->actions->setServer($tab);
-                $this->actions->recheckProblem([
+                if (!isset($commands[$tab])) {
+                    $commands[$tab] = [];
+                }
+
+                $commands[$tab][] = [
                     'host'    => $host,
                     'service' => $service,
                     'tab'     => $tab,
                     'isHost'  => $hostOrService,
-                ]);
+                ];
             }
+        }
+
+        foreach ($commands as $server => $data) {
+            $this->actions->setType('recheckIt');
+            $this->actions->setServer($server);
+            $this->actions->runActions($data);
         }
     }
     private function forceCronPhp()
