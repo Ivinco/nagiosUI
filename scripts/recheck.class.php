@@ -45,10 +45,12 @@ class recheck
 
     public function setRecheckStatus()
     {
-        $this->memcache->set($this->memcacheFullName . "_recheck", true, 0, 600);
+        if (!$this->memcache->get($this->memcacheFullName . "_recheck")) {
+            $this->memcache->set($this->memcacheFullName . "_recheck", true, 0, 600);
 
-        $this->getUnhandledAlerts();
-        $this->forceCronPhp();
+            $this->getUnhandledAlerts();
+            $this->forceCronPhp();
+        }
     }
 
     private function getUnhandledAlerts()

@@ -229,6 +229,10 @@ class json
             $memcache->delete($memcacheName);
         }
 
+        if ($memcache->get($this->utils->getMemcacheFullName('All') . "_recheck")) {
+            return true;
+        }
+
         if ($memcache && $memcache->get($memcacheName) && $memcache->get($memcacheName) == $lastCheckS) {
             return true;
         }
