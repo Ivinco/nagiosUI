@@ -25,6 +25,7 @@ class planned
         $this->utils       = new utils();
         $this->removeAlerts = [];
         $this->addAlerts    = [];
+        $this->memcache     = $this->utils->getMemcache();
     }
 
     public function verifyPostData() {
@@ -127,10 +128,7 @@ class planned
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
-                        if (!isset($this->removeAlerts[$server])) {
-                            $this->removeAlerts[$server] = [];
-                        }
-                        $this->removeAlerts[$server][] = $downtime;
+                        $this->addToRemoveAlerts($server, $downtime);
                     }
 
                     $sched = 0;
@@ -287,6 +285,32 @@ class planned
         return $pattern;
     }
     private function schedulePlanned($host, $service, $end, $user, $comment, $hostOrService, $server) {
+        if ($this->memcache) {
+            $downtimeKey   = md5($host . $service . $end . $user . $comment . $hostOrService . $server);
+            $alertsList    = [];
+            $memcacheName  = $this->utils->getMemcacheFullName($server);
+            $memcacheName += "_add_planned";
+
+            if ($this->memcache->get($memcacheName)) {
+                $alertsList  = $this->memcache->get($memcacheName);
+                $alertsList  = json_decode($alertsList);
+
+                if (!in_array($downtimeKey, $alertsList)) {
+                    $alertsList[] = $downtimeKey;
+                    $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                    $this->addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server);
+                }
+            } else {
+                $alertsList[] = $downtimeKey;
+                $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                $this->addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server);
+            }
+        } else {
+            $this->addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server);
+        }
+    }
+    private function addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server)
+    {
         if (!isset($this->addAlerts[$server])) {
             $this->addAlerts[$server] = [];
         }
@@ -346,10 +370,7 @@ class planned
                                 foreach ($serviceCommands as $commandService) {
                                     foreach ($statusCommands as $commandStatus) {
                                         if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                            if (!isset($this->removeAlerts[$server])) {
-                                                $this->removeAlerts[$server] = [];
-                                            }
-                                            $this->removeAlerts[$server][] = $downtime;
+                                            $this->addToRemoveAlerts($server, $downtime);
                                         }
                                     }
                                 }
@@ -360,6 +381,40 @@ class planned
             }
         }
     }
+    private function addToRemoveAlerts($server, $downtime)
+    {
+        if ($this->memcache) {
+            $downtimeKey   = $server . "_" . $downtime;
+            $alertsList    = [];
+            $memcacheName  = $this->utils->getMemcacheFullName($server);
+            $memcacheName += "_remove_planned";
+
+            if ($this->memcache->get($memcacheName)) {
+                $alertsList  = $this->memcache->get($memcacheName);
+                $alertsList  = json_decode($alertsList);
+
+                if (!in_array($downtimeKey, $alertsList)) {
+                    $alertsList[] = $downtimeKey;
+                    $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                    $this->addToRemoveAlert($server, $downtime);
+                }
+            } else {
+                $alertsList[] = $downtimeKey;
+                $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                $this->addToRemoveAlert($server, $downtime);
+            }
+        } else {
+            $this->addToRemoveAlert($server, $downtime);
+        }
+    }
+    private function addToRemoveAlert($server, $downtime)
+    {
+        if (!isset($this->removeAlerts[$server])) {
+            $this->removeAlerts[$server] = [];
+        }
+        $this->removeAlerts[$server][] = $downtime;
+    }
+
     public function runActionsFromJson()
     {
         $this->removeMultiSchedulePlanned();
