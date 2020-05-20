@@ -121,11 +121,9 @@ class json
             $schComment      = $changedComments['schComment'];
             $acked           = $changedComments['acked'];
             $ackComment      = $changedComments['ackComment'];
-            if ($changedComments['quickAckAu']) {
-                $tempCommen = $changedComments['ackComment'];
-                $quickAckAu = $changedComments['quickAckAu'];
-                $tempAuthor = $changedComments['quickAckAu'];
-            }
+            $tempCommen      = $changedComments['ackComment'];
+            $quickAckAu      = $changedComments['quickAckAu'];
+            $tempAuthor      = $changedComments['quickAckAu'];
 
             $returnType = '';
             $returnType.= (($state != 'OK') && ((!$acked && !$sched && $state != 'OK') || ($acked && $tempCommen == 'temp') || ($showInNormal))) ? '__normal__' : '';
