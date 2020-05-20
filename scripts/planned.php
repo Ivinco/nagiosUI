@@ -128,7 +128,7 @@ class planned
             if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
-                        $this->addToRemoveAlerts($server, $downtime, false);
+                        $this->addToRemoveAlert($server, $downtime);
                     }
 
                     $sched = 0;
@@ -297,12 +297,12 @@ class planned
 
                 if (!in_array($downtimeKey, $alertsList)) {
                     $alertsList[] = $downtimeKey;
-                    $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                    $this->memcache->set($memcacheName, json_encode($alertsList), 0, 120);
                     $this->addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server);
                 }
             } else {
                 $alertsList[] = $downtimeKey;
-                $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
+                $this->memcache->set($memcacheName, json_encode($alertsList), 0, 120);
                 $this->addToAddAlert($host, $service, $end, $user, $comment, $hostOrService, $server);
             }
         } else {
@@ -370,7 +370,7 @@ class planned
                                 foreach ($serviceCommands as $commandService) {
                                     foreach ($statusCommands as $commandStatus) {
                                         if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service) && $this->pregMatchStatus($commandStatus, $status)) {
-                                            $this->addToRemoveAlerts($server, $downtime);
+                                            $this->addToRemoveAlert($server, $downtime);
                                         }
                                     }
                                 }
@@ -379,32 +379,6 @@ class planned
                     }
                 }
             }
-        }
-    }
-    private function addToRemoveAlerts($server, $downtime, $store = true)
-    {
-        if ($this->memcache && $store) {
-            $downtimeKey   = $server . "_" . $downtime;
-            $alertsList    = [];
-            $memcacheName  = $this->utils->getMemcacheFullName($server);
-            $memcacheName += "_remove_planned";
-
-            if ($this->memcache->get($memcacheName)) {
-                $alertsList  = $this->memcache->get($memcacheName);
-                $alertsList  = json_decode($alertsList);
-
-                if (!in_array($downtimeKey, $alertsList)) {
-                    $alertsList[] = $downtimeKey;
-                    $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
-                    $this->addToRemoveAlert($server, $downtime);
-                }
-            } else {
-                $alertsList[] = $downtimeKey;
-                $this->memcache->set($memcacheName, json_encode($alertsList), 0, 300);
-                $this->addToRemoveAlert($server, $downtime);
-            }
-        } else {
-            $this->addToRemoveAlert($server, $downtime);
         }
     }
     private function addToRemoveAlert($server, $downtime)
