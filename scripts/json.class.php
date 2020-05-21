@@ -117,13 +117,15 @@ class json
             }
 
             $changedComments = $this->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab);
-            $sched           = $changedComments['sched'];
-            $schComment      = $changedComments['schComment'];
-            $acked           = $changedComments['acked'];
-            $ackComment      = $changedComments['ackComment'];
-            $tempCommen      = $changedComments['ackComment'];
-            $quickAckAu      = $changedComments['quickAckAu'];
-            $tempAuthor      = $changedComments['quickAckAu'];
+            if ($changedComments) {
+                $sched           = $changedComments['sched'];
+                $schComment      = $changedComments['schComment'];
+                $acked           = $changedComments['acked'];
+                $ackComment      = $changedComments['ackComment'];
+                $tempCommen      = $changedComments['ackComment'];
+                $quickAckAu      = $changedComments['quickAckAu'];
+                $tempAuthor      = $changedComments['quickAckAu'];
+            }
 
             $returnType = '';
             $returnType.= (($state != 'OK') && ((!$acked && !$sched && $state != 'OK') || ($acked && $tempCommen == 'temp') || ($showInNormal))) ? '__normal__' : '';
@@ -241,6 +243,7 @@ class json
     }
     private function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
     {
+        $needToReturn = false;
         $return = [
             'acked'      => $acked,
             'ackComment' => $ackComment,
@@ -252,6 +255,7 @@ class json
         foreach ($this->latestActions as $last) {
             if ($last['host'] == $host && $last['service'] == $service && $last['server'] == $tab) {
                 if ($last['command'] == 'ack') {
+                    $needToReturn = true;
                     $return['acked'] = 1;
                     if ($last['comment'] == 'temp') {
                         $return['ackComment'] = $last['comment'];
@@ -267,12 +271,14 @@ class json
                 }
 
                 if ($last['command'] == 'unack') {
+                    $needToReturn = true;
                     $return['acked'] = 0;
                     $return['ackComment'] = '';
                     $return['quickAckAu'] = '';
                 }
 
                 if ($last['command'] == 'sched') {
+                    $needToReturn = true;
                     $return['acked'] = 0;
                     $return['ackComment'] = '';
                     $return['quickAckAu'] = '';
@@ -281,13 +287,14 @@ class json
                 }
 
                 if ($last['command'] == 'unsched') {
+                    $needToReturn = true;
                     $return['sched'] = 0;
                     $return['schComment'] = '';
                 }
             }
         }
 
-        return $return;
+        return ($needToReturn) ? $return : false;
     }
 
     private function returnCorrectedComments($comment, $tab) {

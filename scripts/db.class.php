@@ -226,7 +226,7 @@ class db
 
         return $list;
     }
-    public function logAction($data, $command, $server, $insertToDb = false) {
+    public function logAction($data, $command, $server, $insertToDb = false, $saveDate = false) {
         $host    = (isset($data['host']))    ? $data['host']    : '';
         $service = (isset($data['service'])) ? $data['service'] : '';
         $author  = (isset($data['author']))  ? $data['author']  : '';
@@ -244,11 +244,12 @@ class db
         }
 
         if ($insertToDb) {
+            $date = ($saveDate) ? 'DATE_ADD(CURRENT_TIMESTAMP(), interval -1 second)' : 'CURRENT_TIMESTAMP()';
             $sql = "
                 INSERT INTO `{$this->nagios_external_commands_log}`
                     (`logged`, `host`, `service`, `command`, `author`, `comment`, `server`) 
                 VALUES 
-                    (CURRENT_TIMESTAMP(), '{$host}', '{$service}', '{$command}', '{$author}', '{$comment}', '{$server}')
+                    ({$date}, '{$host}', '{$service}', '{$command}', '{$author}', '{$comment}', '{$server}')
             ";
 
             if ($this->mysql->query($sql) !== true) {

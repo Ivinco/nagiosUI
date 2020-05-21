@@ -47,7 +47,6 @@ class actions
     {
         if (in_array($this->type, ['quickAck', 'acknowledgeIt', 'scheduleIt'])) {
             $this->unAcknowledgeMultiProblems($data);
-            sleep(1);
         }
 
         if ($this->type == 'recheckIt') {
@@ -172,7 +171,7 @@ class actions
             }
 
             if ($this->server != 'All') {
-                $this->db->logAction($data, 'unack', $this->server, true);
+                $this->db->logAction($data, 'unack', $this->server, true, true);
             }
 
             $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
