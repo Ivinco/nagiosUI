@@ -2392,7 +2392,7 @@ Search.init = function() {
 				var down_id = $(this).find('.service .unScheduleIt').attr('data-id'),
 					isHost  = $(this).find('.host a').attr('data-host'),
                     host    = $(this).find('.host a').text(),
-                    service = $(this).find('.service .service-name').text(),
+                    service = $(this).attr('data-service'),
                     tab     = $(this).closest('tr').find('.host a').attr('data-tab');
 					
 				if (down_id) {
@@ -2423,7 +2423,7 @@ Search.init = function() {
 						var down_id = headerRows[i].find('.service [data-id]').attr('data-id'),
 							isHost  = headerRows[i].find('.host a').attr('data-host'),
                             host    = headerRows[i].find('.host a').text(),
-                            service = headerRows[i].find('.service .service-name').text(),
+                            service = headerRows[i].attr('data-service'),
                             tab     = headerRows[i].find('.host [data-tab]').attr('data-tab');
 							
 						if (down_id) {
@@ -2460,7 +2460,7 @@ Search.init = function() {
 				isHost   = rows.find('.host a').attr('data-host'),
 				hasGroup = rows.attr('data-group'),
                 host     = rows.find('.host a').text(),
-                service  = rows.find('.service .service-name').text(),
+                service  = rows.attr('data-service'),
                 tab      = rows.find('.host [data-tab]').attr('data-tab');
 					
 			if (down_id) {
@@ -4171,7 +4171,7 @@ Grouping = {
             var down_id = this.listGroups[key].children[i].full.service.downId;
             var tab     = this.listGroups[key].children[i].full.host.tab;
             var host    = this.listGroups[key].children[i].full.host.name;
-            var service = this.listGroups[key].children[i].full.service.name;
+            var service = this.listGroups[key].children[i].full.service.original;
 
             if (down_id) {
                 down_id = down_id.split(',');
