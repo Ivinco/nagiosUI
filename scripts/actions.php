@@ -270,7 +270,7 @@ class actions
 
             $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
 
-            if ($this->needToProcess($path, $data) && intval($post['down_id'])) {
+            if ($this->needToProcess($path, $data)) {
                 $this->curlMultiRequest($key, $path, $data);
             }
         }
