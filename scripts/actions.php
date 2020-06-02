@@ -225,12 +225,13 @@ class actions
         foreach ($alerts as $key => $post) {
             $this->server = $post['tab'];
 
-            $data = [
-                'host' => $post['host'],
-                'down_id' => $post['down_id'],
-            ];
+            $data = ['down_id' => $post['down_id']];
 
-            if ($post['isHost'] == 'service') {
+            if (isset($post['host'])) {
+                $data['host'] = $post['host'];
+            }
+
+            if ($post['isHost'] == 'service' && isset($post['service'])) {
                 $data['service'] = $post['service'];
             }
 
