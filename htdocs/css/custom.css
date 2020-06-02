@@ -664,3 +664,31 @@ table.dataTable thead .no-border-th {
 .ui-timepicker-div.ui-timepicker-oneLine dl dd.ui_tpicker_microsec:before { content:'.'; display:inline-block; }
 .ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide,
 .ui-timepicker-div.ui-timepicker-oneLine .ui_tpicker_unit_hide:before{ display: none; }
+
+@-webkit-keyframes rot {
+    0% {-webkit-transform: rotate(0deg);}
+    100% {-webkit-transform: rotate(360deg);}
+}
+@-moz-keyframes rot {
+    0% { -moz-transform: rotate(0deg);}
+    100% {-moz-transform: rotate(360deg);}
+}
+@-o-keyframes rot {
+    0% {-o-transform: rotate(0deg);}
+    100% {-o-transform: rotate(360deg);}
+}
+@keyframes rot {
+    0% {transform: rotate(0deg); }
+    100% {transform: rotate(360deg);}
+}
+
+.rotateRecheck {
+    -webkit-animation: rot 2s infinite;
+    -moz-animation:    rot 2s infinite;
+    -o-animation:      rot 2s infinite;
+    animation:         rot 2s infinite;
+    -webkit-animation-timing-function: linear;
+    -moz-animation-timing-function: linear;
+    -o-animation-timing-function: linear;
+    animation-timing-function: linear;
+}

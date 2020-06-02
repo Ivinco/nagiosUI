@@ -214,11 +214,13 @@ Search.allDataTable       = (getParameterByName('t') || getParameterByName('stat
 
                         var recheckStyle = '';
                         var recheckTitle = 'Refresh Service Status';
+                        var recheckClass = '';
                         if (data.recheck) {
+                            recheckClass = ' rotateRecheck';
                             recheckStyle = ' style="opacity: 0.4; cursor: default;"';
                             recheckTitle += ' in progress'
                         }
-                        var recheck = '<li><span class="list-recheck-icon icons recheckIt" data-recheck="'+ data.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
+                        var recheck = '<li><span class="list-recheck-icon icons recheckIt'+ recheckClass +'" data-recheck="'+ data.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
 
 						if (data.pending) {
                             return '' +
@@ -768,7 +770,7 @@ Search.addParameterToUrl = function(parameter, value) {
 
 Search.tmpHideIcon = function(item, type) {
     if (type == 'recheckIt') {
-        item.find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
+        item.find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
     } else {
         item.find('.icons.'+ type).hide();
     }
@@ -816,8 +818,8 @@ Search.tempHideButtons = function (key) {
         }
 
         if (type == 'recheckIt') {
-            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
-            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress');
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
         } else {
             $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).hide();
             $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').hide();
@@ -3600,7 +3602,7 @@ Grouping = {
             }
 
             if (recheck == this.listGroups[key].children.length) {
-                $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .recheckItGroup').css("opacity", 0.4).css("cursor", "default").attr("title", "Refresh Service Status in progress").attr("alt", "Refresh Service Status in progress").attr('data-recheck', 'true');
+                $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .recheckItGroup').css("opacity", 0.4).css("cursor", "default").attr("title", "Refresh Service Status in progress").attr("alt", "Refresh Service Status in progress").attr('data-recheck', 'true').addClass('rotateRecheck');
             }
         }
     },
@@ -4043,11 +4045,13 @@ Grouping = {
 
                 var recheckStyle = '';
                 var recheckTitle = 'Refresh Service Status';
+                var recheckClass = '';
                 if (item.service.recheck) {
+                    recheckClass = ' rotateRecheck';
                     recheckStyle = ' style="opacity: 0.4; cursor: default;"';
                     recheckTitle += ' in progress'
                 }
-                var recheck = '<li><span class="list-recheck-icon icons recheckIt" data-recheck="'+ item.service.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
+                var recheck = '<li><span class="list-recheck-icon icons recheckIt'+ recheckClass +'" data-recheck="'+ item.service.recheck +'" alt="'+ recheckTitle +'" title="'+ recheckTitle +'" '+ recheckStyle +'></span></li>';
 
                 result += '<td class="service '+ item.state + colorClass +'">';
                 if (item.service.pending) {
