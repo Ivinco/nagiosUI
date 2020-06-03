@@ -129,6 +129,7 @@
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">
         <button type="button" class="force-recheck-button" title="reckeck all alerts in 'Unhandled' tab">Refresh statuses<span class="spinner" style="border: 2px solid #000; border-right-color: transparent;"></span></button>
         New data from nagios-api was aggregated (<span id="updatedTimestamp"></span>) <span id="updatedAgo">0</span>s ago</p>
+    <p style="float: left; margin: 10px 5px 0 0; font-size: 13px; color: red;" id="server-errors"></p>
     <table id="mainTable">
         <thead>
             <tr>

@@ -194,4 +194,12 @@ class utils
         return $result;
     }
 
+    public function returnServerHostAndPort($server) {
+        if (isset($this->serversList[$server]) && isset($this->serversList[$server]['url']) && isset($this->serversList[$server]['port'])) {
+            return $this->serversList[$server]['url'] . ":" . $this->serversList[$server]['port'];
+        }
+
+        return $server;
+    }
+
 }

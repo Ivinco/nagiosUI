@@ -9,6 +9,7 @@ class xml
         $this->serversList = $serversList;
         $this->currentTab = 'All';
         $this->errorTabs = [];
+        $this->timeoutTabs = [];
         $this->memcacheFullName = '';
         $this->hosts = [];
         $this->getDataFromMemcache = true;
@@ -116,7 +117,6 @@ class xml
             $this->verifyNagiosApi();
 
             if (!in_array($this->currentTabTmp, $this->errorTabs)) {
-                $this->retry = 0;
                 $this->otherFiles();
                 $this->getHistoryChecks();
                 $this->getHistoryUnfinishedAlerts();
@@ -141,10 +141,27 @@ class xml
             }
         }
 
-        $data = serialize($this->generateXml());
+        $errorsText = [];
+        foreach ($this->errorTabs as $errorTab) {
+            $errorsText[] = "Host is unreachable: ". $this->utils->returnServerHostAndPort($errorTab);
+        }
 
-        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 1200);
-        $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 1200);
+        foreach ($this->timeoutTabs as $timeoutTab) {
+            $errorsText[] = "Error fetching data for: ". $this->utils->returnServerHostAndPort($timeoutTab);
+        }
+
+        if (count($errorsText) < count($this->currentTabList)) {
+            $data = serialize($this->generateXml());
+
+            $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 3600);
+            $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 3600);
+        }
+
+        if ($errorsText) {
+            $this->memcache->set("{$this->memcacheFullName}_errors", json_encode(implode("<br />", $errorsText)), 0, 3600);
+        } else {
+            $this->memcache->set("{$this->memcacheFullName}_errors", "", 0, 3600);
+        }
 
         return [$hostsCount, $servicesCount];
     }
@@ -545,28 +562,19 @@ class xml
     }
 
     private function getStatusFile() {
-        $i = 0;
-        while ($i < 5) {
-            $data = $this->curlRequest("/state");
+        $data = $this->curlRequest("/state");
 
-            if (    $data
-                && !empty($data)
-                && isset($data['content'])
-                && !empty($data['content'])
-                && count($data['content'])
-                && isset($data['success'])
-                && $data['success']
-            ) {
-                $this->statusFile = $data;
-                break;
-            }
-
-            $i++;
-        }
-
-        if (!$this->statusFile) {
-            http_response_code(404);
-            die(date("Y-m-d H:i:s") . " Status file not found.\n");
+        if (    $data
+            && !empty($data)
+            && isset($data['content'])
+            && !empty($data['content'])
+            && count($data['content'])
+            && isset($data['success'])
+            && $data['success']
+        ) {
+            $this->statusFile = $data;
+        } else {
+            $this->statusFile = [];
         }
 
         $this->prepareHosts();
@@ -592,6 +600,7 @@ class xml
             if ($error_msg == 'connect() timed out!'
                 || $error_msg == 'couldn\'t connect to host'
                 || preg_match('#^connection timed out after?#i', $error_msg) === 1
+                || preg_match('#^Could not resolve host?#i', $error_msg) === 1
             ) {
                 $this->errorTabs[] = $this->currentTabTmp;
             }
@@ -607,10 +616,22 @@ class xml
         curl_setopt($curl, CURLOPT_URL,            $path);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
 
         $result = curl_exec($curl);
 
         if (curl_errno($curl)) {
+            $error_msg = curl_error($curl);
+
+            if ($error_msg == 'connect() timed out!'
+                || $error_msg == 'couldn\'t connect to host'
+                || preg_match('#^connection timed out after?#i', $error_msg) === 1
+                || preg_match('#^Could not resolve host?#i', $error_msg) === 1
+            ) {
+                $this->timeoutTabs[] = $this->currentTabTmp;
+            }
+
             curl_close($curl);
             return '';
         }
@@ -627,28 +648,6 @@ class xml
 
     private function prepareHosts()
     {
-        if ($this->retry < 2) {
-            $notOkAlerts = 0;
-
-            foreach ($this->statusFile['content'] as $host => $data) {
-                if ((int)$data['current_state']) {
-                    $notOkAlerts++;
-                }
-
-                foreach ($data['services'] as $service => $serviceData) {
-                    if ((int)$serviceData['current_state']) {
-                        $notOkAlerts++;
-                    }
-                }
-            }
-
-            if (!$notOkAlerts) {
-                $this->retry++;
-                return $this->getStatusFile();
-
-            }
-        }
-
         if (!isset($this->statusFile['content']) || !count($this->statusFile['content'])) {
             return;
         }

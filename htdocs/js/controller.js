@@ -109,6 +109,16 @@ Search = {
         text += sec + "s";
 
         return text;
+    },
+    getServerErrors: function() {
+        $.ajax({
+            url:    'server_errors.php?server_tab=' + Search.currentServerTab,
+            method: 'GET',
+        }).success(function(data) {
+            $('#server-errors').html(data);
+        }).always(function(data) {
+            setTimeout(function(){ Search.getServerErrors(); }, 3000);
+        });
     }
 }
 
@@ -1961,6 +1971,7 @@ Search.init = function() {
     Search.startedGetData = true;
 	Search.startAgo();
     setTimeout(function(){ Search.getCounts(); }, 3000);
+    setTimeout(function(){ Search.getServerErrors(); }, 1000);
 
 	$(document).mousedown(function() {
 		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
@@ -4450,6 +4461,7 @@ History = {
 
         $('#loading, #mainTable').hide();
         $('#updatedAgo').closest('p').hide();
+        $('#server-errors').hide();
         $('#infoHolder, #historyContent').show();
     },
     drawSelects: function() {
@@ -5501,6 +5513,7 @@ Stats = {
 
         $('#loading, #mainTable').hide();
         $('#updatedAgo').closest('p').hide();
+        $('#server-errors').hide();
         $('#infoHolder, #historyContent').show();
 
         $('.historyHeading').css('padding-top', '0');
