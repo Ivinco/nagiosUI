@@ -10,7 +10,7 @@ class stats
     private $summaryReportName = 'Summary report';
     private $nobodysReportName = 'Nobody\'s shift';
 
-    function __construct()
+    function __construct($lastYear = false)
     {
         global $serversList;
         global $timeZone;
@@ -22,8 +22,12 @@ class stats
         $this->list        = (isset($_GET['list'])   && $_GET['list'])   ? $_GET['list']   : '';
         $this->servers     = $this->setServers($this->server, $this->serversList);
         $this->timeZone    = $timeZone;
-        $this->calendar    = new calendar;
+        $this->lastYear    = $lastYear;
         $this->usersAlerts = [$this->summaryReportName => []];
+
+        if (!$this->lastYear) {
+            $this->calendar = new calendar;
+        }
     }
 
     public function returnTabsList()
@@ -55,6 +59,30 @@ class stats
         $this->setAdditionalInfo();
 
         return $this->results;
+    }
+
+    public function returnLastYearStats()
+    {
+        $this->history = [];
+
+        $this->setFormattedDates();
+        $this->validate();
+        $this->getStatsDataFromDb();
+        $this->results[$this->summaryReportName] = $this->calculateByServer($this->from, $this->to, $this->summaryReportName, [], $this->history, false);
+        $this->calculateAllData();
+
+        $results = [];
+
+        foreach ($this->results as $records) {
+            foreach ($records as $server => $record) {
+                $results[$server] = [
+                    "unhandled_time"   => (isset($record["unhandled_time"]))   ? $record["unhandled_time"]   : 0,
+                    "quick_acked_time" => (isset($record["quick_acked_time"])) ? $record["quick_acked_time"] : 0,
+                ];
+            }
+        }
+
+        return $results;
     }
 
     private function setAdditionalInfo()
@@ -190,7 +218,7 @@ class stats
                         $this->results[$name][$server]['worked_total_list']    = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
                     }
                 } else {
-                    if (isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName])) {
+                    if (isset($this->usersAlerts[$this->summaryReportName][$server][$name])) {
                         $this->results[$name][$server]['worked_total']      = count($this->usersAlerts[$this->summaryReportName][$server][$name]);
                         $this->results[$name][$server]['worked_total_list'] = $this->usersAlerts[$this->summaryReportName][$server][$name];
                     }
@@ -548,15 +576,19 @@ class stats
                 $result['reaction_alerts']  += $stat['reaction_alerts'];
                 $result['emergency_count']  += $stat['emergency_count'];
 
-                foreach ($stat['worked_total_list'] as $check_id => $alert) {
-                    if (!isset($result['worked_total_list'][$check_id])) {
-                        $result['worked_total_list'][$check_id] = $alert;
+                if (isset($stat['worked_total_list'])) {
+                    foreach ($stat['worked_total_list'] as $check_id => $alert) {
+                        if (!isset($result['worked_total_list'][$check_id])) {
+                            $result['worked_total_list'][$check_id] = $alert;
+                        }
                     }
                 }
 
-                foreach ($stat['worked_on_shift_list'] as $check_id => $alert) {
-                    if (!isset($result['worked_on_shift_list'][$check_id])) {
-                        $result['worked_on_shift_list'][$check_id] = $alert;
+                if (isset($stat['worked_on_shift_list'])) {
+                    foreach ($stat['worked_on_shift_list'] as $check_id => $alert) {
+                        if (!isset($result['worked_on_shift_list'][$check_id])) {
+                            $result['worked_on_shift_list'][$check_id] = $alert;
+                        }
                     }
                 }
             }

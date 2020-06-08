@@ -2685,13 +2685,13 @@ $.stopPendingAjax = (function() {
 	var id = 0, Q = {};
 
 	$(document).ajaxSend(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1' && settings.url != 'stats.php?lastyear=1') {
             jqx._id = ++id;
 			Q[jqx._id] = jqx;
         }
 	});
 	$(document).ajaxComplete(function(e, jqx, settings){
-		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1') {
+		if (!settings.url.startsWith('planned.php') && !settings.url.startsWith('counts.php') && settings.url != 'post.php' && settings.url != 'recheck.php' && settings.url != 'recheck.php?run=1' && settings.url != 'stats.php?lastyear=1') {
 			delete Q[jqx._id];
 		}
 	});
@@ -5033,29 +5033,14 @@ Stats = {
 
             $('.alert-days-block').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
 
-            setTimeout(function(){
-                for (var i = 13; i >= 1; i--) {
-                    var date = moment().utc().subtract(i, 'months').startOf('month').format('YYYY-MM');
-
-                    $.ajax({
-                        type:    'GET',
-                        url:     'stats.php',
-                        async:   false,
-                        data:    {
-                            'time_correction_type': this.timeZone,
-                            'time_correction_diff': moment().utcOffset(),
-                            'from': moment().utc().subtract(i, 'months').startOf('month').unix(),
-                            'to': moment().utc().subtract(i, 'months').endOf('month').unix(),
-                        },
-                        success: function(data){
-                            Stats.setAlertDays(data, date);
-                        }
-                    });
+            $.ajax({
+                type:    'GET',
+                url:     'stats.php?lastyear=1',
+                success: function(data){
+                    Stats.alerDaysList = data;
+                    Stats.drawAlertDaysTable();
                 }
-
-                Stats.drawAlertDaysTable();
-            }, 500);
-
+            });
         });
     },
     drawAlertDaysTable: function() {
@@ -5081,24 +5066,6 @@ Stats = {
         html += '</table>';
 
         $('.alert-days-block').html(html);
-    },
-    setAlertDays: function(data, date) {
-        Stats.alerDaysList[date] = {};
-
-        for (var name in data) {
-            if (name != 'Summary report') {
-                continue;
-            }
-
-            for (var server in data[name]) {
-                if (typeof Stats.alerDaysList[date][server] === 'undefined') {
-                    Stats.alerDaysList[date][server] = {};
-                }
-
-                Stats.alerDaysList[date][server]['unhandled_time']   = data[name][server]['unhandled_time'];
-                Stats.alerDaysList[date][server]['quick_acked_time'] = data[name][server]['quick_acked_time'];
-            }
-        }
     },
     redrawAlerts: function() {
         $(document).find('.show-alert-details').each(function (key, value) {
