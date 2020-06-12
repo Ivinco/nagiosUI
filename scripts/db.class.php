@@ -8,7 +8,9 @@ class db
     {
         global $database;
         global $infoRecordMark;
+        global $emergencyConfig;
 
+        $this->emergencyConfig = $emergencyConfig;
         $this->database = $database;
         $this->infoRecordMark = $infoRecordMark;
 
@@ -261,6 +263,27 @@ class db
             $xml = new xml;
             $xml->updateMemcache($server, $data, $command);
         }*/
+    }
+
+    public function insertToEmergencyTable($host, $service, $status, $info, $hash)
+    {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $status  = $this->mysql->real_escape_string($status);
+        $info    = $this->mysql->real_escape_string($info);
+        $hash    = $this->mysql->real_escape_string($hash);
+
+        if ($this->emergencyConfig && isset($this->emergencyConfig['insertToDbCommand'])) {
+            $command = $this->emergencyConfig['insertToDbCommand'];
+            $command = str_replace('__hash__',    $hash,    $command);
+            $command = str_replace('__host__',    $host,    $command);
+            $command = str_replace('__service__', $service, $command);
+            $command = str_replace('__status__',  $status,  $command);
+            $command = str_replace('__output__',  $info,    $command);
+
+            $return = null;
+            exec($command . " 2>&1", $return);
+        }
     }
 
     public function returnPlanned($server) {

@@ -33,6 +33,8 @@ class utils
         $this->setTimeZonesList($timeZonesList);
         $this->setServerTabsList($serversList);
         $this->setTimeCorrection();
+
+        $this->db = new db;
     }
 
     public function getMemcache()
@@ -200,6 +202,63 @@ class utils
         }
 
         return $server;
+    }
+
+    public function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
+    {
+        $latestActions = $this->db->getLatestActions();
+        $needToReturn = false;
+        $return = [
+            'acked'      => $acked,
+            'ackComment' => $ackComment,
+            'sched'      => $sched,
+            'schComment' => $schComment,
+            'quickAckAu' => '',
+        ];
+
+        foreach ($latestActions as $last) {
+            if ($last['host'] == $host && $last['service'] == $service && $last['server'] == $tab) {
+                if ($last['command'] == 'ack') {
+                    $needToReturn = true;
+                    $return['acked'] = 1;
+                    if ($last['comment'] == 'temp') {
+                        $return['ackComment'] = $last['comment'];
+
+                        $usersList = $this->db->usersList($tab);
+                        $photo = (isset($usersList[$last['author']])) ? $usersList[$last['author']] : '';
+                        $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
+                        $return['quickAckAu'] = md5($photo);
+                    } else {
+                        $return['ackComment'] = $this->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
+                        $return['quickAckAu'] = '';
+                    }
+                }
+
+                if ($last['command'] == 'unack') {
+                    $needToReturn = true;
+                    $return['acked'] = 0;
+                    $return['ackComment'] = '';
+                    $return['quickAckAu'] = '';
+                }
+
+                if ($last['command'] == 'sched') {
+                    $needToReturn = true;
+                    $return['acked'] = 0;
+                    $return['ackComment'] = '';
+                    $return['quickAckAu'] = '';
+                    $return['sched'] = 1;
+                    $return['schComment'] = $this->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
+                }
+
+                if ($last['command'] == 'unsched') {
+                    $needToReturn = true;
+                    $return['sched'] = 0;
+                    $return['schComment'] = '';
+                }
+            }
+        }
+
+        return ($needToReturn) ? $return : false;
     }
 
 }

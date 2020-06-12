@@ -23,7 +23,6 @@ class json
         $this->user       = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
 
         $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
-        $this->latestActions = $this->db->getLatestActions();
 
         if (!$this->fullData) {
             http_response_code(404);
@@ -116,7 +115,7 @@ class json
                 $schedEnd       = $plannedRecord['end'];
             }
 
-            $changedComments = $this->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab);
+            $changedComments = $this->utils->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab);
             if ($changedComments) {
                 $sched           = $changedComments['sched'];
                 $schComment      = $changedComments['schComment'];
@@ -240,61 +239,6 @@ class json
         }
 
         return false;
-    }
-    private function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
-    {
-        $needToReturn = false;
-        $return = [
-            'acked'      => $acked,
-            'ackComment' => $ackComment,
-            'sched'      => $sched,
-            'schComment' => $schComment,
-            'quickAckAu' => '',
-        ];
-
-        foreach ($this->latestActions as $last) {
-            if ($last['host'] == $host && $last['service'] == $service && $last['server'] == $tab) {
-                if ($last['command'] == 'ack') {
-                    $needToReturn = true;
-                    $return['acked'] = 1;
-                    if ($last['comment'] == 'temp') {
-                        $return['ackComment'] = $last['comment'];
-
-                        $usersList = $this->db->usersList($tab);
-                        $photo = (isset($usersList[$last['author']])) ? $usersList[$last['author']] : '';
-                        $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
-                        $return['quickAckAu'] = md5($photo);
-                    } else {
-                        $return['ackComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
-                        $return['quickAckAu'] = '';
-                    }
-                }
-
-                if ($last['command'] == 'unack') {
-                    $needToReturn = true;
-                    $return['acked'] = 0;
-                    $return['ackComment'] = '';
-                    $return['quickAckAu'] = '';
-                }
-
-                if ($last['command'] == 'sched') {
-                    $needToReturn = true;
-                    $return['acked'] = 0;
-                    $return['ackComment'] = '';
-                    $return['quickAckAu'] = '';
-                    $return['sched'] = 1;
-                    $return['schComment'] = $this->utils->prepareAckSchedComment($last['comment'], $last['author'], $last['logged'], $last['server']);
-                }
-
-                if ($last['command'] == 'unsched') {
-                    $needToReturn = true;
-                    $return['sched'] = 0;
-                    $return['schComment'] = '';
-                }
-            }
-        }
-
-        return ($needToReturn) ? $return : false;
     }
 
     private function returnCorrectedComments($comment, $tab) {
