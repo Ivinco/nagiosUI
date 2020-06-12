@@ -379,7 +379,7 @@ class emergency
                 $ackComment = '';
             }
 
-            $changedComments = $this->utils->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab);
+            $changedComments = $this->utils->changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab, true);
             if ($changedComments) {
                 $sched = $changedComments['sched'];
                 $acked = $changedComments['acked'];

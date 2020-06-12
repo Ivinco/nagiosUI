@@ -35,6 +35,7 @@ class utils
         $this->setTimeCorrection();
 
         $this->db = new db;
+        $this->latestActions = $this->db->getLatestActions();
     }
 
     public function getMemcache()
@@ -204,9 +205,14 @@ class utils
         return $server;
     }
 
-    public function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
+    public function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab, $emergency = false)
     {
-        $latestActions = $this->db->getLatestActions();
+        if ($emergency) {
+            $latestActions = $this->db->getLatestActions();
+        } else {
+            $latestActions = $this->latestActions;
+        }
+
         $needToReturn = false;
         $return = [
             'acked'      => $acked,
