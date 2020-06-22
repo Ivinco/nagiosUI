@@ -562,8 +562,29 @@ class xml
     }
 
     private function getStatusFile() {
-        $data = $this->curlRequest("/state");
+        $this->statusFile = [];
+        $retries = 5;
 
+        while ($retries > 0) {
+            $data = $this->curlRequest("/state");
+
+            if ($this->isCorrectStatusFile($data)) {
+                $this->statusFile = $data;
+                break;
+            }
+
+            if ($this->tmpStatusFileError) {
+                break;
+            }
+
+            sleep(2);
+            $retries--;
+        }
+
+        $this->prepareHosts();
+    }
+    private function isCorrectStatusFile($data)
+    {
         if (    $data
             && !empty($data)
             && isset($data['content'])
@@ -572,12 +593,10 @@ class xml
             && isset($data['success'])
             && $data['success']
         ) {
-            $this->statusFile = $data;
-        } else {
-            $this->statusFile = [];
+            return true;
         }
 
-        $this->prepareHosts();
+        return false;
     }
 
     private function verifyNagiosApi()
@@ -601,6 +620,7 @@ class xml
                 || $error_msg == 'couldn\'t connect to host'
                 || preg_match('#^connection timed out after?#i', $error_msg) === 1
                 || preg_match('#^Could not resolve host?#i', $error_msg) === 1
+                || preg_match('#^Failed to connect to?#i', $error_msg) === 1
             ) {
                 $this->errorTabs[] = $this->currentTabTmp;
             }
@@ -610,6 +630,7 @@ class xml
     }
     private function curlRequest($url)
     {
+        $this->tmpStatusFileError = false;
         $path = $this->serversList[$this->currentTabTmp]['url'] . $url;
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_PORT, $this->serversList[$this->currentTabTmp]['port']);
@@ -628,8 +649,10 @@ class xml
                 || $error_msg == 'couldn\'t connect to host'
                 || preg_match('#^connection timed out after?#i', $error_msg) === 1
                 || preg_match('#^Could not resolve host?#i', $error_msg) === 1
+                || preg_match('#^Failed to connect to?#i', $error_msg) === 1
             ) {
                 $this->timeoutTabs[] = $this->currentTabTmp;
+                $this->tmpStatusFileError = true;
             }
 
             curl_close($curl);
