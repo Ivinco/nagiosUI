@@ -228,6 +228,42 @@ class db
 
         return $list;
     }
+    public function getActionsByDate($dateFrom, $dateTo)
+    {
+        $dateTo   = $this->mysql->real_escape_string($dateTo);
+        $dateFrom = $this->mysql->real_escape_string($dateFrom);
+
+        $list   = [];
+        $sql    = "
+            SELECT 
+                * 
+            FROM 
+                {$this->nagios_external_commands_log}
+            WHERE 
+                    `logged` > '{$dateFrom}' 
+                AND
+                    `logged` < '{$dateTo}'
+                AND
+                    `command` IN ('ack') 
+            ORDER BY 
+                `host`, `service`, `logged`
+        ";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            if (!isset($list[$row['host']])) {
+                $list[$row['host']] = [];
+            }
+
+            if (!isset($list[$row['host']][$row['service']])) {
+                $list[$row['host']][$row['service']] = [];
+            }
+
+            $list[$row['host']][$row['service']][] = $row;
+        }
+
+        return $list;
+    }
     public function logAction($data, $command, $server, $insertToDb = false, $saveDate = false) {
         $host    = (isset($data['host']))    ? $data['host']    : '';
         $service = (isset($data['service'])) ? $data['service'] : '';
