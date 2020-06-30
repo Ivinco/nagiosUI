@@ -236,6 +236,7 @@ class emergency
         curl_setopt($curl_handle, CURLOPT_URL,$ackedcheckurl);
         curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
         curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, false);
         $ackedcheckdata = curl_exec($curl_handle);
         curl_close($curl_handle);
 
@@ -252,6 +253,7 @@ class emergency
         curl_setopt($curl_handle, CURLOPT_URL,$this->emergency['domain'] . 'getresponsibleadmin?number=' . $timesCalled);
         curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
         curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, false);
         $adminData = curl_exec($curl_handle);
         curl_close($curl_handle);
 
@@ -284,6 +286,7 @@ class emergency
         curl_setopt($curl_handle, CURLOPT_POSTFIELDS, http_build_query(['message' => $twimlMessage]));
         curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
         curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, false);
         $data = curl_exec($curl_handle);
         curl_close($curl_handle);
 
