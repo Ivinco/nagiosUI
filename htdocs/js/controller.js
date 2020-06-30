@@ -166,7 +166,7 @@ Search.changeNagiosComment = function(comment) {
 
     return replacedText;
 }
-Search.allDataTable       = (getParameterByName('t') || getParameterByName('stats')) ? false : $('#mainTable').DataTable({
+Search.allDataTable       = (getParameterByName('emergency') || getParameterByName('t') || getParameterByName('stats')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
@@ -2671,6 +2671,9 @@ Search.init = function() {
     $('#stats').on('click', function() {
         window.location = window.location.href.split('?')[0] + "?stats=1";
     });
+    $('#emergencies').on('click', function() {
+        window.location = window.location.href.split('?')[0] + "?emergency=1";
+    });
 }
 
 function getParameterByName (name) {
@@ -4423,6 +4426,9 @@ History = {
         $('#stats').on('click', function() {
             window.location = window.location.href.split('?')[0] + "?stats=1";
         });
+        $('#emergencies').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?emergency=1";
+        });
 
         $(document).on('click', '.ui-datepicker-close', function() {
             var value = $('#history_date').val();
@@ -4963,6 +4969,9 @@ Stats = {
         });
         $('#history').on('click', function() {
             window.location = window.location.href.split('?')[0] + "?t=1";
+        });
+        $('#emergencies').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?emergency=1";
         });
         $('#filterStats').on('click', function() {
             Stats.selectedUsers = $('#usersFilter').val();
@@ -5595,6 +5604,330 @@ Stats = {
             { name: 'Custom',       value: this.returnPeriod('custom') },
         ];
     },
+};
+Emergency = {
+    id: null,
+    limit: 10,
+    page: 1,
+    from: '',
+    to: '',
+    timeZone: localStorage.getItem('timeZone'),
+    timeZonesList: [],
+    waveformList: [],
+    init: function() {
+        this.drawButtons();
+        this.setParams();
+        this.drawDatePickers();
+        this.getTimezonesList();
+
+        $('#stats').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?stats=1";
+        });
+        $('#alerts').on('click', function() {
+            window.location = window.location.href.split('?')[0];
+        });
+        $('#history').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?t=1";
+        });
+        $(document).on('change', '.emergencies-per-page-select', function() {
+            Emergency.limit = $(this).find(":selected").val();
+            Emergency.page  = 1;
+            Emergency.goTo();
+        });
+        $(document).on('click', '.play-pause', function() {
+            Emergency.waveformList[$(this).attr('waveid')].playPause();
+        });
+        $(document).on('click', '.go-to-full-list', function() {
+            window.location.href = '//' + location.host + location.pathname + '?emergency=1';
+        });
+        $('.emergencies-select-period').on('change', function() {
+            Emergency.changePeriodDates();
+            Emergency.checkCalendarSwitch();
+        });
+        $('#emergencies_from_date, #emergencies_to_date').on('change', function() {
+            Emergency.checkCalendarSwitch();
+        });
+        $('#emergencies-filter').on('click', function() {
+            Emergency.from = $('#emergencies_from_date').val();
+            Emergency.to   = $('#emergencies_to_date').val();
+
+            Emergency.goTo();
+        });
+    },
+    setParams: function() {
+        if (Search.getParameterByName('id') && Search.getParameterByName('id') != 'null') {
+            Emergency.id = Search.getParameterByName('id');
+        }
+        if (Search.getParameterByName('limit') && parseInt(Search.getParameterByName('limit')) > 0) {
+            Emergency.limit = parseInt(Search.getParameterByName('limit'));
+        }
+        if (Search.getParameterByName('page') && parseInt(Search.getParameterByName('page')) > 0) {
+            Emergency.page = parseInt(Search.getParameterByName('page'));
+        }
+        if (Search.getParameterByName('from')) {
+            Emergency.from = Search.getParameterByName('from');
+        }
+        if (Search.getParameterByName('to')) {
+            Emergency.to = Search.getParameterByName('to');
+        }
+    },
+    drawButtons: function() {
+        $('#emergencies').prop('checked', true);
+        $('#timeZoneBlock, #radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput, #normalGrouping, #tabs').hide();
+        $('#radio-switch').buttonset();
+
+        $('#loading, #mainTable').hide();
+        $('#updatedAgo').closest('p').hide();
+        $('#server-errors').hide();
+        $('#infoHolder, #historyContent').show();
+
+        $('.historyHeading').css('padding-top', '0').html('');
+    },
+    getTimezonesList: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'emergency.php',
+            data:    {'list': 'timeZones'},
+            success: function(data){
+                Emergency.timeZonesList  = data.timeZonesList;
+                Emergency.drawTimeZonesList();
+                Emergency.getList();
+            }
+        });
+    },
+    drawTimeZonesList: function() {
+        var tzList = '';
+
+        $(Emergency.timeZonesList).each(function (key, value) {
+            var selected = (Emergency.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>TZ: '+ value +'</option>';
+        });
+
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect').html(tzList);
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                if (Emergency.timeZone != data.item.value) {
+                    localStorage.setItem('timeZone', data.item.value);
+                    Emergency.timeZone = localStorage.getItem('timeZone');
+                    Emergency.goTo();
+                }
+            }
+        });
+    },
+    drawDatePickers: function() {
+        var html = "";
+        html += "<span id='emergencies-period'><label style='margin-right: 20px;'><strong>Period:</strong> <select class='emergencies-select-period' style='padding: 3px;'><option value='' data-from='' data-to=''></option></select></label></span>";
+        html += "<span id='emergencies-dates'><strong>Pick dates:</strong>";
+        html += '<label style="margin-left: 15px;">From: <input type="text" name="emergencies_from_date" id="emergencies_from_date" value="'+ Emergency.from +'" class="text" style="font-size: 13px; outline: none; width: 150px; padding: 3px;" autocomplete="off"></label>';
+        html += '<label style="margin-left: 15px;">To: <input type="text" name="emergencies_to_date" id="emergencies_to_date" value="'+ Emergency.to +'" class="text" style="font-size: 13px; outline: none; width: 150px; padding: 3px;" autocomplete="off"></label>';
+        html += '</span>';
+        html += '<span><button id=\'emergencies-filter\' style="margin-left: 15px; padding: 3px;">Filter</button></span>';
+
+
+        $('.historyHeading').html(html);
+
+        $(Stats.returnSelectList()).each(function (key, value) {
+            $('.emergencies-select-period').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'">'+ value.name +'</option>');
+        });
+
+        Emergency.drawDatePicker();
+        Emergency.checkCalendarSwitch();
+    },
+    drawDatePicker: function() {
+        var dateTimePickerFromSettings = {
+            timeFormat: 'HH:mm:ss',
+            dateFormat: 'yy-mm-dd',
+            controlType: 'select',
+            oneLine: true,
+            defaultValue: $('#emergencies_from_date').val(),
+        };
+
+        dateTimePickerToSettings = dateTimePickerFromSettings;
+        dateTimePickerToSettings.defaultValue = $('#emergencies_to_date').val();
+
+        $('#emergencies_from_date').datetimepicker(dateTimePickerFromSettings);
+        $('#emergencies_to_date').datetimepicker(dateTimePickerToSettings);
+    },
+    changePeriodDates: function() {
+        item = $(".emergencies-select-period option:selected");
+
+        if (item.val() != 'Custom') {
+            $('#emergencies_from_date').val(item.attr('data-from'));
+            $('#emergencies_to_date').val(item.attr('data-to'));
+        }
+    },
+    checkCalendarSwitch: function() {
+        var from     = $('#emergencies_from_date').val(),
+            to       = $('#emergencies_to_date').val(),
+            selected = 'Custom';
+
+        $('.emergencies-select-period option').each(function (key, value) {
+            if (from == $(value).attr('data-from') && to == $(value).attr('data-to')) {
+                selected = $(value).val();
+
+                return false;
+            }
+        });
+
+        if ($('.emergencies-select-period').val() != selected) {
+            $('.emergencies-select-period [value="'+ $('.emergencies-select-period').val() +'"]').removeAttr('selected');
+            $('.emergencies-select-period [value="'+ selected +'"]').prop('selected', 'selected');
+        }
+    },
+    getList: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'emergency.php',
+            data:    {id: Emergency.id, limit: Emergency.limit, page: Emergency.page, from: Emergency.from, to: Emergency.to, tz: Emergency.timeZone, diff: moment().utcOffset()},
+            success: function(data){
+                var waveformList = [];
+                var idsList = [];
+
+                var html = "";
+                html += "<table class='emergencies-table' cellpadding='0' cellspacing='0' border='1'>";
+                html += "<tr>";
+                html += "<th>Logged</th>";
+                html += "<th>Service</th>";
+                html += "<th>History</th>";
+                html += "<th>Why it happened</th>";
+                html += "<th>Preventative measures</th>";
+                html += "</tr>";
+
+                for (var i = 0; i < data.data.length; i++) {
+                    var item = data.data[i];
+                    idsList.push(item.id);
+
+                    var link = (!Emergency.id) ? ("<a href=\"?emergency=1&id="+ item['id'] +"\">"+ item['logged'] +"</a>") : ("<span>"+ item['logged'] +"</span>");
+                    html += "<tr>";
+                    html += "<td>"+ link +"<br /><br />"+ item['host'] +"<br /><br />"+ item.id +"</td>";
+                    html += "<td>"+ item.service +"<br /><br /><small>"+ item.output +"</small></td>";
+                    html += "<td width='280'>"+ item.history.split('|').join("<br />");
+
+                    if (item.link) {
+                        var id = "waveform-" + item.id;
+                        html += "<div id="+ id +"></div>";
+                        html += "<div style=\"text-align: center\"><button waveid='"+ id +"' class='play-pause'>Play/Pause</button></div>";
+
+                        waveformList[id] = item.link;
+                    }
+
+                    html +="</td>";
+                    html += "<td width='240'><a href=\"#\" id=\"investigation"+ item.id +"\" data-type=\"textarea\" data-pk=\"1\">" +item.investigation +"</a>" + "<br /><br />by <span class='investigation_author'>"+ item.author_investigation +"</span>. Updated: <span class='investigation_date'>"+ item.updated_investigation +"</span></td>";
+                    html += "<td width='240'><a href=\"#\" id=\"prevention"+ item.id +"\" data-type=\"textarea\" data-pk=\"1\">"+ item.prevention +"</a>" + "<br /><br />by <span class='prevention_author'>"+ item.author_prevention +"</span>. Updated: <span class='prevention_date'>"+ item.updated_prevention +"</span></td>";
+                    html += "</tr>";
+                }
+
+                if (!Emergency.id) {
+                    html += "<tr><td id='emergencies-per-page'></td><td id='emergencies-total' colspan='2' align='center'></td><td colspan='2' id='emergencies-pagination'></td></tr>";
+                } else {
+                    html += "<tr><td colspan='5' style='text-align:center; padding: 7px;'><button class='go-to-full-list'>Go to full list</button></td></tr>";
+                }
+
+                html += "</table>";
+
+                $('.historyText').html(html);
+
+                if (!Emergency.id) {
+                    Emergency.drawTablesBottom(data.total);
+                }
+
+                for (var [key, value] of Object.entries(waveformList)) {
+                    Emergency.waveformList[key] = WaveSurfer.create({
+                        container: '#' + key,
+                        height: 40
+                    });
+
+                    Emergency.waveformList[key].load(value);
+                }
+
+                for (var i = 0; i < idsList.length; i++) {
+                    $('#investigation' + idsList[i]).editable({
+                        url: '/emergency.php?save=1&author=' + $('#userName').text() +'&id=' + idsList[i] + '&type=investigation',
+                        title: 'change investigation',
+                        rows: 10,
+                        mode: 'inline',
+                        type: 'text',
+                        success: function(data, config) {
+                            for (var i = 0; i < data.data.length; i++) {
+                                var item = data.data[i];
+                                var row  = $(document).find('#investigation' + item.id).closest('td');
+                                row.find('.investigation_author').text(item.investigation_author);
+                                row.find('.investigation_date').text(item.updated_investigation);
+                            }
+                        }
+                    });
+                    $('#prevention' + idsList[i]).editable({
+                        url: '/emergency.php?save=1&author=' + $('#userName').text() +'&id=' + idsList[i] + '&type=prevention',
+                        title: 'change prevention',
+                        rows: 10,
+                        mode: 'inline',
+                        type: 'text',
+                        success: function(data, config) {
+                            for (var i = 0; i < data.data.length; i++) {
+                                var item = data.data[i];
+                                var row  = $(document).find('#prevention' + item.id).closest('td');
+                                row.find('.prevention_author').text(item.author_prevention);
+                                row.find('.prevention_date').text(item.updated_prevention);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    },
+    drawTablesBottom: function(total) {
+        if (total == 0) {
+            $('.historyText').html("<h4>Nothing Found. Please search again.</h4>");
+
+            return;
+        }
+        var perPage = [10, 20, 40, 80, 150, -1];
+        var options = '';
+
+        if (perPage.indexOf(Emergency.limit) == -1) {
+            Emergency.limit = 10;
+        }
+
+        for (var i = 0; i < perPage.length; i++) {
+            var selected = (perPage[i] == Emergency.limit) ? ' selected="selected"' : '';
+            var name = (perPage[i] == -1) ? 'all' : perPage[i];
+            options += '<option label="'+ perPage[i] +'" value="'+ perPage[i] +'" '+ selected +'>'+ name +'</option>';
+        }
+        $("#emergencies-per-page").html('<label><select class="emergencies-per-page-select">'+ options +'</select> records per page</label>').closest('td').css("padding", "15px 5px");
+
+
+        var from = (Emergency.limit * Emergency.page) - Emergency.limit + 1;
+        var to = from + Emergency.limit - 1;
+
+        if (to > total) {
+            to = total;
+        }
+        $("#emergencies-total").html('Showing '+ from +' to '+ to +' of '+ total +' records').closest('td').css("padding", "15px 5px");
+
+
+        var totalPagesList = [];
+
+        for (var i = 1; i <= Math.ceil(total / Emergency.limit); i++) {
+            totalPagesList.push(i);
+        }
+
+        $('#emergencies-pagination').pagination({
+            dataSource: totalPagesList,
+            totalNumber: Emergency.limit,
+            pageSize: 1,
+            pageNumber: Emergency.page,
+            callback: function(data, pagination) {
+                if (parseInt(data[0]) != Emergency.page) {
+                    Emergency.page = data[0];
+                    Emergency.goTo();
+                }
+            }
+        });
+    },
+    goTo: function() {
+        window.location.href = '//' + location.host + location.pathname + '?emergency=1&id=' + Emergency.id + '&limit=' + Emergency.limit + '&page=' + Emergency.page + '&from=' + Emergency.from + '&to=' + Emergency.to + '&tz=' + Emergency.timeZone + '&diff=' + moment().utcOffset();
+    }
 };
 
 Number.prototype.padLeft = function(base,chr){

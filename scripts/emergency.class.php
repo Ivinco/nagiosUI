@@ -48,8 +48,6 @@ class emergency
             || !isset($this->emergency['mailto'])
             || !isset($this->emergency['domain'])
             || !isset($this->emergency['root'])
-            || !isset($this->emergency['insertToDbCommand'])
-            || !isset($this->emergency['getEmergencyAlerts'])
             || !isset($this->emergency['twilio'])
             || !isset($this->emergency['twilio']['language'])
             || !isset($this->emergency['twilio']['helloText'])

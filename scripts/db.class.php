@@ -211,6 +211,146 @@ class db
                 `output` `output` VARCHAR(1024) NOT NULL;
         ";
         $this->mysql->query($history_alter);
+
+
+        $this->emergency = $this->database['prefix'] . "emergency";
+        $emergency = "
+            CREATE TABLE IF NOT EXISTS `". $this->emergency ."` (
+                `logged`                TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `id`                    CHAR(32)     NOT NULL DEFAULT '',
+                `host`                  VARCHAR(255) NOT NULL,
+                `service`               VARCHAR(255) NOT NULL,
+                `history`               BLOB,
+                `updated`               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                `investigation`         TEXT,
+                `output`                TEXT,
+                `updated_investigation` TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `prevention`            TEXT,
+                `updated_prevention`    TIMESTAMP    NULL     DEFAULT NULL,
+                `author_prevention`     VARCHAR(255)          DEFAULT NULL,
+                `author_investigation`  VARCHAR(255)          DEFAULT NULL,
+                `author`                VARCHAR(255)          DEFAULT NULL,
+                `link`                  TEXT,
+                PRIMARY KEY (`id`)
+            )
+        ";
+        if ($this->mysql->query($emergency) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+    }
+    public function getEmergenciesList($limit, $offset, $from, $to)
+    {
+        $limit  = $this->mysql->real_escape_string($limit);
+        $offset = $this->mysql->real_escape_string($offset);
+        $from   = $this->mysql->real_escape_string($from);
+        $to     = $this->mysql->real_escape_string($to);
+        $where  = $this->returnFromToWhere($from, $to);
+        $list   = [];
+        $sql    = "
+            SELECT
+                *
+            FROM 
+                {$this->emergency}
+            {$where}
+            ORDER BY
+                logged DESC
+            LIMIT {$offset}, {$limit}
+        ";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+    private function returnFromToWhere($from, $to)
+    {
+        $where = [];
+
+        if ($from) {
+            $where[] = "`logged` >= '{$from}'";
+        }
+
+        if ($to) {
+            $where[] = "`logged` <= '{$to}'";
+        }
+
+        $where = implode(" AND ", $where);
+
+        if ($where) {
+            $where = "WHERE " . $where;
+        }
+
+        return $where;
+    }
+    public function getEmergenciesTotal($from, $to)
+    {
+        $total  = 0;
+        $from   = $this->mysql->real_escape_string($from);
+        $to     = $this->mysql->real_escape_string($to);
+        $where  = $this->returnFromToWhere($from, $to);
+        $sql    = "
+            SELECT
+                count(*) as cnt
+            FROM 
+                {$this->emergency}
+            {$where}
+        ";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $total = intval($row['cnt']);
+        }
+
+        return $total;
+    }
+    public function getEmergenciesRecord($id)
+    {
+        $id   = $this->mysql->real_escape_string($id);
+        $list = [];
+
+        $sql    = "
+            SELECT
+                *
+            FROM 
+                {$this->emergency} 
+            WHERE
+                `id` = '{$id}'
+        ";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+    public function changeEmergenciesRecord($id, $author, $value, $type)
+    {
+        $id     = $this->mysql->real_escape_string($id);
+        $author = $this->mysql->real_escape_string($author);
+        $value  = $this->mysql->real_escape_string($value);
+        $type   = $this->mysql->real_escape_string($type);
+
+        $sql = "
+            UPDATE 
+                `{$this->emergency}`
+            SET
+                `author_{$type}` = '{$author}',
+                `{$type}` = '{$value}',
+                `updated_{$type}` = NOW()
+            WHERE
+                `id` = '{$id}'
+        ";
+
+        $this->mysql->query($sql);
+
+        if ($this->mysql->query($sql) !== true) {
+            http_response_code(404);
+            die("Error saving data: " . $this->mysql->error);
+        }
     }
     public function getLatestActions()
     {
@@ -309,16 +449,28 @@ class db
         $info    = $this->mysql->real_escape_string($info);
         $hash    = $this->mysql->real_escape_string($hash);
 
-        if ($this->emergencyConfig && isset($this->emergencyConfig['insertToDbCommand'])) {
-            $command = $this->emergencyConfig['insertToDbCommand'];
-            $command = str_replace('__hash__',    $hash,    $command);
-            $command = str_replace('__host__',    $host,    $command);
-            $command = str_replace('__service__', $service, $command);
-            $command = str_replace('__status__',  $status,  $command);
-            $command = str_replace('__output__',  $info,    $command);
+        if ($this->emergencyConfig) {
+            $sql    = "
+                INSERT INTO 
+                    {$this->emergency}
+                SET 
+                    `logged`  = NOW(),
+                    `updated` = NOW(),
+                    `updated_investigation` = NOW(),
+                    `id`      = '{$hash}',
+                    `host`    = '{$host}',
+                    `service` = '{$service}',
+                    `history` = '{$status}',
+                    `output`  = '{$info}'
+                ON DUPLICATE KEY UPDATE history=concat(history, '|', VALUES(history))
+            ";
 
-            $return = null;
-            exec($command . " 2>&1", $return);
+            $this->mysql->query($sql);
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
         }
     }
 

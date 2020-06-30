@@ -692,3 +692,68 @@ table.dataTable thead .no-border-th {
     -o-animation-timing-function: linear;
     animation-timing-function: linear;
 }
+
+.emergencies-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.emergencies-table th, .emergencies-table td {
+    vertical-align: top;
+    padding: 3px 5px;
+}
+.emergencies-table td {
+    font-size: 13px;
+}
+.emergencies-table tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+.emergencies-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+#emergencies-pagination ul {
+    float: right;
+    margin: 3px 0 0 0;
+    padding: 0;
+}
+#emergencies-pagination ul>li:first-child, #emergencies-pagination li:first-child>a {
+    border-radius: 3px 0 0 3px;
+}
+#emergencies-pagination ul>li:last-child {
+    border-right: 1px solid #aaa;
+    border-radius: 0 3px 3px 0;
+}
+#emergencies-pagination ul>li {
+    float: left;
+    border: 1px solid #aaa;
+    border-right: none;
+    list-style: none;
+}
+#emergencies-pagination ul>li>a {
+    min-width: 36px;
+    height: 34px;
+    line-height: 34px;
+    font-size: 16px;
+    display: block;
+    background: #fff;
+    color: #333;
+    text-decoration: none;
+    text-align: center;
+}
+#emergencies-pagination ul>li:first-child>a {
+    border-radius: 3px 0 0 3px;
+}
+#emergencies-pagination ul>li.active {
+    border: none;
+}
+#emergencies-pagination ul>li.active>a {
+    height: 36px;
+    line-height: 36px;
+    background: #aaa;
+    color: #fff;
+}
+
+.emergencies-table .editable-buttons {
+    display: block;
+    margin: 10px 0 0 0;
+}

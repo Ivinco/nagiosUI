@@ -27,6 +27,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" />
 	<link rel="stylesheet" href="css/jquery-ui.min.css"/>
 	<link rel="stylesheet" href="css/datatables.min.css" />
+    <link rel="stylesheet" href="css/editable.css" />
 	<link rel="stylesheet" href="css/custom.css?v=<?php echo $rev; ?>" />
     <script>
         url = new URL(window.location.href);
@@ -124,6 +125,8 @@
             <label for="history" id="history-label">History</label>
             <input type="radio" id="stats" name="radio">
             <label for="stats" id="stats-label">Stats</label>
+            <input type="radio" id="emergencies" name="radio">
+            <label for="emergencies" id="emergencies-label">Emergency</label>
         </div>
     </form>
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">
@@ -271,16 +274,22 @@
     </div>
     <div class="historyText"></div>
 </div>
-
     <script src="js/jquery-2.1.4.min.js"></script>
+    <script>$.fn.poshytip={defaults:null};</script>
 	<script src="js/jquery-ui.min.js"></script>
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
     <script src="js/datetimepicker.min.js"></script>
     <script src="js/zingchart.min.js"></script>
 <?php
-if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_GET['stats']))) { ?>
+if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_GET['stats'])) || (isset($_GET['emergency']) && trim($_GET['emergency']))) { ?>
     <script src="js/jquery-ui-timepicker-addon.js"></script>
+<?php }
+
+if (isset($_GET['emergency']) && trim($_GET['emergency'])) { ?>
+    <script src="js/wavesurfer.min.js"></script>
+    <script src="js/pagination.min.js"></script>
+    <script src="js/editable.min.js"></script>
 <?php } ?>
 	<script src="js/controller.js?v=<?php echo $rev; ?>"></script>
     <script>
@@ -298,6 +307,8 @@ if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_
                 Stats.init();
             } else if (getParameterByName('t')) {
                 History.init();
+            } else if (getParameterByName('emergency')) {
+                Emergency.init();
             } else {
                 Search.init();
                 Grouping.init();
