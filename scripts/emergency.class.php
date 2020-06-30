@@ -272,7 +272,7 @@ class emergency
 
         $body .= "\n\nHost: {$alert['host']}\nService: {$alert['service']}\nId: $this->hash\nPlugin output: {$alert['statusInfo']}\n\n";
         $body .= "Ack: {$this->link}post.php?data%5B0%5D%5Bhost%5D=".urlencode($alert['host'])."&data%5B0%5D%5Bservice%5D=".urlencode($alert['service'])."&data%5B0%5D%5Bcom_data%5D=temp&data%5B0%5D%5Bauthor%5D=email&data%5B0%5D%5BisHost%5D=service&data%5B0%5D%5Btab%5D=".urlencode($alert['tab'])."&type=quickAck\n\n";
-        return mail($this->emergency['mailto'], "{$alert['state']} for {$alert['service']} ({$this->hash})", $body, "From: Emergency <{$this->mailto}>\r\n");
+        return mail($this->emergency['mailto'], "{$alert['state']} for {$alert['service']} ({$this->hash})", $body, "From: Emergency <{$this->emergency['mailto']}>\r\n");
     }
     private function call($name, $phone, $service, $alreadyCalled, $nagios_name = '')
     {
