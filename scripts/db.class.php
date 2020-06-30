@@ -345,8 +345,6 @@ class db
                 `id` = '{$id}'
         ";
 
-        $this->mysql->query($sql);
-
         if ($this->mysql->query($sql) !== true) {
             http_response_code(404);
             die("Error saving data: " . $this->mysql->error);
@@ -464,8 +462,6 @@ class db
                     `output`  = '{$info}'
                 ON DUPLICATE KEY UPDATE history=concat(history, '|', VALUES(history))
             ";
-
-            $this->mysql->query($sql);
 
             if ($this->mysql->query($sql) !== true) {
                 http_response_code(404);
