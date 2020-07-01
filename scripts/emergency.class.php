@@ -83,8 +83,8 @@ class emergency
                 $this->db->insertToEmergencyTable($alert['host'], $alert['service'], 'email', $alert['statusInfo'], $this->hash);
 
 
-                $this->log("Waiting 60 sec");
-                sleep(60);
+                $this->log("Waiting 300 sec");
+                sleep(300);
 
                 $this->log("Calling cycle");
                 $alreadyCalled = array();
@@ -369,7 +369,7 @@ class emergency
                 continue;
             }
 
-            if ($duration < 600) {
+            if ($duration < 300) {
                 continue;
             }
 
