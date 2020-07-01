@@ -239,7 +239,23 @@ class db
             exit();
         }
     }
-    public function getEmergenciesList($limit, $offset, $from, $to)
+    public function getLastEmergencyDate()
+    {
+        $sql = "
+            SELECT 
+                MAX(`logged`) 
+            FROM 
+                `{$this->emergency}`
+            WHERE 
+                `host` = 'emergency line'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+        $row    = $result->fetch_row();
+
+        return $row;
+    }
+    public function getEmergenciesList($limit = 10, $offset = 0, $from = 0, $to = 0)
     {
         $limit  = $this->mysql->real_escape_string($limit);
         $offset = $this->mysql->real_escape_string($offset);
@@ -461,6 +477,38 @@ class db
                     `history` = '{$status}',
                     `output`  = '{$info}'
                 ON DUPLICATE KEY UPDATE history=concat(history, '|', VALUES(history))
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
+    public function importToEmergencyTable($logged, $id, $host, $service, $output, $link, $history)
+    {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $logged  = $this->mysql->real_escape_string($logged);
+        $output  = $this->mysql->real_escape_string($output);
+        $id      = $this->mysql->real_escape_string($id);
+        $link    = $this->mysql->real_escape_string($link);
+        $history = $this->mysql->real_escape_string($history);
+
+        if ($this->emergencyConfig) {
+            $sql    = "
+                INSERT INTO 
+                    {$this->emergency}
+                SET 
+                    `logged`  = '{$logged}',
+                    `updated` = NOW(),
+                    `updated_investigation` = NOW(),
+                    `id`      = '{$id}',
+                    `host`    = '{$host}',
+                    `service` = '{$service}',
+                    `history` = '{$history}',
+                    `output`  = '{$output}',
+                    `link`    = '{$link}'
             ";
 
             if ($this->mysql->query($sql) !== true) {

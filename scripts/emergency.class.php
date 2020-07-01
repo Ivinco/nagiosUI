@@ -462,6 +462,65 @@ class emergency
         return ($needToReturn) ? $return : false;
     }
 
+    public function import()
+    {
+        $this->log("Emergencies import started");
+        $this->getLastImportedRecordDate();
+        $this->getCallsList();
+        $this->processImportsList();
+        $this->log("Emergencies import finished");
+    }
+    private function getLastImportedRecordDate()
+    {
+        $this->importFrom = $this->db->getLastEmergencyDate();
+        $this->importFrom = array_shift($this->importFrom);
+
+        $this->log("Emergencies import from: " . $this->importFrom);
+    }
+    private function getCallsList()
+    {
+        $urlDate = str_replace(' ', '%20', $this->importFrom);
+
+        $curl_handle=curl_init();
+        curl_setopt($curl_handle, CURLOPT_URL, $this->emergency['domain'] . 'twilio-emergency-sync.php?from_date_time=' . $urlDate);
+        curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, false);
+        $list = curl_exec($curl_handle);
+        curl_close($curl_handle);
+
+        $this->callsList = json_decode($list, true);
+    }
+    private function processImportsList()
+    {
+        foreach ($this->callsList as $item) {
+            if ((!in_array($item['type'], $this->emergency['typeSkip']) && !in_array($item['subtype'], $this->emergency['subtypeSkip'])) || $item['date_create'] <= $this->importFrom) {
+                continue;
+            }
+
+            $logged = $item['date_create'];
+            $id = $item['tag'];
+            $host = 'emergency line';
+            $service = 'caller: ' . $item['caller'];
+            $output = 'status: ' . $item['status'];
+            $link = explode("|", $item['data']);
+            $link = end($link);
+            $history = $this->getImportHistory($item);
+
+            $this->db->importToEmergencyTable($logged, $id, $host, $service, $output, $link, $history);
+        }
+    }
+    private function getImportHistory($record)
+    {
+        foreach ($this->callsList as $item) {
+            if ($item['tag'] == $record['tag'] && $item['type'] == 'outgoing queue call' && $item['status'] != 'calling') {
+                return $item['recipient'] . " - " . $item['status'];
+            }
+        }
+
+        return $record['recipient'] . " - " . $record['status'];
+    }
+
     public function log($text) {
         echo date("Y-m-d H:i:s") . " " . $text . "\n";
     }

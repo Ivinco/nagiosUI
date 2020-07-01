@@ -10,6 +10,9 @@ if (isset($argv[1]) && $argv[1] == '--test') {
         echo date("Y-m-d H:i:s") . " Please add your phone!\n";
         exit(1);
     }
+} else if (isset($argv[1]) && $argv[1] == '--import') {
+    $e = new emergency();
+    $e->import();
 } else {
     $lockName = "nagios-ui-emergency";
     $lockPath = __DIR__ . "/../config/";
