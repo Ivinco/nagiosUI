@@ -494,7 +494,7 @@ class emergency
     private function processImportsList()
     {
         foreach ($this->callsList as $item) {
-            if ((!in_array($item['type'], $this->emergency['typeSkip']) && !in_array($item['subtype'], $this->emergency['subtypeSkip'])) || $item['date_create'] <= $this->importFrom) {
+            if ((!in_array($item['type'], $this->emergency['typeSkip']) && !in_array($item['subtype'], $this->emergency['subtypeSkip'])) || $item['data'] == 'incoming_call' || $item['date_create'] <= $this->importFrom) {
                 continue;
             }
 
