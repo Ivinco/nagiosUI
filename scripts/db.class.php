@@ -238,6 +238,58 @@ class db
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
+
+        $this->stats = $this->database['prefix'] . "stats";
+        $stats = "
+            CREATE TABLE IF NOT EXISTS `". $this->stats ."` (
+                `logged`             TIMESTAMP          NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `unhandled_critical` SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
+                `unhandled_warning`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
+                `unhandled_unknown`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
+                `acked`              SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
+                `sched`              SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
+                `longest_critical`   MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
+                `longest_warning`    MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
+                `longest_unknown`    MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
+                PRIMARY KEY (`logged`)
+            )
+        ";
+
+        if ($this->mysql->query($stats) !== true) {
+            echo "Error creating table: " . $this->mysql->error;
+            exit();
+        }
+    }
+    public function insertIntoStatsTable($stats)
+    {
+        $unhandled_critical  = $this->mysql->real_escape_string($stats['criticalUnhandled']);
+        $unhandled_warning   = $this->mysql->real_escape_string($stats['warningUnhandled']);
+        $unhandled_unknown   = $this->mysql->real_escape_string($stats['unknownUnhandled']);
+        $acked               = $this->mysql->real_escape_string($stats['acked']);
+        $sched               = $this->mysql->real_escape_string($stats['sched']);
+        $longest_critical    = $this->mysql->real_escape_string($stats['criticalLongest']);
+        $longest_warning     = $this->mysql->real_escape_string($stats['warningLongest']);
+        $longest_unknown     = $this->mysql->real_escape_string($stats['unknownLongest']);
+
+        $sql = "
+            INSERT INTO 
+                {$this->stats}
+            SET 
+                `logged`             = NOW(),
+                `unhandled_critical` = {$unhandled_critical},
+                `unhandled_warning`  = {$unhandled_warning},
+                `unhandled_unknown`  = {$unhandled_unknown},
+                `acked`              = {$acked},
+                `sched`              = {$sched},
+                `longest_critical`   = {$longest_critical},
+                `longest_warning`    = {$longest_warning},
+                `longest_unknown`    = {$longest_unknown} 
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            http_response_code(404);
+            die("Error saving data: " . $this->mysql->error);
+        }
     }
     public function getLastEmergencyDate()
     {
@@ -1054,6 +1106,40 @@ class db
         $list = [];
         while ($row = $result->fetch_assoc()){
             $list[$row['host']][$row['service']] = $row;
+        }
+
+        return $list;
+    }
+    public function historyGetUnfinishedAlertsForAggregatedStats()
+    {
+        $sql = "
+            SELECT 
+                `history1`.*, `checks`.`server`, `checks`.`host`, `checks`.`service`
+            FROM 
+                `{$this->history}` AS `history1`
+            JOIN
+                  (SELECT MAX(`date`) `date`, `check_id` FROM `{$this->history}` GROUP BY `check_id`) AS `history2`
+                ON
+                  `history1`.`date` = `history2`.`date` AND `history1`.`check_id` = `history2`.`check_id`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history1`.`check_id` = `checks`.`id`
+            WHERE
+                  `history1`.`state` != 'ok'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $list[$row['host']][$row['service']] = $row;
+            $list[$row['host']][$row['service']]['info'] = 0;
+
+            $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
+            if ($infoRecord['info']) {
+                $list[$row['host']][$row['service']]['info'] = 1;
+            }
         }
 
         return $list;
