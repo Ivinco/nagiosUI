@@ -15,3 +15,4 @@ include_once __DIR__ . '/recheck.class.php';
 include_once __DIR__ . '/emergency.class.php';
 include_once __DIR__ . '/reports.class.php';
 include_once __DIR__ . '/aggregated_stats.class.php';
+include_once __DIR__ . '/synchronize_notes.class.php';

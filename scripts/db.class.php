@@ -977,6 +977,73 @@ class db
 
         return $list;
     }
+    public function insertNotesUrl($service_or_host, $url, $server) {
+        $service_or_host = $this->mysql->real_escape_string($service_or_host);
+        $url             = $this->mysql->real_escape_string($url);
+        $server          = $this->mysql->real_escape_string($server);
+
+        if ($service_or_host && $url && $server) {
+            $sql = "
+                INSERT INTO 
+                    {$this->notes_urls}
+                SET 
+                    `service_or_host` = '{$service_or_host}',
+                    `url`             = '{$url}',
+                    `server`          = '{$server}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
+    public function updateNotesUrl($service_or_host, $url, $server) {
+        $service_or_host = $this->mysql->real_escape_string($service_or_host);
+        $url             = $this->mysql->real_escape_string($url);
+        $server          = $this->mysql->real_escape_string($server);
+
+        if ($service_or_host && $url && $server) {
+            $sql = "
+                UPDATE
+                    {$this->notes_urls}
+                SET 
+                    `url` = '{$url}'
+                WHERE
+                        `service_or_host` = '{$service_or_host}'
+                    AND
+                        `server` = '{$server}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
+    public function deleteNotesUrl($service_or_host, $url, $server) {
+        $service_or_host = $this->mysql->real_escape_string($service_or_host);
+        $url             = $this->mysql->real_escape_string($url);
+        $server          = $this->mysql->real_escape_string($server);
+
+        if ($service_or_host && $url && $server) {
+            $sql = "
+                DELETE FROM
+                    {$this->notes_urls}
+                WHERE
+                        `service_or_host` = '{$service_or_host}'
+                    AND
+                        `server` = '{$server}'
+                    AND
+                        `url` = '{$url}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
 
     public function getSuperUsers($server) {
         $server = $this->mysql->real_escape_string($server);
