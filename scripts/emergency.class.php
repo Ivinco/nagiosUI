@@ -18,6 +18,7 @@ class emergency
 
         global $emergencyConfig;
         $this->emergency = $emergencyConfig;
+        $this->memcache = $this->utils->getMemcache();
     }
 
     private function setRequestUrl()
@@ -62,6 +63,23 @@ class emergency
             die;
         }
     }
+    private function isNeededToSendEmail($alert)
+    {
+        if ($this->memcache) {
+            $key  = $this->utils->getMemcacheFullName($alert['tab']);
+            $key .= "_email_";
+            $key .= md5($alert['host'] . $alert['service'] . $alert['tab']);
+
+            if ($this->memcache->get($key)) {
+                return false;
+            }
+
+            $this->memcache->set($key, "1", 0, 1800);
+        }
+
+        return true;
+    }
+
     private function process()
     {
         if ($this->emergencyAlerts) {
@@ -69,9 +87,12 @@ class emergency
                 $this->hash = md5(rand());
 
                 if ($alert['state'] != 'CRITICAL') {
-                    if (!$this->sendEmail($alert)) {
-                        $this->log("Sending failed");
+                    if ($this->isNeededToSendEmail($alert)) {
+                        if (!$this->sendEmail($alert)) {
+                            $this->log("Sending failed");
+                        }
                     }
+
                     $this->log("Not going to call. Finishing");
                     continue;
                 }
