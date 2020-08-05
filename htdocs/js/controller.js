@@ -385,7 +385,7 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
 			Search.countRecords();
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
-            $('#mainTable').show();
+            $('#mainTable, #mainTable_filter, #mainTable_info').toggle(Search.currentTab != 'planned');
 		},
 		'initComplete': function(settings, json) {
             if (Search.currentTab == 'planned') {
@@ -447,8 +447,9 @@ Search.startReloads = function() {
     if (Search.currentTab == 'planned') {
         Search.stopReloads();
     }
-
-    globalReload = true;
+    if (Search.currentTab != 'planned') {
+        globalReload = true;
+    }
 }
 Search.getContent = function() {
     if (Search.backgroundReload && !Search.startedGetData && Search.updateHash) {
@@ -2648,6 +2649,10 @@ Search.init = function() {
 	setInterval(function() {
         globalTime += 2;
 
+        if (!globalReload) {
+            globalTime = 0;
+        }
+
         if (globalTime > 300 && globalReload) {
             location.reload(true);
         }
@@ -3070,14 +3075,6 @@ Planned = {
                 $('#planned_status').css('border-color', 'red');
             }
         }
-        if ($('#planned_time').length) {
-            $('#planned_time').css('border-color', '#aaa');
-
-            if (!$('#planned_time').val() || !parseInt($('#planned_time').val())) {
-                error++;
-                $('#planned_time').css('border-color', 'red');
-            }
-        }
         if ($('#planned_comment').length) {
             $('#planned_comment').css('border-color', '#aaa');
 
@@ -3121,7 +3118,7 @@ Planned = {
             }
 
             if ($('#planned_time').length) {
-                Planned.plannedData.time = parseInt($('#planned_time').val());
+                Planned.plannedData.time = (parseInt($('#planned_time').val())) ? parseInt($('#planned_time').val()) : 1200000;
             }
 
             if ($('#planned_comment').length) {
@@ -3157,7 +3154,7 @@ Planned = {
             server  = $('#edit_planned_server').val(),
             normal  = +$('#edit_planned_normal').prop('checked'),
             time    = parseInt($('#edit_planned_downtime').val()),
-            time    = (time > 1) ? time : 1,
+            time    = (time && time > 1) ? time : 1200000,
             user    = $('#userName').text();
 
         if ((!host && !service && !status) || !comment) {
@@ -3247,13 +3244,13 @@ Planned = {
             var host    = $('#maintenance-host').val(),
                 service = $('#maintenance-service').val(),
                 status  = $('#maintenance-status').val(),
-                time    = parseInt($('#maintenance-time').val()),
+                time    = (parseInt($('#maintenance-time').val())) ? parseInt($('#maintenance-time').val()) : 1200000,
                 comment = $('#maintenance-comment').val(),
                 user    = $('#userName').text(),
                 normal  = +$('#maintenance-normal').prop('checked'),
                 server  = $('#maintenance-server').val();
 
-            if ((host || service || status) && comment && time > 0) {
+            if ((host || service || status) && comment) {
                 $.ajax({
                     url: 'planned.php?server=' + Search.currentServerTab,
                     method: 'POST',
@@ -3319,7 +3316,7 @@ Planned = {
             html+= '<td><input type="text" name="edit_planned_status" id="edit_planned_status" class="text ui-widget-content" value="'+ status +'" style="width: 100%; font-size: 14px;"></td>';
             html+= '</tr>';
             html+= '<tr>';
-            html+= '<td style="font-size: 13px; white-space: nowrap;">Downtime <small>(minutes)</small></td>';
+            html+= '<td style="font-size: 13px; white-space: nowrap;">Downtime <small>(minutes)</small><br /><small>Leave empty for permanent<br /> downtime</small></td>';
             html+= '<td><input type="text" name="edit_planned_downtime" id="edit_planned_downtime" class="text ui-widget-content" value="" style="width: 100%; font-size: 14px;"></td>';
             html+= '</tr>';
             html+= '<tr>';
@@ -3384,7 +3381,7 @@ Planned = {
                 service:       service,
                 status:        status,
                 server:        server,
-                time:          parseInt($(this).attr('data-time')),
+                time:          (parseInt($(this).attr('data-time'))) ? parseInt($(this).attr('data-time')) : 1200000,
                 comment:       decodeURIComponent($(this).attr('data-comment')),
                 changeHost:    (host.indexOf('${host}') > -1)       ? 1 : 0,
                 changeService: (service.indexOf('${service}') > -1) ? 1 : 0,
@@ -3439,7 +3436,7 @@ Planned = {
 
                 if (!Planned.plannedData.time) {
                     html+= '<tr>';
-                    html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes)</td>';
+                    html+= '<td style="font-size: 13px; white-space: nowrap;">Maintenance Time (minutes) <br /><small>Leave empty for permanent downtime</small></td>';
                     html+= '<td><input type="text" name="planned_time" id="planned_time" class="text ui-widget-content" style="width: 100%; font-size: 14px;"></td>';
                     html+= '</tr>';
                 }

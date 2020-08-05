@@ -168,7 +168,7 @@
             <input type="text" name="maintenance-service" id="maintenance-service" /><br />
             <label for="maintenance-status">Status Information</label><br />
             <input type="text" name="maintenance-status" id="maintenance-status" /><br />
-			<label for="maintenance-time">Downtime <small>(minutes)</small></label><br />
+			<label for="maintenance-time" style="line-height: 100%; margin: 10px 0 5px 0; display: inline-block;">Downtime <small>(minutes)</small><br /><small style="font-weight: normal;">Leave empty for permanent<br /> downtime</small></label><br />
 			<input type="text" name="maintenance-time" id="maintenance-time" /><br />
             <label for="maintenance-comment">Comment</label><br />
             <input type="text" name="maintenance-comment" id="maintenance-comment" /><br />
