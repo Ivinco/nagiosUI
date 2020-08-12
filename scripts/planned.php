@@ -125,7 +125,7 @@ class planned
 
             $sched = ($schComment) ? 1 : 0;
 
-            if ($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment']) {
+            if (($planned['type'] == 'new' && $this->returnRawComment($schComment) != $planned['comment'] || !$sched)) {
                 if ($downtimeId) {
                     foreach (explode(',', $downtimeId) as $downtime) {
                         $this->addToRemoveAlert($server, $downtime);

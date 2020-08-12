@@ -276,7 +276,9 @@ class reports
         });
 
         for ($i = 0; $i < 5; $i++) {
-            $list[$i] = $hosts[$i]['host'] . ":" . $hosts[$i]['incidents'];
+            if (isset($hosts[$i])) {
+                $list[$i] = $hosts[$i]['host'] . ":" . $hosts[$i]['incidents'];
+            }
         }
 
         $result .= "(total ". count($hosts) .") ";
