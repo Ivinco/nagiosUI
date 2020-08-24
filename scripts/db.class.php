@@ -271,11 +271,12 @@ class db
         $longest_warning     = $this->mysql->real_escape_string($stats['warningLongest']);
         $longest_unknown     = $this->mysql->real_escape_string($stats['unknownLongest']);
 
+        $date = date('Y-m-d H:i:s');
         $sql = "
             INSERT INTO 
                 {$this->stats}
             SET 
-                `logged`             = NOW(),
+                `logged`             = '{$date}',
                 `unhandled_critical` = {$unhandled_critical},
                 `unhandled_warning`  = {$unhandled_warning},
                 `unhandled_unknown`  = {$unhandled_unknown},
