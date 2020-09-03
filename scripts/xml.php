@@ -171,7 +171,7 @@ class xml
             $photo = "";
 
             if (isset($data['author'])) {
-                $usersList = $this->db->usersList($server);
+                $usersList = $this->db->returnUsersList();
                 $photo = (isset($usersList[$data['author']])) ? $usersList[$data['author']] : '';
                 $photo = ($photo) ? $photo : ((isset($usersList[$data['default']]) ? $usersList[$data['default']] : ''));
                 $photo = md5($photo);
@@ -310,7 +310,7 @@ class xml
     }
     private function prepareOtherData()
     {
-        $usersArray = $this->db->usersList($this->currentTab);
+        $usersArray = $this->db->returnUsersList();
 
         foreach ($this->hosts as $host => $services) {
             foreach ($services as $service => $attrs) {

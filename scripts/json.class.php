@@ -263,7 +263,7 @@ class json
                     if ($last['comment'] == 'temp') {
                         $return['ackComment'] = $last['comment'];
 
-                        $usersList = $this->db->usersList($tab);
+                        $usersList = $this->db->returnUsersList();
                         $photo = (isset($usersList[$last['author']])) ? $usersList[$last['author']] : '';
                         $photo = ($photo) ? $photo : ((isset($usersList['default']) ? $usersList['default'] : ''));
                         $return['quickAckAu'] = md5($photo);
@@ -334,7 +334,7 @@ class json
             'infoCritical'      => 0,
             'infoWarnings'      => 0,
             'total'             => count($this->returnJson),
-            'tabsList'          => $this->utils->getServerTabsListByUserServers($this->userServers),   
+            'tabsList'          => $this->utils->getServerTabsListByUserServers($this->userServers),
             'tabCurrent'        => $this->xml->getCurrentTab(),
             'timeZonesList'     => $this->utils->getTimeZonesList(),
             'comentUrl'         => $this->utils->getCommentUrlList(),
