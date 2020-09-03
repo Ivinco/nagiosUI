@@ -1,21 +1,18 @@
 <?php
-    $rev = exec('git rev-parse HEAD');
-
     if (!isset($_SESSION)) {
         session_start();
     }
 
+    $rev = exec('git rev-parse HEAD');
+
     include_once __DIR__ . '/../scripts/init.php';
 
     if (!isset($_SESSION['currentUser']) || !isset($_SESSION['currentAvatar']) || !$_SESSION['currentUser'] || !$_SESSION['currentAvatar'] || $_SESSION['currentAvatar'] == 'd41d8cd98f00b204e9800998ecf8427e') {
-        $db = new db;
-        $usersArray = $db->usersList('All');
-        $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
-        $user = (!$user) ? ((isset($_SERVER['REDIRECT_REMOTE_USER']) ? $_SERVER['REDIRECT_REMOTE_USER'] : '')) : $user;
-        $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
-
-        $_SESSION["currentUser"] = $user;
-        $_SESSION["currentAvatar"] = md5(strtolower(trim((isset($usersArray[$user]) ? $usersArray[$user] : ''))));
+        $utils = new utils;
+        $user  = $utils->returnUserNameAndEmail();
+        
+        $_SESSION["currentUser"] = $user[0];
+        $_SESSION["currentAvatar"] = md5(strtolower(trim($user[1])));
     }
 
     $userName   = $_SESSION["currentUser"];
@@ -127,6 +124,8 @@
             <label for="stats" id="stats-label">Stats</label>
             <input type="radio" id="emergencies" name="radio">
             <label for="emergencies" id="emergencies-label">Emergency</label>
+            <input type="radio" id="users" name="radio">
+            <label for="users" id="users-label">Users</label>
         </div>
     </form>
     <p style="clear: both; float: right; margin: 5px 5px 0 0;">
@@ -309,6 +308,8 @@ if (isset($_GET['emergency']) && trim($_GET['emergency'])) { ?>
                 History.init();
             } else if (getParameterByName('emergency')) {
                 Emergency.init();
+            } else if (getParameterByName('users')) {
+                Users.init();
             } else {
                 Search.init();
                 Grouping.init();

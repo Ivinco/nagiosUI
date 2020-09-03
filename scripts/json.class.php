@@ -4,8 +4,6 @@ class json
 {
     function __construct()
     {
-        $this->utils = new utils();
-
         global $infoRecordMark;
 
         $this->xml         = new xml;
@@ -20,7 +18,8 @@ class json
 
         $this->returnJson = [];
         $this->additional = [];
-        $this->user       = (isset($_SESSION["currentUser"]) && $_SESSION["currentUser"]) ? $_SESSION["currentUser"] : 'default';
+        $this->user       = (isset($_GET["current_user"]) && $_GET["current_user"]) ? $_GET["current_user"] : 'default';
+        $this->userServers = $this->utils->returnUserServers($this->user);
 
         $this->fullData = json_decode(json_encode(simplexml_load_string($this->xml->returnXml(false))),TRUE);
         $this->latestActions = $this->db->getLatestActions();
@@ -91,6 +90,10 @@ class json
             $schedPlanned    = true;
             $serviceOriginal = $service;
             $recheckValue    = $this->getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS);
+
+            if (!in_array($tab, $this->userServers)) {
+                continue;
+            }
 
             $lastCheck  = $this->utils->returnCorrectedDate($lastCheck, $tab);
             $ackComment = $this->returnCorrectedComments($ackComment, $tab);
@@ -331,7 +334,7 @@ class json
             'infoCritical'      => 0,
             'infoWarnings'      => 0,
             'total'             => count($this->returnJson),
-            'tabsList'          => $this->utils->getServerTabsList(),
+            'tabsList'          => $this->utils->getServerTabsListByUserServers($this->userServers),   
             'tabCurrent'        => $this->xml->getCurrentTab(),
             'timeZonesList'     => $this->utils->getTimeZonesList(),
             'comentUrl'         => $this->utils->getCommentUrlList(),

@@ -225,6 +225,10 @@ class actions
         foreach ($alerts as $key => $post) {
             $this->server = $post['tab'];
 
+            if ($this->server == 'All') {
+                continue;
+            }
+
             $data = ['down_id' => $post['down_id']];
 
             if (isset($post['host'])) {

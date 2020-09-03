@@ -122,7 +122,8 @@ class db
                 `email`  VARCHAR(255) NOT NULL,
                 `server` VARCHAR(255) NOT NULL,
                 `full_name`   VARCHAR(255) NOT NULL,
-                `full_access` TINYINT DEFAULT 0 NOT NULL
+                `full_access` TINYINT DEFAULT 0 NOT NULL,
+                `super_user` TINYINT DEFAULT 0 NOT NULL
             )
         ";
         if ($this->mysql->query($users_list) !== true) {
@@ -144,6 +145,14 @@ class db
                 `full_name` VARCHAR(255) NOT NULL;
         ";
         $this->mysql->query($users_list_alter1);
+
+        $users_list_alter2 = "
+            ALTER TABLE
+                {$this->users_list}
+            ADD
+                `super_user` TINYINT DEFAULT 0 NOT NULL;
+        ";
+        $this->mysql->query($users_list_alter2);
 
         $this->access_list = $this->database['prefix'] . "access_list";
         $access_list = "
@@ -828,7 +837,134 @@ class db
 
         return $list;
     }
+    public function returnUsersList() {
+        $return = [];
+        $list = $this->returnFullUsersList();
 
+        foreach ($list as $item) {
+            $return[$item['name']] = $item['email'];
+        }
+
+        return $return;
+    }
+    public function returnFullUsersList()
+    {
+        $list   = [];
+        $sql    = "SELECT * FROM `{$this->users_list}` ORDER BY `name`";
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $row['server'] = explode(',', $row['server']);
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+    public function saveUser($oldData, $newData, $superUser)
+    {
+        $newServer    = ($superUser) ? $newData['server']     : $oldData['server'];
+        $newSuperUser = ($superUser) ? $newData['super_user'] : $oldData['super_user'];
+
+        $newName      = $this->mysql->real_escape_string($newData['name']);
+        $newEmail     = $this->mysql->real_escape_string($newData['email']);
+        $newFullName  = $this->mysql->real_escape_string($newData['full_name']);
+        $newServer    = $this->mysql->real_escape_string($newServer);
+        $newSuperUser = $this->mysql->real_escape_string($newSuperUser);
+
+        $oldName      = $this->mysql->real_escape_string($oldData['name']);
+        $oldEmail     = $this->mysql->real_escape_string($oldData['email']);
+        $oldFullName  = $this->mysql->real_escape_string($oldData['full_name']);
+        $oldServer    = $this->mysql->real_escape_string($oldData['server']);
+        $oldSuperUser = $this->mysql->real_escape_string($oldData['super_user']);
+
+        if (!$newName || !$newEmail || !$newFullName) {
+            http_response_code(404);
+            die("Please fill: login, email, full name.");
+        }
+
+        $sql        = "
+            UPDATE
+                {$this->users_list}
+            SET 
+                `name`       = '{$newName}',
+                `email`      = '{$newEmail}',
+                `server`     = '{$newServer}',
+                `full_name`  = '{$newFullName}',
+                `super_user` = '{$newSuperUser}'
+            WHERE
+                    `name`       = '{$oldName}'
+                AND
+                    `email`      = '{$oldEmail}'
+                AND
+                    `server`     = '{$oldServer}'
+                AND
+                    `full_name`  = '{$oldFullName}'
+                AND
+                    `super_user` = '{$oldSuperUser}'
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            http_response_code(404);
+            die("Error saving data: " . $this->mysql->error);
+        }
+    }
+    public function deleteUser($oldData)
+    {
+        $oldName      = $this->mysql->real_escape_string($oldData['name']);
+        $oldEmail     = $this->mysql->real_escape_string($oldData['email']);
+        $oldFullName  = $this->mysql->real_escape_string($oldData['full_name']);
+        $oldServer    = $this->mysql->real_escape_string($oldData['server']);
+        $oldSuperUser = $this->mysql->real_escape_string($oldData['super_user']);
+
+        $sql = "
+            DELETE FROM
+                {$this->users_list}
+            WHERE
+                    `name`       = '{$oldName}'
+                AND
+                    `email`      = '{$oldEmail}'
+                AND
+                    `server`     = '{$oldServer}'
+                AND
+                    `full_name`  = '{$oldFullName}'
+                AND
+                    `super_user` = '{$oldSuperUser}'
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            http_response_code(404);
+            die("Error saving data: " . $this->mysql->error);
+        }
+    }
+    public function insertUser($newData)
+    {
+        $newName      = $this->mysql->real_escape_string($newData['name']);
+        $newEmail     = $this->mysql->real_escape_string($newData['email']);
+        $newFullName  = $this->mysql->real_escape_string($newData['full_name']);
+        $newServer    = $this->mysql->real_escape_string($newData['server']);
+        $newSuperUser = $this->mysql->real_escape_string($newData['super_user']);
+
+        if (!$newName || !$newEmail || !$newFullName) {
+            http_response_code(404);
+            die("Please fill: login, email, full name.");
+        }
+
+        $sql = "
+            INSERT INTO 
+                {$this->users_list}
+            SET 
+                `name`       = '{$newName}',
+                `email`      = '{$newEmail}',
+                `server`     = '{$newServer}',
+                `full_name`  = '{$newFullName}',
+                `super_user` = '{$newSuperUser}'
+        ";
+
+        if ($this->mysql->query($sql) !== true) {
+            http_response_code(404);
+            die("Error saving data: " . $this->mysql->error);
+        }
+    }
     public function usersListStatsPage() {
         $sql = "SELECT * FROM `{$this->users_list}`";
 

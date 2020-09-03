@@ -757,3 +757,20 @@ table.dataTable thead .no-border-th {
     display: block;
     margin: 10px 0 0 0;
 }
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout:fixed;
+    display: table;
+}
+.users-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+.users-table input, .users-table select, .users-table checkbox {
+    outline: none;
+}
+.users-table input {
+    border-width: 1px;
+}

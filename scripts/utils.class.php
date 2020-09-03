@@ -17,6 +17,8 @@ class utils
         global $memcachePort;
         global $memcacheName;
 
+        $this->db = new db;
+
         $this->memcacheEnabled = $memcacheEnabled;
         $this->memcacheHost    = $memcacheHost;
         $this->memcachePort    = $memcachePort;
@@ -135,6 +137,18 @@ class utils
         sort($this->timeZonesList);
     }
 
+    public function getServerTabsListByUserServers($userServers)
+    {
+        $list = ['All'];
+
+        foreach ($this->serverTabsList as $server) {
+            if (in_array($server, $userServers)) {
+                $list[] = $server;
+            }
+        }
+
+        return $list;
+    }
     public function getServerTabsList()
     {
         return $this->serverTabsList;
@@ -202,4 +216,57 @@ class utils
         return $server;
     }
 
+    public function returnUserNameAndEmail()
+    {
+        $usersArray = $this->db->returnUsersList();
+        $user = (isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : '');
+        $user = (!$user) ? ((isset($_SERVER['REDIRECT_REMOTE_USER']) ? $_SERVER['REDIRECT_REMOTE_USER'] : '')) : $user;
+
+        if ($user && !array_key_exists($user, $usersArray)) {
+            $this->db->insertUser([
+                'name'       => $user,
+                'email'      => $user,
+                'full_name'  => $user,
+                'server'     => '',
+                'super_user' => '0', 
+            ]);
+
+            $usersArray = $this->db->returnUsersList();
+        }
+
+        $user = ($user && array_key_exists($user, $usersArray)) ? $user : 'default';
+
+        return [$user, $usersArray[$user]];
+    }
+    private function returnAllUsersServers()
+    {
+        $usersList  = [];
+        $usersArray = $this->db->returnFullUsersList();
+
+        foreach ($usersArray as $item) {
+            $name = $item['name'];
+
+            if (!isset($usersList[$name])) {
+                $usersList[$name] = [];
+            }
+
+            foreach ($item['server'] as $server) {
+                if (!in_array($server, $usersList[$name])) {
+                    $usersList[$name][] = $server;
+                }
+            }
+        }
+
+        return $usersList;
+    }
+    public function returnUserServers($user)
+    {
+        $usersList = $this->returnAllUsersServers();
+
+        if (isset($usersList[$user])) {
+            return $usersList[$user];
+        }
+
+        return [];
+    }
 }

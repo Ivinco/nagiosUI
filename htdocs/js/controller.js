@@ -166,12 +166,12 @@ Search.changeNagiosComment = function(comment) {
 
     return replacedText;
 }
-Search.allDataTable       = (getParameterByName('emergency') || getParameterByName('t') || getParameterByName('stats')) ? false : $('#mainTable').DataTable({
+Search.allDataTable       = (getParameterByName('emergency') || getParameterByName('t') || getParameterByName('stats') || getParameterByName('users')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
         'ajax': {
-            url: 'json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue'),
+            url: 'json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue'),
             dataFilter: function(data){
                 var tabsArray = ['normal', 'acked', 'sched'];
 
@@ -1862,7 +1862,7 @@ Search.infoRowCounter = function() {
 Search.getNewData = function() {
     Search.stopReloads();
     Search.startedGetData = true;
-    Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+    Search.allDataTable.ajax.url('json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
         Search.resetAgo();
         Planned.getPlanned();
         Planned.showHidePlanned();
@@ -2027,7 +2027,7 @@ Search.init = function() {
 
 		Search.allDataTable.order(Search.orderBy[Search.currentTab]);
 
-		Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+		Search.allDataTable.ajax.url('json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
 			Search.resetAgo();
 			Planned.showHidePlanned();
 		}).order(Search.orderBy[Search.currentTab]);
@@ -2039,7 +2039,7 @@ Search.init = function() {
             localStorage.setItem('searchValue', val);
             Search.stopReloads();
 
-            Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
+            Search.allDataTable.ajax.url('json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
                 Search.resetAgo();
                 Planned.showHidePlanned();
 
@@ -2678,6 +2678,9 @@ Search.init = function() {
     });
     $('#emergencies').on('click', function() {
         window.location = window.location.href.split('?')[0] + "?emergency=1";
+    });
+    $('#users').on('click', function() {
+        window.location = window.location.href.split('?')[0] + "?users=1";
     });
 }
 
@@ -4222,7 +4225,7 @@ Grouping = {
                 localStorage.setItem('currentGroup', data.item.value);
                 Search.currentGroup = localStorage.getItem('currentGroup');
 
-                Search.allDataTable.ajax.url('json_new.php?time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
+                Search.allDataTable.ajax.url('json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function() {
                     Search.resetAgo();
                     Planned.showHidePlanned();
                 }).order(Search.orderBy[Search.currentTab]);
@@ -4425,6 +4428,9 @@ History = {
         });
         $('#emergencies').on('click', function() {
             window.location = window.location.href.split('?')[0] + "?emergency=1";
+        });
+        $('#users').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?users=1";
         });
 
         $(document).on('click', '.ui-datepicker-close', function() {
@@ -4969,6 +4975,9 @@ Stats = {
         });
         $('#emergencies').on('click', function() {
             window.location = window.location.href.split('?')[0] + "?emergency=1";
+        });
+        $('#users').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?users=1";
         });
         $('#filterStats').on('click', function() {
             Stats.selectedUsers = $('#usersFilter').val();
@@ -5626,6 +5635,9 @@ Emergency = {
         $('#history').on('click', function() {
             window.location = window.location.href.split('?')[0] + "?t=1";
         });
+        $('#users').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?users=1";
+        });
         $(document).on('change', '.emergencies-per-page-select', function() {
             Emergency.limit = $(this).find(":selected").val();
             Emergency.page  = 1;
@@ -5925,6 +5937,255 @@ Emergency = {
     goTo: function() {
         window.location.href = '//' + location.host + location.pathname + '?emergency=1&id=' + Emergency.id + '&limit=' + Emergency.limit + '&page=' + Emergency.page + '&from=' + Emergency.from + '&to=' + Emergency.to + '&tz=' + Emergency.timeZone + '&diff=' + moment().utcOffset();
     }
+};
+Users = {
+    usersList: [],
+    init: function() {
+        this.drawButtons();
+        this.getUsersList();
+
+        $('#alerts').on('click', function() {
+            window.location = window.location.href.split('?')[0];
+        });
+        $('#history').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?t=1";
+        });
+        $('#emergencies').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?emergency=1";
+        });
+        $('#stats').on('click', function() {
+            window.location = window.location.href.split('?')[0] + "?stats=1";
+        });
+
+        $(document).on('click', '[name=save_user]', function() {
+            Users.saveUser($(this).closest('tr'));
+        });
+
+        $(document).on('click', '[name=delete_user]', function() {
+            Users.deleteUser($(this).closest('tr'));
+        });
+
+        $(document).on('click', '[name=add_new_user]', function() {
+            Users.addNewUser();
+        });
+    },
+    validateSaveUser: function(row) {
+        $('[name=name], [name=email], [name=full_name], [name=servers]').css('border-color', '');
+
+        var error = [];
+
+        if (!row.find('[name=name]').val().trim()) {
+            error.push(" Please enter 'login'.");
+            row.find('[name=name]').css('border-color', 'red');
+        }
+
+        if (!row.find('[name=email]').val().trim()) {
+            error.push(" Please enter 'email'.");
+            row.find('[name=email]').css('border-color', 'red');
+        }
+
+        if (!row.find('[name=full_name]').val().trim()) {
+            error.push(" Please enter 'full name'.");
+            row.find('[name=full_name]').css('border-color', 'red');
+        }
+
+        if (row.find('[name=servers]').length > 0 && !row.find('[name=servers]').val()) {
+            error.push(" Please select at least one 'server'.");
+            row.find('[name=servers]').css('border-color', 'red');
+        }
+
+        if (error.length) {
+            alert(error.join("\n"));
+            return false;
+        }
+
+        return true;
+    },
+    addNewUser: function() {
+        if (Users.isAdminUser()) {
+            html = '';
+            html += '<tr data-name="" data-email=""  data-full_name=""  data-server=""  data-super_user="" data-type="new">';
+            html += '<td valign="top"><input type="text" name="name" value="" /></td>';
+            html += '<td valign="top"><input type="text" name="email" value="" /></td>';
+            html += '<td valign="top"><input type="text" name="full_name" value="" /></td>';
+            html += '<td valign="top">';
+            html += '<select name="servers" multiple style="width: 200px;">';
+            $(Users.serversList).each(function (keyServer, server) {
+                html += '<option value="'+ server +'">'+ server +'</option>';
+            });
+            html += '</select>';
+            html += '</td>';
+            html += '<td valign="top" align="center"><input type="checkbox" name="super_user"></td>';
+            html += '<td valign="top" align="center"><input type="button" name="save_user" value="save" /></td>';
+            html += '<td valign="top"></td>';
+            html += '</tr>';
+
+            $('#historyContent tr:first-child').after(html);
+        }
+    },
+    saveUser: function(row) {
+        if (Users.validateSaveUser(row)) {
+            if (confirm("Are you shure you want to save?")) {
+                var action  = (row.attr('data-type') == 'new') ? 'insert' : 'save';
+                var oldData = {
+                    'name':       row.attr('data-name'),
+                    'email':      row.attr('data-email'),
+                    'full_name':  row.attr('data-full_name'),
+                    'server':     row.attr('data-server'),
+                    'super_user': row.attr('data-super_user'),
+                };
+                var newData = {
+                    'name':       encodeURIComponent(row.find('[name=name]').val()),
+                    'email':      encodeURIComponent(row.find('[name=email]').val()),
+                    'full_name':  encodeURIComponent(row.find('[name=full_name]').val()),
+                    'server':     (row.find('[name=servers]').length > 0)    ? encodeURIComponent(row.find('[name=servers]').val().join(','))    : row.attr('data-server'),
+                    'super_user': (row.find('[name=super_user]').length > 0) ? encodeURIComponent((row.find('[name=super_user]').is(":checked")) ? 1 :0 ) : row.attr('data-super_user'),
+                };
+
+                $.ajax({
+                    url:    'users.php?action='+ action +'-user&user=' + $('#userName').text(),
+                    method: 'POST',
+                    data:   { oldData: oldData, newData: newData },
+                })
+                    .fail(function(jqXHR) {
+                        alert(jqXHR.responseText);
+                    })
+                    .done(function() {
+                        Users.getUsersList();
+                    });
+            }
+        }
+    },
+    deleteUser: function(row) {
+        if (confirm("Are you shure you want to delete?")) {
+            var oldData = {
+                'name':       row.attr('data-name'),
+                'email':      row.attr('data-email'),
+                'full_name':  row.attr('data-full_name'),
+                'server':     row.attr('data-server'),
+                'super_user': row.attr('data-super_user'),
+            };
+
+            $.ajax({
+                url:    'users.php?action=delete-user&user=' + $('#userName').text(),
+                method: 'POST',
+                data:   { oldData: oldData },
+            })
+                .fail(function(jqXHR) {
+                    console.log(jqXHR);
+                    alert(jqXHR.responseText);
+                })
+                .done(function() {
+                    Users.getUsersList();
+                });
+        }
+    },
+    drawButtons: function() {
+        $('#tabsSelect').html('<option value="'+ Search.currentServerTab +'" selected="selected">Server: '+ Search.currentServerTab +'</option>');
+        $('#tabsSelect').selectmenu({ disabled: true });
+
+        $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
+        $('#grouping').selectmenu({ disabled: true });
+
+        $('#users').prop('checked', true);
+        $('#timeZoneBlock, #radio, #EMERGENCY, #EMERGENCY-label, #hosts, #hosts-label, #planned, #planned-label, #radio .xs-hide, .historyHeading table.historyInput').hide();
+        $('#radio-switch').buttonset();
+
+        $('#loading, #mainTable').hide();
+        $('#updatedAgo').closest('p').hide();
+        $('#server-errors').hide();
+        $('#infoHolder, #historyContent').show();
+        $('#historyContent').html('');
+    },
+    getUsersList: function() {
+        $('#historyContent').html('');
+        $.ajax({
+            type:    'GET',
+            url:     'users.php',
+            data:    {'user': $('#userName').text()},
+            success: function(data){
+                Users.usersList   = data.users;
+                Users.serversList = data.servers;
+
+                Users.setServersList();
+                Users.drawUsersTable();
+            }
+        });
+    },
+    setServersList: function() {
+        $(Users.usersList).each(function (key, value) {
+            $(value['server']).each(function (keyServer, server) {
+                if (Users.serversList.indexOf(server) === -1) {
+                    Users.serversList.push(server);
+                }
+            });
+        });
+
+        Users.serversList.sort();
+    },
+    isAdminUser: function() {
+        if (Users.usersList.length && "admin_user" in Users.usersList[0]) {
+            return true;
+        }
+
+        return false;
+    },
+    drawUsersTable: function() {
+        var addNewUser = (Users.isAdminUser()) ? '<input type="button" name="add_new_user" value="add new user" style="float: right;" />' : '';
+        var html = '<h4 style="padding-top: 20px;">Users list '+ addNewUser +'</h4>';
+
+        html += '<table cellpadding="4" cellspacing="0" border="1" class="users-table">';
+        html += '<tr>';
+        html += '<th>login</th>';
+        html += '<th>email</th>';
+        html += '<th>full name</th>';
+        html += '<th>servers</th>';
+        html += '<th>super user</th>';
+        html += '<th></th>';
+        html += '<th></th>';
+        html += '</tr>';
+
+        $(Users.usersList).each(function (key, value) {
+            html += '<tr data-name="'+ encodeURIComponent(value['name']) +'" data-email="'+ encodeURIComponent(value['email']) +'"  data-full_name="'+ encodeURIComponent(value['full_name']) +'"  data-server="'+ encodeURIComponent(value['server'].join(",")) +'"  data-super_user="'+ encodeURIComponent(value['super_user']) +'" data-type="old">';
+            html += '<td valign="top"><input type="text" name="name" value="'+ value['name'] +'" /></td>';
+            html += '<td valign="top"><input type="text" name="email" value="'+ value['email'] +'" /></td>';
+            html += '<td valign="top"><input type="text" name="full_name" value="'+ value['full_name'] +'" /></td>';
+
+            if ("admin_user" in value) {
+                html += '<td valign="top">';
+
+                html += '<select name="servers" multiple style="width: 200px;">';
+                $(Users.serversList).each(function (keyServer, server) {
+                    var selected = (value['server'].indexOf(server) !== -1) ? 'selected="selected"' : '';
+
+                    html += '<option value="'+ server +'" '+ selected +'>'+ server +'</option>';
+                });
+                html += '</select>';
+
+                html += '</td>';
+
+                var checked = (value['super_user'] == '1') ? 'checked="checked"' : '';
+                html += '<td valign="top" align="center"><input type="checkbox" name="super_user" '+ checked +'></td>';
+            } else {
+                html += '<td valign="top">'+ value['server'].join(", ") +'</td>';
+                html += '<td valign="top" align="center">'+ ((value['super_user'] == '1') ? 'yes' : 'no') +'</td>';
+            }
+
+            html += '<td valign="top" align="center"><input type="button" name="save_user" value="save" /></td>';
+
+            if ("admin_user" in value) {
+                html += '<td valign="top" align="center"><input type="button" name="delete_user" value="delete" /></td>';
+            } else {
+                html += '<td valign="top"></td>';
+            }
+
+            html += '</tr>';
+        });
+
+        html += '</table>';
+
+        $('#historyContent').html(html);
+    },
 };
 
 Number.prototype.padLeft = function(base,chr){
