@@ -7,6 +7,8 @@ class stats
     private $calendar;
     private $timeZone;
     private $usersShifts = [];
+    private $emergencies = [];
+    private $emergenciesList = [];
     private $summaryReportName = 'Summary report';
     private $nobodysReportName = 'Nobody\'s shift';
 
@@ -18,6 +20,7 @@ class stats
         $this->db          = new db;
         $this->serversList = $serversList;
         $this->usersList   = $this->db->usersListStatsPage();
+        $this->usersList   = $this->clearUsersList();
         $this->server      = (isset($_GET['server']) && $_GET['server']) ? $_GET['server'] : '';
         $this->list        = (isset($_GET['list'])   && $_GET['list'])   ? $_GET['list']   : '';
         $this->servers     = $this->setServers($this->server, $this->serversList);
@@ -30,6 +33,20 @@ class stats
         }
     }
 
+    private function clearUsersList()
+    {
+        $return = [];
+
+        foreach ($this->usersList as $server => $data) {
+            if (!in_array($server, array_keys($this->serversList)) || !$server) {
+                continue;
+            }
+
+            $return[$server] = $data;
+        }
+
+        return $return;
+    }
     public function returnTabsList()
     {
         $servers = array_keys($this->serversList);
@@ -195,6 +212,7 @@ class stats
                             'unknown_count'    => 0,
                             'info_count'       => 0,
                             'emergency_count'  => 0,
+                            'emergency_calls'  => 0,
                             'unhandled_time'   => 0,
                             'quick_acked_time' => 0,
                             'reaction_time'    => 0,
@@ -246,6 +264,7 @@ class stats
                     'unknown_count'    => 0,
                     'info_count'       => 0,
                     'emergency_count'  => 0,
+                    'emergency_calls'  => 0,
                     'unhandled_time'   => 0,
                     'quick_acked_time' => 0,
                     'reaction_time'    => 0,
@@ -256,6 +275,9 @@ class stats
                     'worked_on_shift_list' => [],
                 ];
             }
+
+            $stats[$user][$server]['emergency_count'] += $this->getEmergencyCount($from, $to);
+            $stats[$user][$server]['emergency_calls'] += $this->getEmergencyCalls($from, $to);
 
             foreach ($data as $check_id => $dataList) {
                 $alerts    = [];
@@ -430,6 +452,34 @@ class stats
             }
         }
     }
+    private function getEmergencyCount($from, $to)
+    {
+        $emergencies = 0;
+
+        foreach ($this->emergenciesList as $emergency) {
+            $date = strtotime($emergency['logged']);
+
+            if ($date >= $from && $date <= $to) {
+                $emergencies++;
+            }
+        }
+
+        return $emergencies;
+    }
+    private function getEmergencyCalls($from, $to)
+    {
+        $emergencies = 0;
+
+        foreach ($this->emergenciesList as $emergency) {
+            $date = strtotime($emergency['logged']);
+
+            if ($date >= $from && $date <= $to && strpos($emergency['history'], 'call') !== false) {
+                $emergencies++;
+            }
+        }
+
+        return $emergencies;
+    }
     private function calculateByCheckId($stats, $alerts, $from, $to, $server, $saveUsersData, $user)
     {
         $lastTs          = null;
@@ -437,7 +487,6 @@ class stats
         $quickAckStarted = null;
         $alertStarted    = null;
         $alertStates     = [];
-        $emergencyAlert  = 0;
 
         foreach ($alerts as $alert) {
             $ts       = $alert['ts'];
@@ -455,12 +504,6 @@ class stats
 
                 continue;
             }
-
-            if ($alertStarted && !$emergencyAlert && strpos($alert['host'] . " " . $alert['service'] . " " . $alert['output'], 'EMERGENCY') !== false) {
-                $stats['emergency_count']++;
-                $emergencyAlert++;
-            }
-
 
             if ($severity == 'unhandled' && $state != 'ok') {
                 $this->setUsersAlerts($server, $saveUsersData, $alert, $user);
@@ -554,6 +597,7 @@ class stats
                 'unknown_count'    => 0,
                 'info_count'       => 0,
                 'emergency_count'  => 0,
+                'emergency_calls'  => 0,
                 'unhandled_time'   => 0,
                 'quick_acked_time' => 0,
                 'reaction_time'    => 0,
@@ -563,6 +607,8 @@ class stats
                 'worked_total_list'    => [],
                 'worked_on_shift_list' => [],
             ];
+
+            $emergency = true;
 
             foreach ($stats as $server => $stat) {
                 $result['alerts_count']     += $stat['alerts_count'];
@@ -574,7 +620,13 @@ class stats
                 $result['quick_acked_time'] += $stat['quick_acked_time'];
                 $result['reaction_time']    += $stat['reaction_time'];
                 $result['reaction_alerts']  += $stat['reaction_alerts'];
-                $result['emergency_count']  += $stat['emergency_count'];
+
+                if ($emergency) {
+                    $result['emergency_count']  += $stat['emergency_count'];
+                    $result['emergency_calls']  += $stat['emergency_calls'];
+
+                    $emergency = false;
+                }
 
                 if (isset($stat['worked_total_list'])) {
                     foreach ($stat['worked_total_list'] as $check_id => $alert) {
@@ -684,8 +736,18 @@ class stats
         $from = $this->returnDateForDb($this->from);
         $to   = $this->returnDateForDb($this->to);
         $this->history = $this->db->historyGetUnfinishedAlertsWithPeriod($from, $to);
+        $this->emergencies = $this->db->getEmergenciesList(1000, 0, $from, $to);
 
+        $this->clearEmergencies();
         $this->groupByCheckId();
+    }
+    private function clearEmergencies()
+    {
+        foreach ($this->emergencies as $emergency) {
+            if ($emergency['host'] != 'emergency line') {
+                $this->emergenciesList[] = $emergency;
+            }
+        }
     }
     private function groupByCheckId() {
         $results = [];

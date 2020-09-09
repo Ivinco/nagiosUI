@@ -4955,6 +4955,10 @@ Stats = {
     groupByService: 0,
     groupByHost: 0,
     alerDaysList: [],
+    alertDetails: [],
+    alertsOrder: 'host',
+    alertsShift: 'worked_on_shift_list',
+    alertsDialogs: [],
     statsData: null,
     lastPeriod: null,
     tz: null,
@@ -5041,26 +5045,59 @@ Stats = {
             }
         });
 
-        $(document).on('click', '.get-alert-days', function() {
+        $(document).on('click', '#get-alert-days', function() {
             if (Object.keys(Stats.alerDaysList).length) {
+                Stats.drawAlertDaysTable();
+
                 return;
             }
 
-            $('.alert-days-block').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
+            $('.historyText').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
+            
+            $('#get-alert-days, #filterStats').prop("disabled", true).css('cursor', 'default').css('opacity', '0.7');
 
             $.ajax({
                 type:    'GET',
                 url:     'stats.php?lastyear=1',
                 success: function(data){
                     Stats.alerDaysList = data;
+                    $('#get-alert-days, #filterStats').prop("disabled", false).css('cursor', 'pointer').css('opacity', '1');
                     Stats.drawAlertDaysTable();
                 }
             });
         });
+
+        $(document).on('click', '.change-order', function() {
+            Stats.alertsOrder = $(this).attr('data-order');
+            Stats.drawStatsHtml();
+        });
+
+        if (Stats.alertsShift == 'worked_on_shift_list') {
+            $('.during_shifts input').prop('checked', true);
+        }
+
+        $(document).on('click', '.during_shifts, .during_shifts input', function() {
+            if (Stats.alertsShift == 'worked_on_shift_list') {
+                $('.during_shifts input').prop('checked', false);
+                Stats.alertsShift = 'worked_total_list';
+            } else {
+                $('.during_shifts input').prop('checked', true);
+                Stats.alertsShift = 'worked_on_shift_list';
+            }
+
+            Stats.drawStatsHtml();
+        });
+
+        $(document).on('click', '.open-dialog', function() {
+            $('#' + $(this).attr('data-id')).dialog('open');
+            console.log($(this).attr('data-id'));
+        });
     },
+    alertsOrder: 'host',
     drawAlertDaysTable: function() {
-        var html = '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px;">';
-        html += '<tr><th>Date</th><th>alert-days</th></tr>';
+        var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">Yearly report</h4>';
+        html += '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px; margin: 20px auto;">';
+        html += '<tr><th>Date</th><th>Unhandled alerts time</th></tr>';
 
         for (var date in Stats.alerDaysList) {
             var unhandled_time   = 0;
@@ -5075,12 +5112,19 @@ Stats = {
                 }
             }
 
-            html += '<tr><td>'+ date +'</td><td align="right">'+ Stats.getAlertDays(unhandled_time, quick_acked_time) +'</td></tr>';
+            var date  = date.split(' ');
+            var month = date[1];
+            var year  = date[0];
+
+            month = parseInt(month) - 1;
+            month = moment().month(month).format('MMM');
+
+            html += '<tr><td>'+ month + ' ' + year +'</td><td align="right">'+ Stats.getAlertDaysHours(unhandled_time, quick_acked_time) +'</td></tr>';
         }
 
         html += '</table>';
 
-        $('.alert-days-block').html(html);
+        $('.historyText').html(html);
     },
     redrawAlerts: function() {
         $(document).find('.show-alert-details').each(function (key, value) {
@@ -5268,41 +5312,173 @@ Stats = {
             }
         });
     },
+    prepareAlertsData: function() {
+        var type = Stats.alertsShift;
+        Stats.alertDetails = [];
+
+        $(Stats.selectedUsers).each(function (userKey, user) {
+            Stats.alertDetails[user] = [];
+
+            var services = [];
+            for (var key in Stats.statsData[user][Search.currentServerTab][type]) {
+                var item = Stats.statsData[user][Search.currentServerTab][type][key];
+
+                if (typeof services[item.service] === "undefined" ) {
+                    services[item.service] = { 'hosts': [] };
+                }
+
+                if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
+                    services[item.service]['hosts'].push(item.host);
+                }
+            }
+
+            var alerts = [];
+            for (var service in services) {
+                var more  = [];
+                var hosts = services[service]['hosts'];
+                hosts.sort();
+
+                if (Stats.alertsOrder == '-host') {
+                    hosts.reverse();
+                }
+
+                if (hosts.length > 2) {
+                    more = hosts;
+                    hosts = hosts.length + ' different hosts (details)';
+                } else {
+                    hosts = hosts.join(', ');
+                }
+
+                alerts.push({
+                    'service': service,
+                    'hosts':   hosts,
+                    'more':    more,
+                });
+            }
+
+            if (Stats.alertsOrder == 'host') {
+                alerts.sort((a, b) => (a.hosts > b.hosts) ? 1 : -1);
+            }
+            if (Stats.alertsOrder == '-host') {
+                alerts.sort((a, b) => (a.hosts < b.hosts) ? 1 : -1);
+            }
+            if (Stats.alertsOrder == 'service') {
+                alerts.sort((a, b) => (a.service > b.service) ? 1 : -1);
+            }
+            if (Stats.alertsOrder == '-service') {
+                alerts.sort((a, b) => (a.service < b.service) ? 1 : -1);
+            }
+
+            Stats.alertDetails[user] = alerts;
+        });
+    },
+    drawAlertDetails: function(user) {
+        var html = '';
+
+        if (Stats.alertDetails[user].length) {
+            var hostOrder = 'host';
+            var hostArrow = '&#8597;'
+
+            if (Stats.alertsOrder == 'host') {
+                hostOrder = '-host';
+                hostArrow = '&uarr;'
+            }
+            if (Stats.alertsOrder == '-host') {
+                hostOrder = 'host';
+                hostArrow = '&darr;'
+            }
+
+            var serviceOrder = 'service';
+            var serviceArrow = '&#8597;'
+
+            if (Stats.alertsOrder == 'service') {
+                serviceOrder = '-service';
+                serviceArrow = '&darr;'
+            }
+            if (Stats.alertsOrder == '-service') {
+                serviceOrder = 'service';
+                serviceArrow = '&darr;'
+            }
+
+            html += '<table cellpadding="4" cellspacing="0" border="0" class="alert-details-table">';
+            html += '<tr>';
+            html += '<th>Host <span class="change-order" data-order="'+ hostOrder +'">'+ hostArrow +'</span></th>';
+            html += '<th>Service <span class="change-order" data-order="'+ serviceOrder +'">'+ serviceArrow +'</span></th>';
+            html += '<th>How it was handled</th>';
+            html += '</tr>';
+
+            Stats.destroyAlertDialogs();
+            Stats.alertsDialogs = [];
+            for (var key in Stats.alertDetails[user]) {
+                var item = Stats.alertDetails[user][key];
+                var host = '';
+
+                if (item.more.length) {
+                    host += '<span data-id="dialog-'+ key +'" style="cursor: pointer;" class="open-dialog">'+ item.hosts +'</span>';
+                    host += '<div id="dialog-'+ key +'" title="Full hosts list for '+ item.service +'">';
+                    host += item.more.join("<br />");
+                    host += '</div>';
+
+                    Stats.alertsDialogs.push("dialog-"+ key);
+                } else {
+                    host += item.hosts;
+                }
+
+                html += '<tr>';
+                html += '<td>'+ host +'</td>';
+                html += '<td>'+ item.service +'</td>';
+                html += '<td>&nbsp;</td>';
+                html += '</tr>';
+            }
+
+            html += '</table>';
+        }
+
+        return html;
+    },
+    destroyAlertDialogs: function() {
+        for (var key in Stats.alertsDialogs) {
+            var item = Stats.alertsDialogs[key];
+
+            $('#'+ item).dialog('destroy');
+        }
+    },
+    drawAlertsDialogs: function() {
+        for (var key in Stats.alertsDialogs) {
+            var item = Stats.alertsDialogs[key];
+
+            $('#'+ item).dialog({
+                autoOpen: false,
+                modal: true,
+                position: { my: "center center", at: "center top+200"},
+                closeOnEscape: true,
+                width: 400,
+                buttons: [
+                    {
+                        text: 'OK',
+                        click: function() { $(this).dialog('close'); },
+                    }
+                ]
+            });
+        }
+    },
     drawStatsHtml: function() {
         $('.historyText').html('');
+        Stats.prepareAlertsData();
 
-        var html = '<h4>Stats for period: '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +' ('+ Stats.tz +'). ('+ Stats.selectedUsers.join(', ') +')</h4>';
+        var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">'+ Stats.selectedUsers.join(', ') +' - '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +'</h4>';
         html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
 
-        html += '<h4>Stats table';
-        html += '<form style="display: inline-block; float: right;">';
-        html += '<div id="grouping-alerts-switch" style="margin-left: 30px;">Group by: ';
-        html += '<input type="radio" id="grouping-alerts-by-host" name="radio">';
-        html += '<label for="grouping-alerts-by-host" id="grouping-alerts-by-host-label">host</label>';
-        html += '<input type="radio" id="grouping-alerts-by-service" name="radio">';
-        html += '<label for="grouping-alerts-by-service" id="grouping-alerts-by-service-label">service</label>';
-        html += '<input type="radio" id="grouping-alerts-no-grouping" checked="checked" name="radio">';
-        html += '<label for="grouping-alerts-no-grouping" id="grouping-alerts-no-grouping-label">no grouping</label>';
-        html += '</div>';
-        html += '</form>';
-
-        html += '</h4>';
-        html += '<table cellpadding="4" cellspacing="0" border="1" style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout:fixed; display: table;">';
-        html += '<tr>';
-        html += '<th style="width: 400px;"></th>';
-        html += '<th style="width: calc(50vw - 230px);">worked on shift</th>';
-        html += '<th style="width: calc(50vw - 230px);">worked total</th>';
-        html += '</tr>';
-
         $(Stats.selectedUsers).each(function (key, value) {
-            html += '<tr>';
-            html += '<td valign="top">';
-            html += '<strong>'+ value +' ('+ Search.currentServerTab +')</strong>';
+            if (Stats.selectedUsers.length > 1) {
+                html += '<p><strong>'+ value +' ('+ Search.currentServerTab +')</strong></p>';
+            }
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
                 html += '<ul>';
-                html += '<li>alert days: '+ Stats.getAlertDays(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
+                html += '<li>Total unhandled alerts time: '+ Stats.getAlertDaysHours(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
                 html += '<li># of emergencies: '+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</li>';
+                html += '<li># of emergencies escalated to calls: '+ Stats.statsData[value][Search.currentServerTab]['emergency_calls'] +'</li>';
 
                 if (value == 'Summary report') {
                     for (var name in Stats.statsData[value][Search.currentServerTab]['additional']){
@@ -5315,31 +5491,47 @@ Stats = {
                 html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
                 html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
                 html += '</ul>';
-            }
-
-            html += '</td>';
-
-            if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
-                if (value != 'Summary report' && value != 'Nobody\'s shift') {
-                    html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_on_shift'] +'<span class="show-alert-details" data-type="shift" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
-                    html += '<td align="right" valign="top">'+ Stats.statsData[value][Search.currentServerTab]['worked_total'] +'<span class="show-alert-details" data-type="total" data-user="'+ value +'" title="show details" style="cursor:pointer; font-weight: bold;"> [+]</span><span class="alert-details"></span></td>';
-                } else {
-                    html += '<td align="right"></td>';
-                    html += '<td align="right"></td>';
-                }
             } else {
-                html += '<td colspan="2"><b>No stats</b></td>';
+                html += '<ul>';
+                html += '<li>No stats.</li>';
+                html += '</ul>';
             }
 
-            html += '</tr>';
-        });
+            if (value != 'Summary report' && value != 'Nobody\'s shift') {
+                html += Stats.drawAlertDetails(value);
+            }
 
-        html += '</table>';
+            html += "<hr />";
+        });
 
         $('.historyText').html(html);
         $('#grouping-alerts-switch').buttonset();
 
         Stats.drawChart();
+        Stats.drawAlertsDialogs();
+    },
+    getAlertDaysHours: function(unhandled_time, quick_acked_time) {
+        var seconds = unhandled_time - quick_acked_time;
+        var result  = '';
+
+        seconds     = parseInt(seconds, 10);
+        var days    = Math.floor(seconds / (60 * 60 * 24));
+        seconds    -= days * 60 * 60 * 24;
+        var hours   = Math.floor(seconds / 3600);
+
+        if (days) {
+            result += days + 'd ';
+        }
+
+        if (hours) {
+            result += hours + 'h ';
+        }
+
+        if (!result) {
+            result = 0;
+        }
+
+        return result;
     },
     getAlertDays: function(unhandled_time, quick_acked_time) {
         return Math.floor((unhandled_time - quick_acked_time) / 60 / 60 / 24);
@@ -5387,11 +5579,12 @@ Stats = {
 
         let StatsChartConfig = {
             type: 'bar',
-            title: { text: 'Statistic by user (alerts count during shift)', fontSize: 20 },
             legend: { draggable: false },
             scaleX: {
                 labels: cfg.users
             },
+            plotarea:{ marginTopOffset: '0px' },
+            chart: { "margin-top": 10, "margin-bottom": 40 },
             plot: {
                 animation: { effect: 'ANIMATION_EXPAND_BOTTOM', method: 'ANIMATION_STRONG_EASE_OUT', sequence: 'ANIMATION_BY_NODE',  speed: 275 },
                 tooltip: { text: "%kl <br>%v %t", padding: "10%", 'border-radius': "5px" }
@@ -5409,6 +5602,7 @@ Stats = {
         zingchart.render({
             id: 'statsChart',
             data: StatsChartConfig,
+            height: '300px',
         });
     },
     returnDayHour: function(seconds) {
@@ -5478,11 +5672,11 @@ Stats = {
                     $('#tabs select option[value="'+ Search.currentServerTab +'"]').attr('selected', 'selected');
                     $('#tabsSelect').selectmenu('refresh');
 
-                    if (Stats.statsData) {
+                    if ($('.historyText h4:first-child').text() == 'Yearly report') {
+                        Stats.drawAlertDaysTable();
+                    } else if (Stats.statsData) {
                         $('#filterStats').trigger( "click" );
                     }
-                    
-                    Stats.drawAlertDaysTable();
                 }
             }
         });

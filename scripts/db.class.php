@@ -972,6 +972,23 @@ class db
 
         $list = ['All' => []];
         while ($row = $result->fetch_assoc()){
+            $servers = explode(',', $row['server']);
+
+            $list['All'][$row['name']] = $row['full_name'];
+
+            foreach ($servers as $server) {
+                if (!isset($list[$server])) {
+                    $list[$server] = [];
+                }
+
+                $list[$server][$row['name']] = $row['full_name'];
+            }
+        }
+
+        return $list;
+
+        $list = ['All' => []];
+        while ($row = $result->fetch_assoc()){
             if (!isset($list[$row['server']])) {
                 $list[$row['server']] = [];
             }

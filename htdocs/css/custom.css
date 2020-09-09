@@ -774,3 +774,35 @@ table.dataTable thead .no-border-th {
 .users-table input {
     border-width: 1px;
 }
+
+#statsChart-license-text {
+    display: none;
+}
+
+.alert-details-table {
+    width: calc(100% - 10px);
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout:fixed;
+    display: table;
+}
+.alert-details-table th {
+    color: #fff;
+    background: #000;
+    text-align: left;
+    border-left: 1px solid #fff;
+}
+.alert-details-table th span {
+    float: right;
+    cursor: pointer;
+}
+.alert-details-table th, .alert-details-table td {
+    width: 33%;
+}
+.alert-details-table td {
+    border-bottom: 1px solid #000;
+    border-left: 1px solid #fff;
+}
+.alert-details-table tr:nth-child(even) {
+    background: #e0e0e0;
+}

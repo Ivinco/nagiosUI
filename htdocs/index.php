@@ -230,7 +230,7 @@
     </div>
 </div>
 <div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px; clear: both;">
-    <div class="historyHeading" style="border-bottom: 1px solid #c5c5c5; margin: 0 0 15px 0; padding: 20px 0 10px 0;">
+    <div class="historyHeading" style="margin: 0 0 0 0; padding: 20px 0 0 0;">
         <table class="historyInput" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <td>Date: </td>
@@ -239,35 +239,30 @@
         </table>
         <table class="statsInput" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
             <tr>
-                <td valign="top" width="400">
-                    <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
-                        <tr>
-                            <td valign="top">
-                                <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td valign="top">
-                                <select id="calendar_switch"></select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td valign="top" style="padding: 12px 0; font-size: 13px;">
-                                From: <input type="text" name="stats_from_date" id="stats_from_date" class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
-                                To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td valign="top"><input type="button" value="show" name="filterStats" id="filterStats"></td>
-                        </tr>
-                    </table>
+                <td valign="top" style="width: 220px !important;">
+                    <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
                 </td>
-                <td style="width: 300px;" valign="top">
-                    <div style="float:right;">
-                        <h4 class="get-alert-days" style="cursor: pointer;"><br />Get alert days for last year. <br /><small>(It can take some time)</small></h4>
-                        <div class="alert-days-block" style="padding-bottom: 30px;"></div>
-                    </div>
+                <td valign="top" style="width: 220px !important;">
+                    <input type="button" value="Show yearly report" name="get-alert-days" id="get-alert-days" style="color: #fff; background-color: #007bff; border-color: #007bff; font-size: 16px; padding: 3px 8px; border-radius: 3px; cursor: pointer;" />
                 </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td valign="top" colspan="3">
+                    <select id="calendar_switch"></select>
+                </td>
+            </tr>
+            <tr>
+                <td valign="top" colspan="2" style="padding: 12px 0; font-size: 13px;">
+                    From: <input type="text" name="stats_from_date" id="stats_from_date" class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                    To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
+                </td>
+                <td valign="top">
+                    <label style="padding-top: 11px; display: block; font-size: 14px; cursor: pointer;" class="during_shifts"><input type="checkbox" name="during_shifts" /> Show only alerts handled during shifts</label>
+                </td>
+            </tr>
+            <tr>
+                <td valign="top" colspan="3"><input type="button" value="show" name="filterStats" id="filterStats"></td>
             </tr>
         </table>
     </div>
