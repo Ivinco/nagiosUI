@@ -422,7 +422,10 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
                 $('#radio-switch').buttonset();
                 $('#radio').buttonset();
                 Search.addDialog();
-                Search.startReloads();
+
+                if (globalReload) {
+                    Search.startReloads();
+                }
             }
             Search.filterDataTable();
         }
@@ -465,7 +468,9 @@ Search.getContent = function() {
                 Search.allDataTable.ajax.reload();
                 Search.startedGetData = true;
                 setTimeout(function () {
-                    Search.startReloads();
+                    if (globalReload) {
+                        Search.startReloads();
+                    }
                 }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
             },
             error: function() {
@@ -473,7 +478,9 @@ Search.getContent = function() {
                     location.reload();
                 } else {
                     setTimeout(function () {
-                        Search.startReloads();
+                        if (globalReload) {
+                            Search.startReloads();
+                        }
                     }, 3000);
                 }
             },
@@ -1902,7 +1909,7 @@ Search.addToAgo = function() {
 	Search.lastUpdateAgo++;
 	$('#updatedAgo').text(Search.lastUpdateAgo);
 
-	if (Search.lastUpdateAgo > 300) {
+	if (Search.lastUpdateAgo > 300 && globalReload) {
         Search.stopReloads();
 		Search.lastUpdateAgo = 0;
 		Search.startReloads();
