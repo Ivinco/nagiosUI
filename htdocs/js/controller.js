@@ -5342,7 +5342,7 @@ Stats = {
                     hosts.reverse();
                 }
 
-                if (hosts.length > 2) {
+                if (hosts.length > 5) {
                     more = hosts;
                     hosts = hosts.length + ' different hosts (details)';
                 } else {
