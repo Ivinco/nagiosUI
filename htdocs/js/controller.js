@@ -5327,15 +5327,17 @@ Stats = {
             Stats.alertDetails[user] = [];
 
             var services = [];
-            for (var key in Stats.statsData[user][Search.currentServerTab][type]) {
-                var item = Stats.statsData[user][Search.currentServerTab][type][key];
+            if (typeof Stats.statsData[user] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab] !== "undefined" && typeof Stats.statsData[user][Search.currentServerTab][type] !== "undefined") {
+                for (var key in Stats.statsData[user][Search.currentServerTab][type]) {
+                    var item = Stats.statsData[user][Search.currentServerTab][type][key];
 
-                if (typeof services[item.service] === "undefined" ) {
-                    services[item.service] = { 'hosts': [] };
-                }
+                    if (typeof services[item.service] === "undefined" ) {
+                        services[item.service] = { 'hosts': [] };
+                    }
 
-                if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
-                    services[item.service]['hosts'].push(item.host);
+                    if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
+                        services[item.service]['hosts'].push(item.host);
+                    }
                 }
             }
 

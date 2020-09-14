@@ -801,7 +801,16 @@ table.dataTable thead .no-border-th {
 }
 .alert-details-table td {
     border-bottom: 1px solid #000;
-    border-left: 1px solid #fff;
+    border-left: 1px solid #000;
+}
+.alert-details-table td:last-child {
+    border-right: 1px solid #000;
+}
+.alert-details-table th:first-child {
+    border-left: 1px solid #000;
+}
+.alert-details-table th:last-child {
+    border-right: 1px solid #000;
 }
 .alert-details-table tr:nth-child(even) {
     background: #e0e0e0;
