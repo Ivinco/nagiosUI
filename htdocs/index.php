@@ -258,7 +258,7 @@
                     To:   <input type="text" name="stats_to_date"   id="stats_to_date"   class="text" style="font-size: 13px; outline: none; width: 150px;" autocomplete="off">
                 </td>
                 <td valign="top">
-                    <label style="padding-top: 11px; display: block; font-size: 14px; cursor: pointer;" class="during_shifts"><input type="checkbox" name="during_shifts" /> Show only alerts handled during shifts</label>
+                    <input type="checkbox" name="during_shifts" class="during_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="during_shifts">Show only alerts handled during shifts</label>
                 </td>
             </tr>
             <tr>

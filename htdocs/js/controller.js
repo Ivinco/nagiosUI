@@ -5080,15 +5080,15 @@ Stats = {
         });
 
         if (Stats.alertsShift == 'worked_on_shift_list') {
-            $('.during_shifts input').prop('checked', true);
+            $('.during_shift').prop('checked', true);
         }
 
-        $(document).on('click', '.during_shifts, .during_shifts input', function() {
+        $(document).on('click', '.during_shifts, .during_shift', function() {
             if (Stats.alertsShift == 'worked_on_shift_list') {
-                $('.during_shifts input').prop('checked', false);
+                $('.during_shift').prop('checked', false);
                 Stats.alertsShift = 'worked_total_list';
             } else {
-                $('.during_shifts input').prop('checked', true);
+                $('.during_shift').prop('checked', true);
                 Stats.alertsShift = 'worked_on_shift_list';
             }
 
@@ -5097,7 +5097,6 @@ Stats = {
 
         $(document).on('click', '.open-dialog', function() {
             $('#' + $(this).attr('data-id')).dialog('open');
-            console.log($(this).attr('data-id'));
         });
     },
     alertsOrder: 'host',
@@ -5509,8 +5508,6 @@ Stats = {
             if (value != 'Summary report' && value != 'Nobody\'s shift') {
                 html += Stats.drawAlertDetails(value);
             }
-
-            html += "<hr />";
         });
 
         $('.historyText').html(html);
