@@ -1925,7 +1925,6 @@ Search.startAgo = function() {
 	$('#updatedTimestamp').text(moment().format('YYYY-MM-DD HH:mm:ss'));
 	Search.agoInterval = setInterval(function(){ Search.addToAgo(); }, 1000);
 }
-selectTimer = null;
 
 Search.changeWhatWeChangeObject = function(data) {
     Search.whatWeChangeObject.push(data);
@@ -1963,38 +1962,25 @@ Search.getCounts = function() {
     });
 }
 
-function checkSelectedText() {
-	clearTimeout(selectTimer);
-
-	var selection = getSelectedText();
-
-	if (!selection) {
-		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
-	} else {
-		Search.stopReloads();
-	}
-}
-
 Search.init = function() {
     Search.startedGetData = true;
 	Search.startAgo();
     setTimeout(function(){ Search.getCounts(); }, 3000);
     setTimeout(function(){ Search.getServerErrors(); }, 1000);
 
-	$(document).mousedown(function() {
-		selectTimer = setTimeout(function(){ checkSelectedText() }, 100);
+    $(document).mousedown(function(event) {
+        if (event.which == 1) {
+            Search.stopReloads();
+        }
     });
 
-	$(document).click(function() {
-		var selection = getSelectedText();
-
-		if (selection && (Search.backgroundReload || Search.autoRefresh)) {
-			Search.stopReloads();
-		} else if (!selection && !Search.backgroundReload && !Search.autoRefresh && !$('.ui-widget-overlay').length) {
-			Search.startReloads();
-		}
-
-		clearTimeout(selectTimer);
+    $(document).dblclick(function() {
+        Search.startReloads();
+    });
+    $(document).click(function() {
+        if (!getSelectedText()) {
+            Search.startReloads();
+        }
     });
 
 	$(document).on('change', '.select-comment select', function() {
