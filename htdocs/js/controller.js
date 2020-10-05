@@ -1968,7 +1968,7 @@ Search.init = function() {
     setTimeout(function(){ Search.getCounts(); }, 3000);
     setTimeout(function(){ Search.getServerErrors(); }, 1000);
 
-    $(document).mousedown(function(event) {
+    /*$(document).mousedown(function(event) {
         if (event.which == 1) {
             Search.stopReloads();
         }
@@ -1981,7 +1981,7 @@ Search.init = function() {
         if (!getSelectedText()) {
             Search.startReloads();
         }
-    });
+    });*/
 
 	$(document).on('change', '.select-comment select', function() {
 		$(this).closest('td').find('.write-comment input').val($(this).val()).focus();
@@ -4951,6 +4951,7 @@ Stats = {
     alertDetails: [],
     alertsOrder: 'host',
     alertsShift: 'worked_on_shift_list',
+    longAlertsShift: false,
     alertsDialogs: [],
     statsData: null,
     lastPeriod: null,
@@ -5076,6 +5077,18 @@ Stats = {
             } else {
                 $('.during_shift').prop('checked', true);
                 Stats.alertsShift = 'worked_on_shift_list';
+            }
+
+            Stats.drawStatsHtml();
+        });
+
+        $(document).on('click', '.long_alerts_shift, .long_alerts_shifts', function() {
+            if (Stats.longAlertsShift) {
+                Stats.longAlertsShift = false;
+                $('.long_alerts_shift').prop('checked', false);
+            } else {
+                Stats.longAlertsShift = true;
+                $('.long_alerts_shift').prop('checked', true);
             }
 
             Stats.drawStatsHtml();
@@ -5312,16 +5325,29 @@ Stats = {
             Stats.alertDetails[user] = [];
 
             var services = [];
-            if (typeof Stats.statsData[user] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab] !== "undefined" && typeof Stats.statsData[user][Search.currentServerTab][type] !== "undefined") {
-                for (var key in Stats.statsData[user][Search.currentServerTab][type]) {
-                    var item = Stats.statsData[user][Search.currentServerTab][type][key];
 
-                    if (typeof services[item.service] === "undefined" ) {
-                        services[item.service] = { 'hosts': [] };
-                    }
+            if (typeof Stats.statsData[user] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab] !== "undefined") {
+                var alertsList = null;
 
-                    if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
-                        services[item.service]['hosts'].push(item.host);
+                if (!Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab]['long'] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab]['long'][type] !== "undefined") {
+                    alertsList = Stats.statsData[user][Search.currentServerTab]['long'][type];
+                }
+
+                if (Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab][type] !== "undefined") {
+                    alertsList = Stats.statsData[user][Search.currentServerTab][type];
+                }
+
+                if (alertsList) {
+                    for (var key in alertsList) {
+                        var item = alertsList[key];
+
+                        if (typeof services[item.service] === "undefined" ) {
+                            services[item.service] = { 'hosts': [] };
+                        }
+
+                        if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
+                            services[item.service]['hosts'].push(item.host);
+                        }
                     }
                 }
             }
@@ -5401,8 +5427,6 @@ Stats = {
             html += '<th>How it was handled</th>';
             html += '</tr>';
 
-            Stats.destroyAlertDialogs();
-            Stats.alertsDialogs = [];
             for (var key in Stats.alertDetails[user]) {
                 var item = Stats.alertDetails[user][key];
                 var host = '';
@@ -5418,11 +5442,13 @@ Stats = {
                     host += item.hosts;
                 }
 
-                html += '<tr>';
-                html += '<td>'+ host +'</td>';
-                html += '<td>'+ item.service +'</td>';
-                html += '<td>&nbsp;</td>';
-                html += '</tr>';
+                if (host) {
+                    html += '<tr>';
+                    html += '<td>'+ host +'</td>';
+                    html += '<td>'+ item.service +'</td>';
+                    html += '<td>&nbsp;</td>';
+                    html += '</tr>';
+                }
             }
 
             html += '</table>';
@@ -5441,6 +5467,7 @@ Stats = {
         for (var key in Stats.alertsDialogs) {
             var item = Stats.alertsDialogs[key];
 
+            console.log($('#'+ item));
             $('#'+ item).dialog({
                 autoOpen: false,
                 modal: true,
@@ -5460,6 +5487,13 @@ Stats = {
         $('.historyText').html('');
         Stats.prepareAlertsData();
 
+        if (!Stats.selectedUsers || !Stats.selectedUsers.length) {
+            return;
+        }
+
+        Stats.destroyAlertDialogs();
+        Stats.alertsDialogs = [];
+        
         var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">'+ Stats.selectedUsers.join(', ') +' - '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +'</h4>';
         html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
 
@@ -5469,21 +5503,26 @@ Stats = {
             }
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
-                html += '<ul>';
-                html += '<li>Total unhandled alerts time: '+ Stats.getAlertDaysHours(Stats.statsData[value][Search.currentServerTab]['unhandled_time'], Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
-                html += '<li># of emergencies: '+ Stats.statsData[value][Search.currentServerTab]['emergency_count'] +'</li>';
-                html += '<li># of emergencies escalated to calls: '+ Stats.statsData[value][Search.currentServerTab]['emergency_calls'] +'</li>';
+                var userData = (!Stats.longAlertsShift) ? Stats.statsData[value][Search.currentServerTab]['long'] : Stats.statsData[value][Search.currentServerTab];
 
-                if (value == 'Summary report') {
-                    for (var name in Stats.statsData[value][Search.currentServerTab]['additional']){
-                        html += '<li>'+ name +': '+ Stats.statsData[value][Search.currentServerTab]['additional'][name] +'</li>';
+                html += '<ul>';
+                html += '<li>Total unhandled alerts time: '+ Stats.getAlertDaysHours(userData['unhandled_time'], userData['quick_acked_time']) +'</li>';
+
+                if (Stats.longAlertsShift) {
+                    html += '<li># of emergencies: '+ userData['emergency_count'] +'</li>';
+                    html += '<li># of emergencies escalated to calls: '+ userData['emergency_calls'] +'</li>';
+
+                    if (value == 'Summary report') {
+                        for (var name in userData['additional']){
+                            html += '<li>'+ name +': '+ userData['additional'][name] +'</li>';
+                        }
                     }
                 }
 
-                html += '<li>number of alerts: '+ Stats.statsData[value][Search.currentServerTab]['alerts_count'] +'</li>';
-                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['unhandled_time']) +'</li>';
-                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['quick_acked_time']) +'</li>';
-                html += '<li>reaction time (avg): '+ Stats.returnDayHour(Stats.statsData[value][Search.currentServerTab]['reaction_avg']) +'</li>';
+                html += '<li>number of alerts: '+ userData['alerts_count'] +'</li>';
+                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(userData['unhandled_time']) +'</li>';
+                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(userData['quick_acked_time']) +'</li>';
+                html += '<li>reaction time (avg): '+ Stats.returnDayHour(userData['reaction_avg']) +'</li>';
                 html += '</ul>';
             } else {
                 html += '<ul>';
@@ -5541,19 +5580,28 @@ Stats = {
 
         $(Stats.selectedUsers).each(function (key, value) {
             result.users.push(value.split(" ").join("\n"));
+            var alertData = null;
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
+                if (Stats.longAlertsShift) {
+                    alertData = Stats.statsData[value][Search.currentServerTab];
+                } else if ('long' in Stats.statsData[value][Search.currentServerTab]) {
+                    alertData = Stats.statsData[value][Search.currentServerTab]['long'];
+                }
+            }
+
+            if (alertData) {
                 result.all.push(
-                    Stats.statsData[value][Search.currentServerTab]['warning_count'] +
-                    Stats.statsData[value][Search.currentServerTab]['critical_count'] +
-                    Stats.statsData[value][Search.currentServerTab]['unknown_count'] +
-                    Stats.statsData[value][Search.currentServerTab]['info_count']
+                    alertData['warning_count'] +
+                    alertData['critical_count'] +
+                    alertData['unknown_count'] +
+                    alertData['info_count']
                 );
-                result.warning.push(Stats.statsData[value][Search.currentServerTab]['warning_count']);
-                result.critical.push(Stats.statsData[value][Search.currentServerTab]['critical_count']);
-                result.unknown.push(Stats.statsData[value][Search.currentServerTab]['unknown_count']);
-                result.info.push(Stats.statsData[value][Search.currentServerTab]['info_count']);
-                result.emergency.push(Stats.statsData[value][Search.currentServerTab]['emergency_count']);
+                result.warning.push(alertData['warning_count']);
+                result.critical.push(alertData['critical_count']);
+                result.unknown.push(alertData['unknown_count']);
+                result.info.push(alertData['info_count']);
+                result.emergency.push(alertData['emergency_count']);
             } else {
                 result.warning.push(0);
                 result.critical.push(0);
@@ -6374,7 +6422,7 @@ Users = {
     },
 };
 
-Number.prototype.padLeft = function(base,chr){
-    var  len = (String(base || 10).length - String(this).length)+1;
-    return len > 0? new Array(len).join(chr || '0')+this : this;
+Number.prototype.padLeft = function(base,chr) {
+    var len = (String(base || 10).length - String(this).length) + 1;
+    return len > 0 ? new Array(len).join(chr || '0') + this : this;
 }

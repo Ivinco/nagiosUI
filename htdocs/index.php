@@ -245,10 +245,10 @@
                 <td valign="top" style="width: 220px !important;">
                     <input type="button" value="Show yearly report" name="get-alert-days" id="get-alert-days" style="color: #fff; background-color: #007bff; border-color: #007bff; font-size: 16px; padding: 3px 8px; border-radius: 3px; cursor: pointer;" />
                 </td>
-                <td></td>
+                <td colspan="2"></td>
             </tr>
             <tr>
-                <td valign="top" colspan="3">
+                <td valign="top" colspan="4">
                     <select id="calendar_switch"></select>
                 </td>
             </tr>
@@ -260,9 +260,12 @@
                 <td valign="top">
                     <input type="checkbox" name="during_shifts" class="during_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="during_shifts">Show only alerts handled during shifts</label>
                 </td>
+                <td valign="top">
+                    <input type="checkbox" name="long_alerts_shifts" class="long_alerts_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="long_alerts_shifts">Show alerts that were acked/quick acked for less than 5 mins</label>
+                </td>
             </tr>
             <tr>
-                <td valign="top" colspan="3"><input type="button" value="show" name="filterStats" id="filterStats"></td>
+                <td valign="top" colspan="4"><input type="button" value="show" name="filterStats" id="filterStats"></td>
             </tr>
         </table>
     </div>

@@ -199,7 +199,7 @@ class stats
     {
         foreach ($this->usersAlerts[$this->summaryReportName] as $server => $serverData) {
             foreach ($serverData as $name => $nameData) {
-                if ($name != $this->summaryReportName) {
+                if ($name != $this->summaryReportName && $name != 'long') {
                     if (!isset($this->results[$name]) ) {
                         $this->results[$name] = [];
                     }
@@ -222,6 +222,8 @@ class stats
                             'worked_total_list'    => [],
                             'worked_on_shift_list' => [],
                         ];
+
+                        $this->results[$name][$server]['long'] = $this->results[$name][$server];
                     }
                 }
             }
@@ -235,15 +237,32 @@ class stats
                         $this->results[$name][$server]['worked_on_shift_list'] = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
                         $this->results[$name][$server]['worked_total_list']    = $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName];
                     }
+
+                    if (isset($this->usersAlerts[$this->summaryReportName][$server]['long'])) {
+                        $this->results[$name][$server]['long']['worked_total']         = count($this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName]);
+                        $this->results[$name][$server]['long']['worked_on_shift']      = count($this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName]);
+                        $this->results[$name][$server]['long']['worked_on_shift_list'] = $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName];
+                        $this->results[$name][$server]['long']['worked_total_list']    = $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName];
+                    }
                 } else {
                     if (isset($this->usersAlerts[$this->summaryReportName][$server][$name])) {
                         $this->results[$name][$server]['worked_total']      = count($this->usersAlerts[$this->summaryReportName][$server][$name]);
                         $this->results[$name][$server]['worked_total_list'] = $this->usersAlerts[$this->summaryReportName][$server][$name];
                     }
 
+                    if (isset($this->usersAlerts[$this->summaryReportName][$server][$name]['long'])) {
+                        $this->results[$name][$server]['long']['worked_total']      = count($this->usersAlerts[$this->summaryReportName][$server][$name]['long']);
+                        $this->results[$name][$server]['long']['worked_total_list'] = $this->usersAlerts[$this->summaryReportName][$server][$name]['long'];
+                    }
+
                     if (isset($this->usersAlerts[$name][$server])) {
                         $this->results[$name][$server]['worked_on_shift']      = count($this->usersAlerts[$name][$server]);
                         $this->results[$name][$server]['worked_on_shift_list'] = $this->usersAlerts[$name][$server];
+                    }
+
+                    if (isset($this->usersAlerts[$name][$server]['long'])) {
+                        $this->results[$name][$server]['long']['worked_on_shift']      = count($this->usersAlerts[$name][$server]['long']);
+                        $this->results[$name][$server]['long']['worked_on_shift_list'] = $this->usersAlerts[$name][$server]['long'];
                     }
                 }
             }
@@ -274,6 +293,8 @@ class stats
                     'worked_total_list'    => [],
                     'worked_on_shift_list' => [],
                 ];
+
+                $stats[$user][$server]['long'] = $stats[$user][$server];
             }
 
             $stats[$user][$server]['emergency_count'] += $this->getEmergencyCount($from, $to);
@@ -376,7 +397,7 @@ class stats
 
         return '';
     }
-    private function setUsersAlerts($server, $saveUsersData, $alert, $user)
+    private function setUsersAlerts($server, $saveUsersData, $alert, $user, $long = false)
     {
         if (!$saveUsersData) {
             if ($alert['user']) {
@@ -395,16 +416,34 @@ class stats
                         $this->usersAlerts[$full_name][$server] = [];
                     }
 
-                    if (!isset($this->usersAlerts[$full_name][$server][$alert['check_id']])) {
-                        $this->usersAlerts[$full_name][$server][$alert['check_id']] = [
-                            'host'    => $alert['host'],
-                            'service' => $alert['service'],
-                            'comment' => [],
-                        ];
+                    if (!isset($this->usersAlerts[$full_name][$server]['long'])) {
+                        $this->usersAlerts[$full_name][$server]['long'] = [];
                     }
 
-                    if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'])) {
-                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'][] = $alert['comment'];
+                    if ($long) {
+                        if (!isset($this->usersAlerts[$full_name][$server]['long'][$alert['check_id']])) {
+                            $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']] = [
+                                'host'    => $alert['host'],
+                                'service' => $alert['service'],
+                                'comment' => [],
+                            ];
+                        }
+
+                        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'])) {
+                            $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'][] = $alert['comment'];
+                        }
+                    } else {
+                        if (!isset($this->usersAlerts[$full_name][$server][$alert['check_id']])) {
+                            $this->usersAlerts[$full_name][$server][$alert['check_id']] = [
+                                'host'    => $alert['host'],
+                                'service' => $alert['service'],
+                                'comment' => [],
+                            ];
+                        }
+
+                        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'])) {
+                            $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'][] = $alert['comment'];
+                        }
                     }
                 }
             }
@@ -420,16 +459,34 @@ class stats
             $this->usersAlerts[$this->summaryReportName][$server] = [$this->summaryReportName => []];
         }
 
-        if (!isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']])) {
-            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']] = [
-                'host'    => $alert['host'],
-                'service' => $alert['service'],
-                'comment' => [],
-            ];
+        if (!isset($this->usersAlerts[$this->summaryReportName][$server]['long'])) {
+            $this->usersAlerts[$this->summaryReportName][$server]['long'] = [$this->summaryReportName => []];
         }
 
-        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'])) {
-            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
+        if ($long) {
+            if (!isset($this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']])) {
+                $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']] = [
+                    'host'    => $alert['host'],
+                    'service' => $alert['service'],
+                    'comment' => [],
+                ];
+            }
+
+            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'])) {
+                $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
+            }
+        } else {
+            if (!isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']])) {
+                $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']] = [
+                    'host'    => $alert['host'],
+                    'service' => $alert['service'],
+                    'comment' => [],
+                ];
+            }
+
+            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'])) {
+                $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
+            }
         }
 
         if ($alert['user']) {
@@ -439,16 +496,34 @@ class stats
                 $this->usersAlerts[$this->summaryReportName][$server][$full_name] = [];
             }
 
-            if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']])) {
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']] = [
-                    'host'    => $alert['host'],
-                    'service' => $alert['service'],
-                    'comment' => [],
-                ];
+            if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'])) {
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'] = [];
             }
 
-            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'])) {
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'][] = $alert['comment'];
+            if ($long) {
+                if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']])) {
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']] = [
+                        'host'    => $alert['host'],
+                        'service' => $alert['service'],
+                        'comment' => [],
+                    ];
+                }
+
+                if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'])) {
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'][] = $alert['comment'];
+                }
+            } else {
+                if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']])) {
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']] = [
+                        'host'    => $alert['host'],
+                        'service' => $alert['service'],
+                        'comment' => [],
+                    ];
+                }
+
+                if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'])) {
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'][] = $alert['comment'];
+                }
             }
         }
     }
@@ -480,8 +555,113 @@ class stats
 
         return $emergencies;
     }
+    private function calculateByCheckIdLongAlerts($stats, $alerts, $from, $to, $server, $saveUsersData, $user)
+    {
+        $lastTs          = null;
+        $lastQuickAckTs  = null;
+        $quickAckStarted = null;
+        $alertStarted    = null;
+        $alertStates     = [];
+        $lastState       = null;
+        $lastAlert       = null;
+
+        foreach ($alerts as $alert) {
+            $ts        = $alert['ts'];
+            $ts        = ($ts > $to)   ? $to   : $ts;
+            $ts        = ($ts < $from) ? $from : $ts;
+            $severity  = $alert['severity'];
+            $state     = $alert['state'];
+            $lastState = $state;
+            $lastAlert = $alert;
+
+            if ($alert['info']) {
+                return $stats;
+            }
+
+            if ($severity == 'unhandled' && $state != 'ok') {
+                $alertStarted = true;
+                $lastTs = $ts;
+            }
+
+            if ($severity == 'quick_acked' && !$alertStarted) {
+                $alertStarted = true;
+                $lastTs = $ts;
+                $lastQuickAckTs = $ts;
+                $quickAckStarted = true;
+            }
+
+            if ($severity == 'quick_acked') {
+                if ($alertStarted) {
+                    $alertStarted = false;
+                }
+
+                $lastQuickAckTs = $ts;
+                $quickAckStarted = true;
+            }
+
+            if (    $state == 'ok'
+                 || $severity == 'planned_downtime'
+                 || (in_array($severity, ['acked', 'sched']) && !$quickAckStarted)
+                 || (in_array($severity, ['acked', 'sched']) && $quickAckStarted && ($ts - $lastQuickAckTs) < 300)
+            ) {
+                $alertStarted = false;
+                $lastTs = null;
+                $lastQuickAckTs = null;
+                $quickAckStarted = false;
+            }
+
+            if (in_array($severity, ['acked', 'sched']) && $quickAckStarted && ($ts - $lastQuickAckTs) >= 300) {
+                $stats['unhandled_time'] += ($ts - $lastTs);
+                $stats['quick_acked_time'] += ($ts - $lastQuickAckTs);
+                $stats['reaction_time'] += ($ts - $lastTs);
+                $stats['reaction_alerts']++;
+
+                $this->setUsersAlerts($server, $saveUsersData, $alert, $user, true);
+                if (in_array($lastState, ['warning', 'critical', 'unknown'])) {
+                    $alertStates[] = $lastState;
+                }
+            }
+
+            if ($state == 'ok' || in_array($severity, ['acked', 'sched', 'planned_downtime'])) {
+                $alertStarted = false;
+                $lastTs = null;
+                $lastQuickAckTs = null;
+                $quickAckStarted = false;
+            }
+        }
+
+        if ($lastTs && $quickAckStarted && $lastAlert && $lastQuickAckTs && ($lastTs - $lastQuickAckTs) >= 300) {
+            $stats['unhandled_time'] += ($lastTs - $lastTs);
+            $stats['quick_acked_time'] += ($lastTs - $lastQuickAckTs);
+            $stats['reaction_time'] += ($lastTs - $lastTs);
+            $stats['reaction_alerts']++;
+
+            $this->setUsersAlerts($server, $saveUsersData, $lastAlert, $user, true);
+            if (in_array($lastState, ['warning', 'critical', 'unknown'])) {
+                $alertStates[] = $lastState;
+            }
+        }
+
+        $alertStates = array_unique($alertStates);
+        $stats['alerts_count'] += count($alertStates);
+
+        if (in_array('warning', $alertStates)) {
+            $stats['warning_count'] ++;
+        }
+
+        if (in_array('critical', $alertStates)) {
+            $stats['critical_count'] ++;
+        }
+
+        if (in_array('unknown', $alertStates)) {
+            $stats['unknown_count'] ++;
+        }
+
+        return $stats;
+    }
     private function calculateByCheckId($stats, $alerts, $from, $to, $server, $saveUsersData, $user)
     {
+        $stats['long']   = $this->calculateByCheckIdLongAlerts($stats['long'], $alerts, $from, $to, $server, $saveUsersData, $user);
         $lastTs          = null;
         $lastQuickAckTs  = null;
         $quickAckStarted = null;
@@ -590,65 +770,75 @@ class stats
     private function calculateAllData()
     {
         foreach ($this->results as $name => $stats) {
-            $result = [
-                'alerts_count'     => 0,
-                'warning_count'    => 0,
-                'critical_count'   => 0,
-                'unknown_count'    => 0,
-                'info_count'       => 0,
-                'emergency_count'  => 0,
-                'emergency_calls'  => 0,
-                'unhandled_time'   => 0,
-                'quick_acked_time' => 0,
-                'reaction_time'    => 0,
-                'reaction_alerts'  => 0,
-                'worked_total'     => 0,
-                'worked_on_shift'  => 0,
-                'worked_total_list'    => [],
-                'worked_on_shift_list' => [],
-            ];
+            foreach (['normal', 'long'] as $type) {
+                $result = [
+                    'alerts_count'     => 0,
+                    'warning_count'    => 0,
+                    'critical_count'   => 0,
+                    'unknown_count'    => 0,
+                    'info_count'       => 0,
+                    'emergency_count'  => 0,
+                    'emergency_calls'  => 0,
+                    'unhandled_time'   => 0,
+                    'quick_acked_time' => 0,
+                    'reaction_time'    => 0,
+                    'reaction_alerts'  => 0,
+                    'worked_total'     => 0,
+                    'worked_on_shift'  => 0,
+                    'worked_total_list'    => [],
+                    'worked_on_shift_list' => [],
+                ];
 
-            $emergency = true;
+                $emergency = true;
 
-            foreach ($stats as $server => $stat) {
-                $result['alerts_count']     += $stat['alerts_count'];
-                $result['warning_count']    += $stat['warning_count'];
-                $result['critical_count']   += $stat['critical_count'];
-                $result['unknown_count']    += $stat['unknown_count'];
-                $result['info_count']       += $stat['info_count'];
-                $result['unhandled_time']   += $stat['unhandled_time'];
-                $result['quick_acked_time'] += $stat['quick_acked_time'];
-                $result['reaction_time']    += $stat['reaction_time'];
-                $result['reaction_alerts']  += $stat['reaction_alerts'];
+                foreach ($stats as $server => $stat) {
+                    if ($type == 'long') {
+                        $stat = $stat['long'];
+                    }
 
-                if ($emergency) {
-                    $result['emergency_count']  += $stat['emergency_count'];
-                    $result['emergency_calls']  += $stat['emergency_calls'];
+                    $result['alerts_count']     += $stat['alerts_count'];
+                    $result['warning_count']    += $stat['warning_count'];
+                    $result['critical_count']   += $stat['critical_count'];
+                    $result['unknown_count']    += $stat['unknown_count'];
+                    $result['info_count']       += $stat['info_count'];
+                    $result['unhandled_time']   += $stat['unhandled_time'];
+                    $result['quick_acked_time'] += $stat['quick_acked_time'];
+                    $result['reaction_time']    += $stat['reaction_time'];
+                    $result['reaction_alerts']  += $stat['reaction_alerts'];
 
-                    $emergency = false;
-                }
+                    if ($emergency) {
+                        $result['emergency_count']  += $stat['emergency_count'];
+                        $result['emergency_calls']  += $stat['emergency_calls'];
 
-                if (isset($stat['worked_total_list'])) {
-                    foreach ($stat['worked_total_list'] as $check_id => $alert) {
-                        if (!isset($result['worked_total_list'][$check_id])) {
-                            $result['worked_total_list'][$check_id] = $alert;
+                        $emergency = false;
+                    }
+
+                    if (isset($stat['worked_total_list'])) {
+                        foreach ($stat['worked_total_list'] as $check_id => $alert) {
+                            if (!isset($result['worked_total_list'][$check_id])) {
+                                $result['worked_total_list'][$check_id] = $alert;
+                            }
+                        }
+                    }
+
+                    if (isset($stat['worked_on_shift_list'])) {
+                        foreach ($stat['worked_on_shift_list'] as $check_id => $alert) {
+                            if (!isset($result['worked_on_shift_list'][$check_id])) {
+                                $result['worked_on_shift_list'][$check_id] = $alert;
+                            }
                         }
                     }
                 }
 
-                if (isset($stat['worked_on_shift_list'])) {
-                    foreach ($stat['worked_on_shift_list'] as $check_id => $alert) {
-                        if (!isset($result['worked_on_shift_list'][$check_id])) {
-                            $result['worked_on_shift_list'][$check_id] = $alert;
-                        }
-                    }
+                $result['worked_total']    = count($result['worked_total_list']);
+                $result['worked_on_shift'] = count($result['worked_on_shift_list']);
+
+                if ($type == 'long') {
+                    $this->results[$name]['All']['long'] = $result;
+                } else {
+                    $this->results[$name]['All'] = $result;
                 }
             }
-
-            $result['worked_total']    = count($result['worked_total_list']);
-            $result['worked_on_shift'] = count($result['worked_on_shift_list']);
-
-            $this->results[$name]['All'] = $result;
         }
     }
     private function runCalendar()
@@ -701,6 +891,10 @@ class stats
             foreach ($stats as $server => $stat) {
                 if ($stat['reaction_alerts']) {
                     $this->results[$name][$server]['reaction_avg'] = round($stat['reaction_time'] / $stat['reaction_alerts'] , 2);
+                }
+
+                if ($stat['long']['reaction_alerts']) {
+                    $this->results[$name][$server]['long']['reaction_avg'] = round($stat['long']['reaction_time'] / $stat['long']['reaction_alerts'] , 2);
                 }
             }
         }
