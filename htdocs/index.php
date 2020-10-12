@@ -261,7 +261,7 @@
                     <input type="checkbox" name="during_shifts" class="during_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="during_shifts">Show only alerts handled during shifts</label>
                 </td>
                 <td valign="top">
-                    <input type="checkbox" name="long_alerts_shifts" class="long_alerts_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="long_alerts_shifts">Show alerts that were acked/quick acked for less than 5 mins</label>
+                    <input type="checkbox" name="long_alerts_shifts" class="long_alerts_shift" /> <label style="padding-top: 11px; display: inline-block; font-size: 14px; cursor: pointer;" class="long_alerts_shifts">Show alerts that were quick acked for less than 5 mins</label>
                 </td>
             </tr>
             <tr>
