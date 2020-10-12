@@ -121,9 +121,10 @@ class xml
                 $this->getHistoryChecks();
                 $this->getHistoryUnfinishedAlerts();
                 $this->getStatusFile();
-                $this->prepareOtherData();
             }
         }
+
+        $this->prepareOtherData();
     }
     private function addDataToMemcache()
     {
@@ -320,7 +321,7 @@ class xml
                 $this->hosts[$host][$service]['origState']       = '';
                 $this->hosts[$host][$service]['pluginOutput']    = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $attrs['plugin_output']), ENT_XML1));
                 $this->hosts[$host][$service]['pending']         = (!$attrs['state'] && !$attrs['last_status_change'] && $attrs['active_enabled']) ? 1 : 0;
-                $this->hosts[$host][$service]['notesUrl']        = $this->returnNotesUrl($host, $service);
+                $this->hosts[$host][$service]['notesUrl']        = $this->returnNotesUrl($host, $service, $this->hosts[$host][$service]['tab']);
                 $this->hosts[$host][$service]['last_check_date'] = $this->getLastCheckDate($attrs['last_check'], 'm-d-Y H:i:s');
                 $this->hosts[$host][$service]['attempt']         = $attrs['attempts']/$attrs['max_attempts'];
                 $this->hosts[$host][$service]['host_or_service'] = ($service == "SERVER IS UP") ? "host" : "service";
@@ -394,7 +395,7 @@ class xml
     }
     private function otherFiles()
     {
-        $this->notesUrls = $this->db->notesUrls($this->currentTabTmp);
+        $this->notesUrls[$this->currentTabTmp] = $this->db->notesUrls($this->currentTabTmp);
     }
     private function verifyMatchService($host, $service, $state, $scheduled, $last_status_change, $active_checks_enabled)
     {
@@ -416,12 +417,12 @@ class xml
 
         return false;
     }
-    private function returnNotesUrl($host, $service)
+    private function returnNotesUrl($host, $service, $server)
     {
         if ($service == 'SERVER IS UP') {
-            $notesUrl   = (isset($this->notesUrls[$host])) ? $this->notesUrls[$host] : '';
+            $notesUrl   = (isset($this->notesUrls[$server][$host])) ? $this->notesUrls[$server][$host] : '';
         } else {
-            $notesUrl   = (isset($this->notesUrls[$service])) ? $this->notesUrls[$service] : '';
+            $notesUrl   = (isset($this->notesUrls[$server][$service])) ? $this->notesUrls[$server][$service] : '';
         }
 
         if (preg_match("/zabbix_redirect/", $notesUrl)) {
