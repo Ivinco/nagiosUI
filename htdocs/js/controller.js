@@ -455,7 +455,7 @@ Search.startReloads = function() {
     }
 }
 Search.getContent = function() {
-    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash) {
+    if (Search.backgroundReload && !Search.startedGetData && Search.updateHash && Search.currentTab != 'planned') {
         Search.startedGetData = true;
         $.ajax({
             type:    'GET',
@@ -468,19 +468,17 @@ Search.getContent = function() {
                 Search.allDataTable.ajax.reload();
                 Search.startedGetData = true;
                 setTimeout(function () {
-                    if (globalReload) {
-                        Search.startReloads();
-                    }
+                    Search.startReloads();
                 }, ((Search.tableLength > 1000) ? 15000 : ((Search.tableLength > 200) ? 7000 : 3000)));
             },
             error: function() {
+                Search.startedGetData = false;
+
                 if (!Search.updateHash) {
                     location.reload();
                 } else {
                     setTimeout(function () {
-                        if (globalReload) {
-                            Search.startReloads();
-                        }
+                        Search.startReloads();
                     }, 3000);
                 }
             },
@@ -1968,7 +1966,7 @@ Search.init = function() {
     setTimeout(function(){ Search.getCounts(); }, 3000);
     setTimeout(function(){ Search.getServerErrors(); }, 1000);
 
-    /*$(document).mousedown(function(event) {
+    $(document).mousedown(function(event) {
         if (event.which == 1) {
             Search.stopReloads();
         }
@@ -1981,7 +1979,7 @@ Search.init = function() {
         if (!getSelectedText()) {
             Search.startReloads();
         }
-    });*/
+    });
 
 	$(document).on('change', '.select-comment select', function() {
 		$(this).closest('td').find('.write-comment input').val($(this).val()).focus();
