@@ -79,7 +79,8 @@ class db
                 `list`    TEXT          NOT NULL,
                 `server`  VARCHAR(255)  NOT NULL,
                 `enabled` TINYINT       NOT NULL DEFAULT 1,
-                `deleted` TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00'
+                `deleted` TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00',
+                `remove`  TINYINT       NOT NULL DEFAULT 0
             )
         ";
         if ($this->mysql->query($planned_log) !== true) {
@@ -91,9 +92,17 @@ class db
             ALTER TABLE
                 {$this->planned_log}
             ADD COLUMN
-                `enabled` TINYINT    NOT NULL DEFAULT 1,
+                `enabled` TINYINT    NOT NULL DEFAULT 1, 
             ADD COLUMN 
                 `deleted` TIMESTAMP  NOT NULL DEFAULT '0000-00-00 00:00:00';
+        ";
+        $this->mysql->query($planned_log_alter);
+
+        $planned_log_alter = "
+            ALTER TABLE
+                {$this->planned_log}
+            ADD COLUMN
+                `remove`  TINYINT    NOT NULL DEFAULT 0;
         ";
         $this->mysql->query($planned_log_alter);
 
@@ -610,7 +619,8 @@ class db
                 `{$this->planned_log}`
             SET 
                 `enabled` = 0,
-                `deleted` = CURRENT_TIMESTAMP()
+                `deleted` = CURRENT_TIMESTAMP(),
+                `remove`  = 1
             WHERE
                 `end`    < {$time}
               AND
@@ -758,7 +768,8 @@ class db
                 `{$this->planned_log}`
             SET 
                 `enabled` = 0,
-                `deleted` = CURRENT_TIMESTAMP()
+                `deleted` = CURRENT_TIMESTAMP(),
+                `remove`  = 1
             WHERE
                 `host` = '{$host}'
               AND
@@ -772,6 +783,54 @@ class db
         ";
 
         $this->mysql->query($sql);
+    }
+    public function returnOldPlanned()
+    {
+        $sql = "
+            SELECT 
+                * 
+            FROM 
+                `{$this->planned_log}` 
+            WHERE 
+                `remove` = 1
+        ";
+
+        $list   = [];
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
+    public function removeOldPlanned($old)
+    {
+        foreach ($old as $item) {
+            $host    = $this->mysql->real_escape_string($item['host']);
+            $service = $this->mysql->real_escape_string($item['service']);
+            $status  = $this->mysql->real_escape_string($item['status']);
+            $server  = $this->mysql->real_escape_string($item['server']);
+
+            $sql = "
+                UPDATE
+                    `{$this->planned_log}`
+                SET 
+                    `remove`  = 0
+                WHERE
+                    `host` = '{$host}'
+                  AND
+                    `service` = '{$service}'
+                  AND
+                    `status` = '{$status}'
+                  AND
+                    `server` = '{$server}'
+                  AND
+                    `remove` = 1
+            ";
+
+            $this->mysql->query($sql);
+        }
     }
     public function returnPlannedRecord($id, $server) {
         $id = explode('___', $id);

@@ -289,7 +289,7 @@ class planned
             $downtimeKey   = md5($host . $service . $end . $user . $comment . $hostOrService . $server);
             $alertsList    = [];
             $memcacheName  = $this->utils->getMemcacheFullName($server);
-            $memcacheName += "_add_planned";
+            $memcacheName .= "_add_planned";
 
             if ($this->memcache->get($memcacheName)) {
                 $alertsList  = $this->memcache->get($memcacheName);
@@ -351,6 +351,10 @@ class planned
                 $array['alert'] = [$array['alert']];
             }
 
+            if (!isset($array['alert'])) {
+                continue;
+            }
+
             foreach ($array['alert'] as $item) {
                 $host       = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
                 $service    = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
@@ -388,6 +392,16 @@ class planned
         }
         $this->removeAlerts[$server][] = $downtime;
     }
+    private function addToRemoveOldAlert($server, $host, $service)
+    {
+        if (!isset($this->removeAlerts[$server])) {
+            $this->removeAlerts[$server] = [];
+        }
+        $this->removeAlerts[$server][] = [
+            'host'    => $host,
+            'service' => $service,
+        ];
+    }
 
     public function runActionsFromJson()
     {
@@ -421,6 +435,14 @@ class planned
             $this->actions->runActions($data);
         }
     }
+    private function removeMultiScheduleOldPlanned()
+    {
+        foreach ($this->removeAlerts as $server => $alerts) {
+            $this->actions->setType('downtimeOldPlanned');
+            $this->actions->setServer($server);
+            $this->actions->runActions($alerts);
+        }
+    }
     private function pregMatchHost($commandHost, $host) {
         return preg_match("/^$commandHost$/iu", $host);
     }
@@ -429,5 +451,53 @@ class planned
     }
     private function pregMatchStatus($commandStatus, $status) {
         return preg_match("/$commandStatus/iu", " " . $status . " ");
+    }
+
+    public function removeOldPlanned()
+    {
+        $oldPlanned  = $this->db->returnOldPlanned();
+        $serversList = array_keys($this->serversList);
+
+        if (!$oldPlanned) {
+            return;
+        }
+
+        foreach ($serversList as $server) {
+            $xml = new xml;
+            $xml->setCurrentTab($server);
+
+            $alertsList = $xml->getFullData($server);
+
+            if (!$alertsList) {
+                continue;
+            }
+
+            foreach ($alertsList as $host => $hostData) {
+                foreach ($hostData as $service) {
+
+                    foreach ($oldPlanned as $oldItem) {
+                        if (!in_array($oldItem['server'], ['All', $server])) {
+                            continue;
+                        }
+
+                        $hostCommand     = $this->returnPlannedPattern($oldItem['host']);
+                        $serviceCommand  = $this->returnPlannedPattern($oldItem['service']);
+                        $hostCommands    = explode(',', $hostCommand);
+                        $serviceCommands = explode(',', $serviceCommand);
+
+                        foreach ($hostCommands as $commandHost) {
+                            foreach ($serviceCommands as $commandService) {
+                                if ($this->pregMatchHost($commandHost, $host) && $this->pregMatchService($commandService, $service)) {
+                                    $this->addToRemoveOldAlert($server, $host, $service);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->removeMultiScheduleOldPlanned();
+        $this->db->removeOldPlanned($oldPlanned);
     }
 }

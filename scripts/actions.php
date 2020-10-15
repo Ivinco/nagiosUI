@@ -22,7 +22,7 @@ class actions
             $this->returnError('type is empty', 404);
         }
 
-        if (!in_array($_REQUEST['type'], array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime', 'scheduleItTime', 'downtimePlanned', 'scheduleItTimePlanned'))) {
+        if (!in_array($_REQUEST['type'], array('recheckIt', 'quickAck', 'quickUnAck', 'unAck', 'unAcknowledgeIt', 'acknowledgeIt', 'scheduleIt', 'downtime', 'scheduleItTime', 'downtimePlanned', 'scheduleItTimePlanned', 'downtimeOldPlanned'))) {
             $this->returnError('type not in array', 404);
         }
 
@@ -67,6 +67,10 @@ class actions
 
         if (in_array($this->type, ['downtime', 'downtimePlanned'])) {
             $this->unScheduleMultiProblems($data);
+        }
+
+        if (in_array($this->type, ['downtimeOldPlanned'])) {
+            $this->unScheduleMultiOldProblems($data);
         }
 
         if (in_array($this->type, ['recheckIt'])) {
@@ -216,6 +220,31 @@ class actions
         }
         $this->runCurlMultiRequest();
     }
+    public function unScheduleMultiOldProblems($alerts)
+    {
+        $url = '/cancel_downtime';
+        $this->requests = [];
+        $this->mh = curl_multi_init();
+
+        foreach ($alerts as $key => $post) {
+            if ($this->server == 'All' || !isset($post['host']) || !isset($post['service'])) {
+                continue;
+            }
+
+            if ($post['service'] == 'SERVER IS UP') {
+                unset($post['service']);
+            }
+
+            $this->db->logAction($post, 'unsched', $this->server, true);
+
+            $path = $this->serversList[$this->server]['url'] . ":" . $this->serversList[$this->server]['port']. $url;
+
+            if ($this->needToProcess($path, $post)) {
+                $this->curlMultiRequest($key, $path, $post);
+            }
+        }
+        $this->runCurlMultiRequest();
+    }
     public function unScheduleMultiProblems($alerts)
     {
         $url = '/cancel_downtime';
@@ -237,6 +266,10 @@ class actions
 
             if ($post['isHost'] == 'service' && isset($post['service'])) {
                 $data['service'] = $post['service'];
+            }
+
+            if (isset($data['service']) && $data['service'] == 'FULL HOSTS LIST') {
+                continue;
             }
 
             if ($this->server != 'All') {

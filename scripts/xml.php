@@ -101,6 +101,63 @@ class xml
         }
     }
 
+    private function getFullDataStatusFile()
+    {
+        $statusFile = [];
+        $retries = 5;
+
+        while ($retries > 0) {
+            $data = $this->curlRequest("/state");
+
+            if ($this->isCorrectStatusFile($data)) {
+                $statusFile = $data;
+                break;
+            }
+
+            if ($this->tmpStatusFileError) {
+                break;
+            }
+
+            sleep(2);
+            $retries--;
+        }
+
+        return $statusFile;
+    }
+    private function getFullDataCollectAlerts($statusFile)
+    {
+        $alerts = [];
+
+        if (!isset($statusFile['content']) || !count($statusFile['content'])) {
+            return $alerts;
+        }
+
+        foreach ($statusFile['content'] as $host => $data) {
+            $alerts[$host] = ['SERVER IS UP'];
+
+            foreach ($data['services'] as $service => $serviceData) {
+                $alerts[$host][] = $service;
+            }
+        }
+
+        return $alerts;
+    }
+    public function getFullData($server)
+    {
+        $alertsList = [];
+        $this->currentTabList = [$server];
+        $this->currentTabTmp  = $server;
+
+        $this->verifyNagiosApi();
+
+        if (!in_array($this->currentTabTmp, $this->errorTabs)) {
+            $statusFile = $this->getFullDataStatusFile();
+            $alertsList = $this->getFullDataCollectAlerts($statusFile);
+        }
+
+        return $alertsList;
+    }
+
     private function prepareDataToXml()
     {
         $this->currentTabList = [];
