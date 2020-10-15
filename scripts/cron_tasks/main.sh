@@ -1,6 +1,6 @@
 #!/bin/sh
 
-dir=`basename "$0"`
+dir=`dirname "$0"`
 cd "$dir"
 while [ 1 ]; do
 	php ../cron.php
