@@ -7,14 +7,14 @@ $lockPath = __DIR__ . "/../../config/";
 $lockFile = $lockPath . $lockName . ".lck";
 
 while (false === lock($lockFile)) {
-    echo date("Y-m-d H:i:s") . " Couldn't lock the file!\n";
+    logText("Couldn't lock the file!");
     exit(1);
 }
 
 function lock($filename) {
     $fp = @fopen($filename, "w+");
     if (!$fp) {
-        echo date("Y-m-d H:i:s") . " Unable to create lock file. Lock is already set.\n";
+        logText("Unable to create lock file. Lock is already set.");
         exit(1);
     }
 
@@ -22,14 +22,14 @@ function lock($filename) {
 
     if ($r & !$l) {
         $start = time();
-        echo date("Y-m-d H:i:s") . " Started\n";
+        logText("Started");
         $a = new synchronizeNotes();
         $a->run();
 
         flock($fp, LOCK_UN);
         unlink($filename);
         fclose($fp);
-        echo date("Y-m-d H:i:s") . " Finished in ". (time() - $start) ."s\n";
+        logText("Finished in ". (time() - $start) ."s");
     } else {
         fclose($fp);
         return false;

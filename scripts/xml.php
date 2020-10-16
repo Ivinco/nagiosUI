@@ -70,10 +70,14 @@ class xml
 
         if (!$this->getDataFromMemcache) {
             $start = time();
-            $this->log($this->currentTab . ": started");
+            if (!$this->getDataFromMemcache) {
+                logText($this->currentTab . ": started");
+            }
             $this->prepareDataToXml();
             list($hostsCount, $servicesCount) = $this->addDataToMemcache();
-            $this->log($this->currentTab . ": finished in ". (time() - $start) ."s. Processed: {$hostsCount} hosts and $servicesCount services.");
+            if (!$this->getDataFromMemcache) {
+                logText($this->currentTab . ": finished in ". (time() - $start) ."s. Processed: {$hostsCount} hosts and $servicesCount services.");
+            }
 
             return;
         }

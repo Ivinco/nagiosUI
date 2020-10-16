@@ -7,7 +7,7 @@ if (isset($argv[1]) && $argv[1] == '--test') {
         $e = new emergency();
         $e->runTest($argv[2]);
     } else {
-        echo date("Y-m-d H:i:s") . " Please add your phone!\n";
+        logText("Please add your phone!");
         exit(1);
     }
 } else if (isset($argv[1]) && $argv[1] == '--import') {
@@ -19,7 +19,7 @@ if (isset($argv[1]) && $argv[1] == '--test') {
     $lockFile = $lockPath . $lockName . ".lck";
 
     while (false === lock($lockFile)) {
-        echo date("Y-m-d H:i:s") . " Couldn't lock the file!\n";
+        logText("Couldn't lock the file!");
         exit(1);
     }
 }
@@ -27,7 +27,7 @@ if (isset($argv[1]) && $argv[1] == '--test') {
 function lock($filename) {
     $fp = @fopen($filename, "w+");
     if (!$fp) {
-        echo date("Y-m-d H:i:s") . " Unable to create lock file. Lock is already set.\n";
+        logText("Unable to create lock file. Lock is already set.");
         exit(1);
     }
 
