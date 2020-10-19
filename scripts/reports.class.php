@@ -233,6 +233,10 @@ class reports
             ];
 
             foreach ($data as $host => $item) {
+                if (!isset($item['date']) || !isset($item['time'])) {
+                    continue;
+                }
+
                 $totalByIncidents[$service]['incidents'] += count($item['date']);
                 $totalByIncidents[$service]['hosts'][] = [
                     'host'      => $host,
@@ -331,6 +335,10 @@ class reports
             ];
 
             foreach ($data as $host => $item) {
+                if (!isset($item['time'])) {
+                    continue;
+                }
+
                 $totalTimeByService[$service]['time'] += $item['time'];
             }
         }
