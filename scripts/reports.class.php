@@ -178,7 +178,9 @@ class reports
         });
 
         for ($i = 0; $i < 5; $i++) {
-            $list[$i] = $services[$i]['service'] . " - " . $services[$i]['total'];
+            if (isset($services[$i])) {
+                $list[$i] = $services[$i]['service'] . " - " . $services[$i]['total'];
+            }
         }
 
         return $list;
