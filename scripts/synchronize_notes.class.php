@@ -7,9 +7,10 @@ class synchronizeNotes
     function __construct()
     {
         global $serversList;
+        global $db;
 
         $this->serversList = $serversList;
-        $this->db = new db;
+        $this->db = $db;
     }
 
     public function run()

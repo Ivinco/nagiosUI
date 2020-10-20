@@ -5,11 +5,12 @@ class json
     function __construct()
     {
         global $infoRecordMark;
+        global $db;
 
         $this->xml         = new xml;
         $this->ac          = new accessControl((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');
         $this->plannedData = new planned;
-        $this->db          = new db;
+        $this->db          = $db;
         $this->utils       = new utils;
 
         $this->xml->setCurrentTab((isset($_GET['server_tab'])) ? $_GET['server_tab'] : '');

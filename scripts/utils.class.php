@@ -16,9 +16,9 @@ class utils
         global $memcacheHost;
         global $memcachePort;
         global $memcacheName;
+        global $db;
 
-        $this->db = new db;
-
+        $this->db              = $db;
         $this->memcacheEnabled = $memcacheEnabled;
         $this->memcacheHost    = $memcacheHost;
         $this->memcachePort    = $memcachePort;

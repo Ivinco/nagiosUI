@@ -36,6 +36,10 @@ class db
             $this->mysql->select_db($this->database['db']);
         }
     }
+    public function shutdown()
+    {
+        $this->mysql->close();
+    }
     private function createTables()
     {
         $this->nagios_external_commands_log = $this->database['prefix'] . "nagios_external_commands_log";

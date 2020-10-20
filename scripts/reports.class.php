@@ -23,6 +23,7 @@ class reports
         global $serversList;
         global $timeZone;
         global $weeklyStatsEmail;
+        global $db;
 
         $this->weeklyStatsEmail = $weeklyStatsEmail;
         $this->timeZone    = $timeZone;
@@ -30,7 +31,7 @@ class reports
         $this->servers     = array_keys($this->serversList);
 
         $this->calendar  = new calendar;
-        $this->db        = new db;
+        $this->db        = $db;
         $this->usersList = $this->db->usersListStatsPage();
     }
 

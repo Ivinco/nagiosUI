@@ -176,7 +176,17 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
                 var tabsArray = ['normal', 'acked', 'sched'];
 
                 if (parseInt(Search.currentGroup) && tabsArray.indexOf(Search.currentTab) !== -1) {
-                    var json = $.parseJSON(data);
+                    try {
+                        var json = $.parseJSON(data);
+                    } catch (e) {
+                        console.log("error: " + e);
+                        Search.backgroundReload = true;
+                        Search.startedGetData = false;
+                        Search.updateHash = 'x';
+                        Search.startReloads();
+
+                        return {"additional": {}, "data": []};
+                    };
 
                     return JSON.stringify({
                         additional: json.additional,
@@ -184,6 +194,18 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
                     });
                 } else {
                     Grouping.clearData();
+
+                    try {
+                        var json = $.parseJSON(data);
+                    } catch (e) {
+                        console.log("error: " + e);
+                        Search.backgroundReload = true;
+                        Search.startedGetData = false;
+                        Search.updateHash = 'x';
+                        Search.startReloads();
+
+                        return {"additional": {}, "data": []};
+                    };
 
                     return data;
                 }

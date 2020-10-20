@@ -18,10 +18,11 @@ class planned
     function __construct()
     {
         global $serversList;
+        global $db;
 
         $this->serversList = $serversList;
         $this->actions     = new actions;
-        $this->db          = new db;
+        $this->db          = $db;
         $this->utils       = new utils();
         $this->removeAlerts = [];
         $this->addAlerts    = [];

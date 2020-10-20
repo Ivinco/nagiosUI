@@ -14,7 +14,7 @@ if ((!$host && !$service) || !$server) {
 	die;
 }
 
-$db = new db;
+global $db;
 
 echo json_encode($db->returnComments($host, $service, $server));
 

@@ -10,10 +10,11 @@ class accessControl
     function __construct($server)
     {
         global $accessControl;
+        global $db;
 
         include_once __DIR__ . '/../htdocs/config/config.php';
 
-        $this->db = new db;
+        $this->db = $db;
         $this->accessControl = $accessControl;
         $this->server = $server;
         $this->superUsers = $this->db->getSuperUsers($this->server);

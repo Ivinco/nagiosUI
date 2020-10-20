@@ -15,7 +15,9 @@ class aggregatedStats
 
     function __construct()
     {
-        $this->db = new db;
+        global $db;
+
+        $this->db = $db;
     }
 
     public function run()

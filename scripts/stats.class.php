@@ -16,8 +16,9 @@ class stats
     {
         global $serversList;
         global $timeZone;
-
-        $this->db          = new db;
+        global $db;
+        
+        $this->db          = $db;
         $this->serversList = $serversList;
         $this->usersList   = $this->db->usersListStatsPage();
         $this->usersList   = $this->clearUsersList();

@@ -18,6 +18,7 @@ class xml
         global $memcacheHost;
         global $memcachePort;
         global $memcacheName;
+        global $db;
 
         $this->memcacheEnabled          = $memcacheEnabled;
         $this->memcacheHost             = $memcacheHost;
@@ -28,7 +29,7 @@ class xml
         $this->verificateCheck          = '';
         $this->statesArray              = [0 => 'OK', 1 => 'WARNING', 2 => 'CRITICAL', 3 => 'UNKNOWN'];
         $this->actions                  = new actions;
-        $this->db                       = new db;
+        $this->db                       = $db;
         $this->utils                    = new utils();
         $this->statusFile               = [];
 

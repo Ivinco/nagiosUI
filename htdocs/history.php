@@ -29,7 +29,7 @@ if (!$date || !isTimestamp($date)) {
     die('date must be set. Date format: timestamp');
 }
 
-$db       = new db;
+global $db;
 $history  = [];
 $servers  = returnServers($server, $serversList);
 

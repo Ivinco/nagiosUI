@@ -14,9 +14,10 @@ class emergencyList
         global $timeZone;
         global $timeZonesList;
         global $timeZonesListAliases;
+        global $db;
 
         $this->utils = new utils();
-        $this->db    = new db();
+        $this->db    = $db;
         $this->usersList = $this->db->usersListStatsPage();
         $this->timeZone  = $timeZone;
         $this->timeZonesListAliases = $timeZonesListAliases;

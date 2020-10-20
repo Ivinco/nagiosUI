@@ -5,7 +5,9 @@ class emergency
     public $hash;
     function __construct()
     {
-        $this->db          = new db;
+        global $db;
+
+        $this->db          = $db;
         $this->xml         = new xml;
         $this->plannedData = new planned;
         $this->actions     = new actions;

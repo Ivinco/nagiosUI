@@ -7,13 +7,14 @@ class actions
         global $serversList;
         global $debug;
         global $debugPath;
+        global $db;
 
         $this->debug = $debug;
         $this->debugPath = $debugPath;
         $this->serversList = $serversList;
         $this->requests = [];
 
-        $this->db    = new db;
+        $this->db    = $db;
         $this->utils = new utils();
     }
     public function verifyType()

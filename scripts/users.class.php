@@ -10,25 +10,12 @@ class users
     function __construct()
     {
         global $serversList;
+        global $db;
 
-        $this->db = new db;
-
+        $this->db          = $db;
         $this->currentUser = (isset($_GET['user']) && $_GET['user']) ? $_GET['user'] : '';
         $this->usersList   = $this->db->returnFullUsersList();
         $this->serversList = $serversList;
-
-        /*global $serversList;
-        global $timeZone;
-        global $weeklyStatsEmail;
-
-        $this->weeklyStatsEmail = $weeklyStatsEmail;
-        $this->timeZone    = $timeZone;
-        $this->serversList = $serversList;
-        $this->servers     = array_keys($this->serversList);
-
-        $this->calendar  = new calendar;
-        $this->db        = new db;
-        $this->usersList = $this->db->usersListStatsPage();*/
     }
 
     public function usersList()
