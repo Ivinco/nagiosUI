@@ -910,6 +910,19 @@ class db
 
         return $return;
     }
+    public function returnUsersListWithServer($server)
+    {
+        $return = [];
+        $list = $this->returnFullUsersList();
+
+        foreach ($list as $item) {
+            if (in_array($server, $item['server'])) {
+                $return[$item['name']] = $item['email'];
+            }
+        }
+
+        return $return;
+    }
     public function returnFullUsersList()
     {
         $list   = [];
@@ -1433,7 +1446,7 @@ class db
     {
         $server = $this->mysql->real_escape_string($server);
         $dateTo = $this->mysql->real_escape_string($dateTo);
-        $users  = $this->usersList($server);
+        $users  = $this->returnUsersListWithServer($server);
 
         if ($dateTo) {
             $dateTo = "WHERE `date` < '{$dateTo}'";
