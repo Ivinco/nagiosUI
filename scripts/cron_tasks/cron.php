@@ -1,10 +1,11 @@
 <?php
 
-include_once __DIR__ . '/init.php';
+include_once __DIR__ . '/../init.php';
 
 if ($memcacheEnabled) {
+    $hosts    = [];
     $lockName = (isset($argv[1]) && $argv[1]) ? $argv[1] : "nagios-ui";
-    $lockPath = __DIR__ . "/../config/";
+    $lockPath = __DIR__ . "/../../config/";
     $lockFile = $lockPath . $lockName . ".lck";
 
     while (false === lock($lockFile)) {
@@ -28,10 +29,7 @@ function lock($filename) {
         logText("Started");
         $servers = getServersList();
         foreach ($servers as $server) {
-            $xml = new xml;
-            $xml->getDataFromMemcache = false;
-            $xml->setCurrentTab($server);
-            $xml->returnXml(false);
+            setAlerts($server);
         }
 
         flock($fp, LOCK_UN);
@@ -42,6 +40,21 @@ function lock($filename) {
     } else {
         fclose($fp);
         return false;
+    }
+}
+
+function setAlerts($server) {
+    global $hosts;
+
+    $xml = new xml;
+    $xml->getDataFromMemcache = false;
+    $xml->setCurrentTab($server);
+
+    if ($server == 'All') {
+        $xml->setAllToMemcache($hosts);
+    } else {
+        $xml->returnXml(false);
+        $hosts[] = $xml->returnHosts();
     }
 }
 

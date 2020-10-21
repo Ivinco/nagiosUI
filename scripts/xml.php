@@ -163,6 +163,44 @@ class xml
         return $alertsList;
     }
 
+
+    public function returnHosts()
+    {
+        return $this->hosts;
+    }
+    public function setAllToMemcache($hosts)
+    {
+        $start = time();
+        logText($this->currentTab . ": started");
+
+        $this->setmemcacheFullName();
+
+        $this->currentTabTmp = array_keys($this->serversList);
+        $this->currentTabTmp = end($this->currentTabTmp);
+
+        foreach ($this->serversList as $key => $value) {
+            $this->currentTabList[] = $key;
+        }
+
+        foreach ($hosts as $list) {
+            foreach ($list as $host => $item) {
+                foreach ($item as $service => $alert) {
+                    if (!isset($this->hosts[$host])) {
+                        $this->hosts[$host] = [];
+                    }
+
+                    if (!isset($this->hosts[$host][$service])) {
+                        $this->hosts[$host][$service] = $alert;
+                        $this->addToVerificateCheck($host, $service);
+                    }
+                }
+            }
+        }
+
+        list($hostsCount, $servicesCount) = $this->addDataToMemcache();
+
+        logText($this->currentTab . ": finished in ". (time() - $start) ."s. Processed: {$hostsCount} hosts and $servicesCount services.");
+    }
     private function prepareDataToXml()
     {
         $this->currentTabList = [];
@@ -778,7 +816,6 @@ class xml
     private function addHostToList($host, $data)
     {
         $service = 'SERVER IS UP';
-
         if ($this->verifyMatchHost($host, $service, (int)$data['current_state'], (int)$data['last_state_change'], 0)) {
             $this->hosts[$host][$service] = array(
                 'state'              => 2, // down host is always shown as CRITICAL alert
