@@ -192,6 +192,7 @@ class xml
                     if (!isset($this->hosts[$host][$service])) {
                         $this->hosts[$host][$service] = $alert;
                         $this->addToVerificateCheck($host, $service);
+                        $this->checkBackendStatus((int)$alert['last_check']);
                     }
                 }
             }
