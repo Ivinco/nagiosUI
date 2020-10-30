@@ -184,6 +184,8 @@ class db
         $notes_urls = "
             CREATE TABLE IF NOT EXISTS `". $this->notes_urls ."` (
                 `service_or_host` VARCHAR(255) NOT NULL,
+                `host`         VARCHAR(255) NOT NULL,
+                `service`      VARCHAR(255) NOT NULL,
                 `url`          VARCHAR(255) NOT NULL,
                 `server`       VARCHAR(255) NOT NULL
             )
@@ -192,6 +194,17 @@ class db
             echo "Error creating table: " . $this->mysql->error;
             exit();
         }
+
+        $notes_urls_alter = "
+            ALTER TABLE
+                {$this->notes_urls}
+            ADD COLUMN
+                `host`         VARCHAR(255) NULL,
+            ADD COLUMN 
+                `service`      VARCHAR(255) NULL;
+        ";
+        $this->mysql->query($notes_urls_alter);
+
 
         $this->checks = $this->database['prefix'] . "checks";
         $checks = "
@@ -1207,6 +1220,38 @@ class db
 
         return $list;
     }
+    public function notesUrlsNagiosApi($server) {
+        $server = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                *
+            FROM 
+                `{$this->notes_urls}`
+            WHERE
+                `server` = '{$server}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        $list = [];
+        while ($row = $result->fetch_assoc()){
+            $host = $row['host'];
+            $service = $row['service'];
+
+            if (!$host || !$service) {
+                continue;
+            }
+
+            if (!isset($list[$host])) {
+                $list[$host] = [];
+            }
+
+            $list[$host][$row['service']] = $row['url'];
+        }
+
+        return $list;
+    }
     public function insertNotesUrl($service_or_host, $url, $server) {
         $service_or_host = $this->mysql->real_escape_string($service_or_host);
         $url             = $this->mysql->real_escape_string($url);
@@ -1220,6 +1265,29 @@ class db
                     `service_or_host` = '{$service_or_host}',
                     `url`             = '{$url}',
                     `server`          = '{$server}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
+    public function insertNotesUrlNagiosApi($host, $service, $url, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $url     = $this->mysql->real_escape_string($url);
+        $server  = $this->mysql->real_escape_string($server);
+
+        if ($host && $service && $url && $server) {
+            $sql = "
+                INSERT INTO 
+                    {$this->notes_urls}
+                SET 
+                    `host`    = '{$host}',
+                    `service` = '{$service}',
+                    `url`     = '{$url}',
+                    `server`  = '{$server}'
             ";
 
             if ($this->mysql->query($sql) !== true) {
@@ -1251,6 +1319,32 @@ class db
             }
         }
     }
+    public function updateNotesUrlNagiosApi($host, $service, $url, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $url     = $this->mysql->real_escape_string($url);
+        $server  = $this->mysql->real_escape_string($server);
+
+        if ($host && $service && $url && $server) {
+            $sql = "
+                UPDATE
+                    {$this->notes_urls}
+                SET 
+                    `url` = '{$url}'
+                WHERE
+                        `host` = '{$host}'
+                    AND
+                        `service` = '{$service}'
+                    AND
+                        `server` = '{$server}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
     public function deleteNotesUrl($service_or_host, $url, $server) {
         $service_or_host = $this->mysql->real_escape_string($service_or_host);
         $url             = $this->mysql->real_escape_string($url);
@@ -1262,6 +1356,32 @@ class db
                     {$this->notes_urls}
                 WHERE
                         `service_or_host` = '{$service_or_host}'
+                    AND
+                        `server` = '{$server}'
+                    AND
+                        `url` = '{$url}'
+            ";
+
+            if ($this->mysql->query($sql) !== true) {
+                http_response_code(404);
+                die("Error saving data: " . $this->mysql->error);
+            }
+        }
+    }
+    public function deleteNotesUrlNagiosApi($host, $service, $url, $server) {
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $url     = $this->mysql->real_escape_string($url);
+        $server  = $this->mysql->real_escape_string($server);
+
+        if ($host && $service && $url && $server) {
+            $sql = "
+                DELETE FROM
+                    {$this->notes_urls}
+                WHERE
+                        `host` = '{$host}'
+                    AND
+                        `service` = '{$service}'
                     AND
                         `server` = '{$server}'
                     AND

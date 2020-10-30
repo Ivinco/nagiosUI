@@ -16,36 +16,76 @@ class synchronizeNotes
     public function run()
     {
         $this->setNotesDataForSync();
-
+        $this->syncNotes();
+    }
+    private function syncNotes()
+    {
         foreach ($this->syncList as $server => $data) {
-            foreach ($data['newNotes'] as $service_or_host => $url) {
-                if (isset($data['oldNotes'][$service_or_host])) {
-                    if ($data['oldNotes'][$service_or_host] != $url) {
-                        $this->db->updateNotesUrl($service_or_host, $url, $server);
+            if ($this->isNagiosApi($server)) {
+                $this->syncNotesNagiosApi($server, $data);
+            } else {
+                $this->syncNotesEgrep($server, $data);
+            }
+        }
+    }
+    private function syncNotesNagiosApi($server, $data)
+    {
+        foreach ($data['newNotes'] as $host => $notesList) {
+            foreach ($notesList as $service => $url) {
+                if (isset($data['oldNotes'][$host]) && isset($data['oldNotes'][$host][$service])) {
+                    if ($data['oldNotes'][$host][$service] != $url) {
+                        $this->db->updateNotesUrlNagiosApi($host, $service, $url, $server);
                     }
 
-                    unset($data['oldNotes'][$service_or_host]);
+                    unset($data['oldNotes'][$host][$service]);
                     continue;
                 }
 
-                if (!isset($data['oldNotes'][$service_or_host])) {
-                    $this->db->insertNotesUrl($service_or_host, $url, $server);
+                if (!isset($data['oldNotes'][$host]) || !isset($data['oldNotes'][$host][$service])) {
+                    $this->db->insertNotesUrlNagiosApi($host, $service, $url, $server);
                 }
             }
+        }
 
-            foreach ($data['oldNotes'] as $service_or_host => $url) {
-                $this->db->deleteNotesUrl($service_or_host, $url, $server);
+        foreach ($data['oldNotes'] as $host => $notesList) {
+            foreach ($notesList as $service => $url) {
+                $this->db->deleteNotesUrlNagiosApi($host, $service, $url, $server);
             }
         }
+    }
+    private function syncNotesEgrep($server, $data)
+    {
+        foreach ($data['newNotes'] as $service_or_host => $url) {
+            if (isset($data['oldNotes'][$service_or_host])) {
+                if ($data['oldNotes'][$service_or_host] != $url) {
+                    $this->db->updateNotesUrl($service_or_host, $url, $server);
+                }
+
+                unset($data['oldNotes'][$service_or_host]);
+                continue;
+            }
+
+            if (!isset($data['oldNotes'][$service_or_host])) {
+                $this->db->insertNotesUrl($service_or_host, $url, $server);
+            }
+        }
+
+        foreach ($data['oldNotes'] as $service_or_host => $url) {
+            $this->db->deleteNotesUrl($service_or_host, $url, $server);
+        }
+    }
+    private function isNagiosApi($server)
+    {
+        $servicesPath = (isset($this->serversList[$server]['notesUrlServicesPath'])) ? $this->serversList[$server]['notesUrlServicesPath'] : '';
+        $hostsPath    = (isset($this->serversList[$server]['notesUrlHostsPath']))    ? $this->serversList[$server]['notesUrlHostsPath']    : '';
+
+        return !($servicesPath || $hostsPath);
     }
     private function setNotesDataForSync()
     {
         foreach ($this->serversList as $server => $data) {
-            $servicesPath = (isset($data['notesUrlServicesPath'])) ? $data['notesUrlServicesPath'] : '';
-            $hostsPath    = (isset($data['notesUrlHostsPath']))    ? $data['notesUrlHostsPath']    : '';
-
-            if ($servicesPath || $hostsPath) {
-                $this->getNotesEgrep($servicesPath, $hostsPath, $server);
+            if (!$this->isNagiosApi($server)) {
+                $this->getNotesEgrep($data['notesUrlServicesPath'], $data['notesUrlHostsPath'], $server);
             } else {
                 $this->getNotesNagiosApi($server);
             }
@@ -59,7 +99,7 @@ class synchronizeNotes
             if ($newNotesList) {
                 $this->syncList[$server] = [
                     'newNotes' => $newNotesList,
-                    'oldNotes' => $this->db->notesUrls($server),
+                    'oldNotes' => $this->db->notesUrlsNagiosApi($server),
                 ];
             }
         }
@@ -68,13 +108,14 @@ class synchronizeNotes
     {
         $path = $this->serversList[$server]['url'] . '/status';
 
+        $curl = null;
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_PORT,           $this->serversList[$server]['port']);
         curl_setopt($curl, CURLOPT_URL,            $path);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 1);
-        curl_setopt($curl, CURLOPT_TIMEOUT,        1);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($curl, CURLOPT_TIMEOUT,        3);
 
         curl_exec($curl);
 
@@ -88,14 +129,14 @@ class synchronizeNotes
     }
     private function curlRequest($server)
     {
+        $curl = null;
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_PORT,           $this->serversList[$server]['port']);
-        curl_setopt($curl, CURLOPT_URL,            $this->serversList[$server]['url'] . '/notes_url');
+        curl_setopt($curl, CURLOPT_URL,            $this->serversList[$server]['url'] . '/full_notes_list');
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($curl, CURLOPT_TIMEOUT,        10);
-        curl_setopt($curl, CURLOPT_POSTFIELDS,     '{"type" : "filled"}');
         curl_setopt($curl, CURLOPT_HTTPHEADER,     ['Content-Type: application/json']);
 
         $result = curl_exec($curl);
@@ -114,15 +155,14 @@ class synchronizeNotes
         $results = [];
         if (isset($result['content'])) {
             foreach ($result['content'] as $item) {
-                if (isset($item['description']) && $item['description'] && $item['notes_url']) {
-                    $results[$item['description']] = $item['notes_url'];
-                }
+                foreach ($item['services'] as $service) {
+                    if ($service['notes_url'] && $service['description']) {
+                        $host = $item['host'];
+                        if (!isset($results[$host])) {
+                            $results[$host] = [];
+                        }
 
-                if (isset($item['host_name']) && $item['host_name'] && $item['notes_url']) {
-                    $hosts = explode(',', $item['host_name']);
-
-                    foreach ($hosts as $host) {
-                        $results[$host] = $item['notes_url'];
+                        $results[$host][$service['description']] = $service['notes_url'];
                     }
                 }
             }

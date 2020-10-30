@@ -494,9 +494,20 @@ class xml
 
         return $return;
     }
+    private function isNagiosApi($server)
+    {
+        $servicesPath = (isset($this->serversList[$server]['notesUrlServicesPath'])) ? $this->serversList[$server]['notesUrlServicesPath'] : '';
+        $hostsPath    = (isset($this->serversList[$server]['notesUrlHostsPath']))    ? $this->serversList[$server]['notesUrlHostsPath']    : '';
+
+        return !($servicesPath || $hostsPath);
+    }
     private function otherFiles()
     {
-        $this->notesUrls[$this->currentTabTmp] = $this->db->notesUrls($this->currentTabTmp);
+        if ($this->isNagiosApi($this->currentTabTmp)) {
+            $this->notesUrls[$this->currentTabTmp] = $this->db->notesUrlsNagiosApi($this->currentTabTmp);
+        } else {
+            $this->notesUrls[$this->currentTabTmp] = $this->db->notesUrls($this->currentTabTmp);
+        }
     }
     private function verifyMatchService($host, $service, $state, $scheduled, $last_status_change, $active_checks_enabled)
     {
@@ -520,10 +531,14 @@ class xml
     }
     private function returnNotesUrl($host, $service, $server)
     {
-        if ($service == 'SERVER IS UP') {
-            $notesUrl   = (isset($this->notesUrls[$server][$host])) ? $this->notesUrls[$server][$host] : '';
+        if ($this->isNagiosApi($server)) {
+            $notesUrl = (isset($this->notesUrls[$server][$host]) && isset($this->notesUrls[$server][$host][$service])) ? $this->notesUrls[$server][$host][$service] : '';
         } else {
-            $notesUrl   = (isset($this->notesUrls[$server][$service])) ? $this->notesUrls[$server][$service] : '';
+            if ($service == 'SERVER IS UP') {
+                $notesUrl = (isset($this->notesUrls[$server][$host])) ? $this->notesUrls[$server][$host] : '';
+            } else {
+                $notesUrl = (isset($this->notesUrls[$server][$service])) ? $this->notesUrls[$server][$service] : '';
+            }
         }
 
         if (preg_match("/zabbix_redirect/", $notesUrl)) {
