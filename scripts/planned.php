@@ -191,6 +191,7 @@ class planned
         return '';
     }
     public function findPlannedRecord($host, $service, $status) {
+        $this->db->reconnect();
         $planned = $this->db->returnPlanned($this->server);
         $usersArray = $this->db->usersList($this->server);
         $return  = [];

@@ -36,6 +36,10 @@ class db
             $this->mysql->select_db($this->database['db']);
         }
     }
+    public function reconnect()
+    {
+        $this->connect();
+    }
     public function shutdown()
     {
         $this->mysql->close();
@@ -199,9 +203,9 @@ class db
             ALTER TABLE
                 {$this->notes_urls}
             ADD COLUMN
-                `host`         VARCHAR(255) NULL,
+                `host`         VARCHAR(255) NOT NULL,
             ADD COLUMN 
-                `service`      VARCHAR(255) NULL;
+                `service`      VARCHAR(255) NOT NULL;
         ";
         $this->mysql->query($notes_urls_alter);
 
@@ -1264,7 +1268,9 @@ class db
                 SET 
                     `service_or_host` = '{$service_or_host}',
                     `url`             = '{$url}',
-                    `server`          = '{$server}'
+                    `server`          = '{$server}',
+                    `host`            = ' ',
+                    `service`         = ' '
             ";
 
             if ($this->mysql->query($sql) !== true) {
@@ -1287,7 +1293,8 @@ class db
                     `host`    = '{$host}',
                     `service` = '{$service}',
                     `url`     = '{$url}',
-                    `server`  = '{$server}'
+                    `server`  = '{$server}',
+                    `service_or_host` = ' '
             ";
 
             if ($this->mysql->query($sql) !== true) {
