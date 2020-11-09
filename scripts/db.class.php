@@ -1233,7 +1233,9 @@ class db
             FROM 
                 `{$this->notes_urls}`
             WHERE
-                `server` = '{$server}'
+                    `server` = '{$server}'
+                AND
+                    `url` != ' '
         ";
 
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);

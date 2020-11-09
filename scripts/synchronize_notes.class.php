@@ -156,13 +156,14 @@ class synchronizeNotes
         if (isset($result['content'])) {
             foreach ($result['content'] as $item) {
                 foreach ($item['services'] as $service) {
-                    if ($service['notes_url'] && $service['description']) {
+                    if ($service['description']) {
                         $host = $item['host'];
                         if (!isset($results[$host])) {
                             $results[$host] = [];
                         }
 
-                        $results[$host][$service['description']] = $service['notes_url'];
+                        $notes_url = ($service['notes_url']) ? $service['notes_url'] : ' ';
+                        $results[$host][$service['description']] = $notes_url;
                     }
                 }
             }
