@@ -313,6 +313,7 @@ if (isset($_GET['emergency']) && trim($_GET['emergency'])) { ?>
                 Grouping.init();
                 Planned.init();
                 Recheck.init();
+                FullInfo.init();
             }
         });
     </script>

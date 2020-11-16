@@ -106,6 +106,38 @@ class utils
             $this->timeCorrectionDiff = (int) $_GET['time_correction_diff'];
         }
     }
+    public function correctTs($ts)
+    {
+        if ($this->timeCorrectionType == $this::BROWSER_TYPE_NAME) {
+            $ts -= $this->timeCorrectionDiff * 60;
+        }
+
+        $ts -= $this->getDiffToDB();
+        $ts += $this->getDiffToUTC();
+
+        return $ts;
+    }
+    public function getDateForDB($ts) {
+        if ($this->timeCorrectionType == $this::BROWSER_TYPE_NAME) {
+            $ts -= $this->timeCorrectionDiff * 60;
+        }
+
+        $ts -= $this->getDiffToDB();
+        $ts += $this->getDiffToUTC();
+        $date = new DateTime("@{$ts}");
+
+        return $date->format('Y-m-d H:i:s');
+    }
+    public function getDiffToDB() {
+        return strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
+    }
+    public function getDiffToUTC() {
+        date_default_timezone_set($this->validateTimeZone($this->timeCorrectionType));
+        $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
+        date_default_timezone_set($this->default_time_zone);
+
+        return $diff;
+    }
 
     private function getTimeZoneWithAliases($tz)
     {

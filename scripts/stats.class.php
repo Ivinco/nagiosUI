@@ -975,7 +975,7 @@ class stats
                 $cleared = $this->clearAckedSckedFlappings($cleared);
                 $cleared = $this->clearPlannedAlerts($cleared);
                 $cleared = $this->clearOkAlerts($cleared);
-                
+
                 if ($cleared) {
                     $results[$server][$check_id] = $cleared;
                 }

@@ -4,6 +4,7 @@ include_once __DIR__ . '/../init.php';
 
 if ($memcacheEnabled) {
     $hosts    = [];
+    $fullInfo = [];
     $lockName = (isset($argv[1]) && $argv[1]) ? $argv[1] : "nagios-ui";
     $lockPath = __DIR__ . "/../../config/";
     $lockFile = $lockPath . $lockName . ".lck";
@@ -45,16 +46,18 @@ function lock($filename) {
 
 function setAlerts($server) {
     global $hosts;
+    global $fullInfo;
 
     $xml = new xml;
     $xml->getDataFromMemcache = false;
     $xml->setCurrentTab($server);
 
     if ($server == 'All') {
-        $xml->setAllToMemcache($hosts);
+        $xml->setAllToMemcache($hosts, $fullInfo);
     } else {
         $xml->returnXml(false);
         $hosts[] = $xml->returnHosts();
+        $fullInfo[] = $xml->returnFullInfo();
     }
 }
 

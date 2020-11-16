@@ -1726,6 +1726,79 @@ class db
 
         return $return;
     }
+    public function historyGetUnfinishedAlertsWithPeriodAndHostAndService($from, $to, $host, $service, $server)
+    {
+        $from    = $this->mysql->real_escape_string($from);
+        $to      = $this->mysql->real_escape_string($to);
+        $host    = $this->mysql->real_escape_string($host);
+        $service = $this->mysql->real_escape_string($service);
+        $server  = $this->mysql->real_escape_string($server);
+
+        $sql = "
+            SELECT 
+                `history1`.`date`, `history1`.`state`, `history1`.`check_id`
+            FROM 
+                `{$this->history}` AS `history1`
+            JOIN
+                  (SELECT MAX(`date`) `date`, `check_id` FROM `{$this->history}` WHERE `date` < '{$from}' GROUP BY `check_id`) AS `history2`
+                ON
+                  `history1`.`date` = `history2`.`date` AND `history1`.`check_id` = `history2`.`check_id`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history1`.`check_id` = `checks`.`id`
+            WHERE
+                  `checks`.`server` = '{$server}'
+                AND
+                  `checks`.`host` = '{$host}'
+                AND 
+                  `checks`.`service` = '{$service}'
+                AND
+                  `history1`.`state` != 'ok'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+        $list = [];
+
+        while ($row = $result->fetch_assoc()){
+            if ($row['date'] < $from) {
+                $row['date'] = $from;
+            }
+
+            $list[$row['check_id'].$row['date']] = $row;
+        }
+
+        $sql = "
+            SELECT 
+                `history`.`date`, `history`.`state`, `history`.`check_id`
+            FROM 
+                `{$this->history}` AS `history`
+            LEFT JOIN 
+                  `{$this->checks}` AS `checks`
+                ON
+                  `history`.`check_id` = `checks`.`id`
+            WHERE
+                  `checks`.`server` = '{$server}'
+                AND
+                  `checks`.`host` = '{$host}'
+                AND 
+                  `checks`.`service` = '{$service}'
+                AND
+                  `history`.`date` > '{$from}'
+                AND
+                  `history`.`date` <= '{$to}'
+        ";
+
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[$row['check_id'].$row['date']] = $row;
+        }
+
+        ksort($list);
+
+        return array_values($list);
+    }
     public function historyGetUnfinishedAlertsWithPeriod($dateFrom, $dateTo)
     {
         $dateTo   = $this->mysql->real_escape_string($dateTo);

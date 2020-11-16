@@ -226,7 +226,7 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a data-tab="'+ data.tab +'" data-host="'+ data.host +'" href="'+ data.url +'" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
+					return '<a data-tab="'+ data.tab +'" data-host="'+ data.host +'" href="javascript:void(0)" class="show-full-host-info">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
 				},
 			},
             {
@@ -258,7 +258,7 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
                             return '' +
                                 '<div class="likeTable">' +
                                 '	<ul>' +
-                                '		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+                                '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ data.name +'</a></li>' +
                                 recheck +
                                 notes  +
                                 '	</ul>' +
@@ -268,7 +268,7 @@ Search.allDataTable       = (getParameterByName('emergency') || getParameterByNa
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
-							'		<li><a href="'+ data.url +'" class="service-name">'+ data.name +'</a></li>' +
+							'		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ data.name +'</a></li>' +
 									notes  +
 							'		<li>'  +
 										qAck  +
@@ -2897,7 +2897,460 @@ dateFormat.i18n = {
  */
 !function(){var a={},b=null,c=null,d=null,e=null,f={},g=window.devicePixelRatio||1,h=16*g,i={width:7,height:9,font:10*g+"px arial",colour:"#ffffff",background:"#F03D25",fallback:!0,crossOrigin:!0,abbreviate:!0},j=function(){var a=navigator.userAgent.toLowerCase();return function(b){return-1!==a.indexOf(b)}}(),k={ie:j("msie"),chrome:j("chrome"),webkit:j("chrome")||j("safari"),safari:j("safari")&&!j("chrome"),mozilla:j("mozilla")&&!j("chrome")&&!j("safari")},l=function(){for(var a=document.getElementsByTagName("link"),b=0,c=a.length;c>b;b++)if((a[b].getAttribute("rel")||"").match(/\bicon\b/))return a[b];return!1},m=function(){for(var a=document.getElementsByTagName("link"),b=document.getElementsByTagName("head")[0],c=0,d=a.length;d>c;c++){var e="undefined"!=typeof a[c];e&&(a[c].getAttribute("rel")||"").match(/\bicon\b/)&&b.removeChild(a[c])}},n=function(){if(!c||!b){var a=l();c=b=a?a.getAttribute("href"):"/favicon.ico"}return b},o=function(){return e||(e=document.createElement("canvas"),e.width=h,e.height=h),e},p=function(a){if(a){m();var b=document.createElement("link");b.type="image/x-icon",b.rel="icon",b.href=a,document.getElementsByTagName("head")[0].appendChild(b)}},q=function(a,b){if(!o().getContext||k.ie||k.safari||"force"===f.fallback)return r(a);var c=o().getContext("2d"),b=b||"#000000",e=n();d=document.createElement("img"),d.onload=function(){c.clearRect(0,0,h,h),c.drawImage(d,0,0,d.width,d.height,0,0,h,h),(a+"").length>0&&s(c,a,b),t()},!e.match(/^data/)&&f.crossOrigin&&(d.crossOrigin="anonymous"),d.src=e},r=function(a){if(f.fallback){var b=document.title;"("===b[0]&&(b=b.slice(b.indexOf(" "))),(a+"").length>0?document.title="("+a+") "+b:document.title=b}},s=function(a,b,c){"number"==typeof b&&b>99&&f.abbreviate&&(b=u(b));var d=(b+"").length-1,e=f.width*g+6*g*d,i=f.height*g,j=h-i,l=h-e-g,m=16*g,n=16*g,o=2*g;a.font=(k.webkit?"bold ":"")+f.font,a.fillStyle=f.background,a.strokeStyle=f.background,a.lineWidth=g,a.beginPath(),a.moveTo(l+o,j),a.quadraticCurveTo(l,j,l,j+o),a.lineTo(l,m-o),a.quadraticCurveTo(l,m,l+o,m),a.lineTo(n-o,m),a.quadraticCurveTo(n,m,n,m-o),a.lineTo(n,j+o),a.quadraticCurveTo(n,j,n-o,j),a.closePath(),a.fill(),a.beginPath(),a.strokeStyle="rgba(0,0,0,0.3)",a.moveTo(l+o/2,m),a.lineTo(n-o/2,m),a.stroke(),a.fillStyle=f.colour,a.textAlign="right",a.textBaseline="top",a.fillText(b,2===g?29:15,k.mozilla?7*g:6*g)},t=function(){o().getContext&&p(o().toDataURL())},u=function(a){for(var b=[["G",1e9],["M",1e6],["k",1e3]],c=0;c<b.length;++c)if(a>=b[c][1]){a=v(a/b[c][1])+b[c][0];break}return a},v=function(a,b){var c=new Number(a);return c.toFixed(b)};a.setOptions=function(a){f={};for(var b in i)f[b]=a.hasOwnProperty(b)?a[b]:i[b];return this},a.setImage=function(a){return b=a,t(),this},a.setBubble=function(a,b){return a=a||"",q(a,b),this},a.reset=function(){p(c)},a.setOptions(i),"function"==typeof define&&define.amd?define(a):"undefined"!=typeof module?module.exports=a:window.Tinycon=a}();
 
+FullInfo = {
+    timeZone: localStorage.getItem('timeZone'),
+    hostData: null,
+    serviceData: null,
+    host: null,
+    service: null,
+    chartFrom: 0,
+    chartTo: 0,
+    period: 'Today',
+    periodFrom: moment().format('Y-MM-DD') + ' 00:00:00',
+    periodTo: moment().format('Y-MM-DD') + ' 23:59:59',
+    isHost: false,
+    hostThis: null,
+    serviceThis: null,
+    init: function() {
+        $(document).on('click', '.show-full-host-info', function() {
+            FullInfo.isHost      = true;
+            FullInfo.hostThis    = $(this);
+            FullInfo.serviceThis = null;
 
+            FullInfo.showHostData(FullInfo.hostThis);
+
+            return false;
+        });
+
+        $(document).on('click', '.show-full-service-info', function() {
+            FullInfo.isHost      = false;
+            FullInfo.hostThis    = null;
+            FullInfo.serviceThis = $(this);
+
+            FullInfo.showServiceData(FullInfo.serviceThis);
+
+            return false;
+        });
+
+        $(document).on('change', '#period_calendar_switch', function() {
+            var item = $('#period_calendar_switch option:selected');
+            FullInfo.period     = item.val();
+            FullInfo.periodFrom = (item.attr('data-from') != 'custom') ? item.attr('data-from') : $('#period_from_date').val();
+            FullInfo.periodTo   = (item.attr('data-to') != 'custom')   ? item.attr('data-to')   : $('#period_to_date').val();
+
+            FullInfo.changePeriodDates();
+            FullInfo.checkCalendarSwitch();
+        });
+
+        $(document).on('change', '#period_from_date, #period_to_date', function() {
+            FullInfo.checkCalendarSwitch();
+
+            var item = $('#period_calendar_switch option:selected');
+            FullInfo.period     = item.val();
+            FullInfo.periodFrom = (item.attr('data-from') != 'custom') ? item.attr('data-from') : $('#period_from_date').val();
+            FullInfo.periodTo   = (item.attr('data-to') != 'custom')   ? item.attr('data-to')   : $('#period_to_date').val();
+        });
+
+        $(document).on('click', '#filter_period', function() {
+            $('.full-info-loading').show();
+            $('.full-info-data, #full-calendar_switch, #full-info-chart').html('').hide();
+
+            if (FullInfo.isHost) {
+                FullInfo.showHostData(FullInfo.hostThis);
+            } else {
+                FullInfo.showServiceData(FullInfo.serviceThis);
+            }
+        });
+
+        FullInfo.drawDialog();
+    },
+    showServiceData: function(service) {
+        FullInfo.host    = service.closest('tr').find('.show-full-host-info').text();
+        FullInfo.service = service.closest('tr').attr('data-service');
+
+        $('#fullInfo').dialog('open');
+        $('[aria-describedby="fullInfo"]').find('.ui-dialog-title').text('Service '+ FullInfo.service +' on '+ FullInfo.host +' information');
+        $('[aria-describedby="fullInfo"]').css('top', '50px');
+
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(service.closest('tr').find('.show-full-host-info').attr('data-tab')),
+                'host':                 encodeURIComponent(FullInfo.host),
+                'service':              encodeURIComponent(FullInfo.service),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset(),
+                'from':                 moment.utc(FullInfo.periodFrom).unix(),
+                'to':                   moment.utc(FullInfo.periodTo).unix(),
+            },
+            success: function(data){
+                FullInfo.serviceData = data;
+                FullInfo.chartFrom   = data.chart.from;
+                FullInfo.chartTo     = data.chart.to;
+                FullInfo.drawServiceData();
+                FullInfo.drawDatesSelect();
+                FullInfo.drawChart();
+            }
+        });
+    },
+    drawDatesSelect: function() {
+        var html = '<tr><td colspan="4"><h3 style="margin: 7px 0;">Period for chart</h3></td></tr>';
+
+
+        html += '<tr>';
+        html += '<td style="width: 160px;"><select id="period_calendar_switch" style="width: 120px;">';
+        $(Stats.returnSelectList()).each(function (key, value) {
+            html += '<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'">'+ value.name +'</option>';
+        });
+        html += '</select></td>';
+
+        html += '<td style="width: 240px;">From: <input type="text" name="period_from_date" id="period_from_date" class="text hasDatepicker" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
+
+        html += '<td style="width: 240px;">To: <input type="text" name="period_to_date" id="period_to_date" class="text hasDatepicker" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
+
+        html += '<td><input type="button" value="draw" name="filter_period" id="filter_period"></td>';
+
+        html += '</tr>';
+
+
+        $('#full-calendar_switch').html(html).show();
+
+        $('#period_calendar_switch option[value="'+ FullInfo.period +'"]').attr('selected','selected');
+
+        FullInfo.changePeriodDates();
+        FullInfo.drawDatePickers();
+    },
+    drawDatePickers: function() {
+        var dateTimePickerFromSettings = {
+            format:'Y-m-d H:i:s',
+            timeFormat: 'HH:mm:ss',
+            dateFormat: 'yy-mm-dd',
+            controlType: 'select',
+            oneLine: true,
+            defaultValue: FullInfo.periodFrom,
+        };
+
+        var dateTimePickerToSettings = dateTimePickerFromSettings;
+        dateTimePickerToSettings.defaultValue = FullInfo.periodTo;
+
+        $('#period_from_date').datetimepicker(dateTimePickerFromSettings);
+        $('#period_to_date').datetimepicker(dateTimePickerToSettings);
+    },
+    checkCalendarSwitch: function() {
+        var from     = $('#period_from_date').val(),
+            to       = $('#period_to_date').val(),
+            selected = 'Custom';
+
+        $('#period_calendar_switch option').each(function (key, value) {
+            if (from == $(value).attr('data-from') && to == $(value).attr('data-to')) {
+                selected = $(value).val();
+
+                return false;
+            }
+        });
+
+        if ($('#period_calendar_switch').val() != selected) {
+            $('#period_calendar_switch option[value="'+ $('#period_calendar_switch').val() +'"]').removeAttr('selected');
+            $('#period_calendar_switch option[value="'+ selected +'"]').prop('selected', 'selected');
+        }
+    },
+    changePeriodDates: function() {
+        $('#period_from_date').val(FullInfo.periodFrom);
+        $('#period_to_date').val(FullInfo.periodTo);
+    },
+    showHostData: function(host) {
+        FullInfo.host = host.text();
+
+        $('#fullInfo').dialog('open');
+        $('[aria-describedby="fullInfo"]').find('.ui-dialog-title').text('Host '+ FullInfo.host +' information');
+        $('[aria-describedby="fullInfo"]').css('top', '50px');
+
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(host.attr('data-tab')),
+                'host':                 encodeURIComponent(host.text()),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
+            success: function(data){
+                FullInfo.hostData = data;
+                FullInfo.drawHostData();
+            }
+        });
+    },
+    drawHostData: function() {
+        $('#fullInfo .full-info-loading').hide();
+
+        var dialog = '';
+
+        if (typeof FullInfo.hostData.error !== 'undefined') {
+            dialog += '<tr><td><b>Error</b></td><td>'+ FullInfo.hostData.error +'</td></tr>';
+        }
+
+        if (typeof FullInfo.hostData.check !== 'undefined') {
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            dialog += '<tr><td><b>Status Information</b></td><td>'+ FullInfo.hostData.check.status_info +'</td></tr>';
+            dialog += '<tr><td><b>Performance Data</b></td><td>rta: '+ FullInfo.hostData.check.rta +'; pl: '+ FullInfo.hostData.check.pl +'</td></tr>';
+            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((FullInfo.hostData.check.scheduled) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((FullInfo.hostData.check.acked) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ FullInfo.hostData.check.date +'</td></tr>';
+        }
+
+        $('#fullInfo .full-info-data').show().html(dialog);
+    },
+    drawServiceData: function() {
+        $('#fullInfo .full-info-loading').hide();
+
+        var dialog = '';
+
+        if (typeof FullInfo.serviceData.error !== 'undefined') {
+            dialog += '<tr><td><b>Error</b></td><td>'+ FullInfo.serviceData.error +'</td></tr>';
+        }
+
+        if (typeof FullInfo.serviceData.check !== 'undefined') {
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            dialog += '<tr><td><b>Service</b></td><td>'+ FullInfo.service +'</td></tr>';
+            dialog += '<tr><td><b>Status Information</b></td><td>'+ FullInfo.serviceData.check.status_info +'</td></tr>';
+            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((FullInfo.serviceData.check.scheduled) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((FullInfo.serviceData.check.acked) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ FullInfo.serviceData.check.date +'</td></tr>';
+        }
+
+        $('#fullInfo .full-info-data').show().html(dialog);
+    },
+    drawDialog: function() {
+        var dialog = '';
+        dialog += '<div id="fullInfo" title="information">';
+        dialog += '<table style="width: 100%; font-size: 13px; line-height: 150%;" class="full-info-loading">';
+        dialog += '<tr><td colspan="2">';
+        dialog += '<div class="sk-circle">';
+        dialog += '<div class="sk-circle1 sk-child"></div>';
+        dialog += '<div class="sk-circle2 sk-child"></div>';
+        dialog += '<div class="sk-circle3 sk-child"></div>';
+        dialog += '<div class="sk-circle4 sk-child"></div>';
+        dialog += '<div class="sk-circle5 sk-child"></div>';
+        dialog += '<div class="sk-circle6 sk-child"></div>';
+        dialog += '<div class="sk-circle7 sk-child"></div>';
+        dialog += '<div class="sk-circle8 sk-child"></div>';
+        dialog += '<div class="sk-circle9 sk-child"></div>';
+        dialog += '<div class="sk-circle10 sk-child"></div>';
+        dialog += '<div class="sk-circle11 sk-child"></div>';
+        dialog += '<div class="sk-circle12 sk-child"></div>';
+        dialog += '</div>';
+        dialog += '</td></tr>';
+        dialog += '</table>';
+        dialog += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none;" class="full-info-data"></table>';
+        dialog += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none; border-top: 1px solid #000;border-bottom: 1px solid #000; margin-top: 20px; padding-bottom: 12px;" id="full-calendar_switch"></table>';
+        dialog += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none;" id="full-info-chart"></table>';
+        dialog += '</div>';
+
+        $('body').append(dialog);
+
+        FullInfo.dialogJs();
+    },
+    dialogJs: function() {
+        var windowWidth = ($(window).width() < 600) ? $(window).width() : 1000;
+
+        $('#fullInfo').dialog({
+            autoOpen: false,
+            modal:    true,
+            width:    windowWidth,
+            position: { my: "center center", at: "center top+200"},
+            open:     function() {
+                $('body').css("overflow", "hidden");
+                $('#fullInfo .full-info-data, #full-info-chart, #full-calendar_switch').html('').hide();
+                $('#fullInfo .full-info-loading').show();
+            },
+            close:    function() {
+                $('body').css("overflow", "auto");
+                $('#fullInfo .full-info-data, #full-info-chart, #full-calendar_switch').html('').hide();
+                $('#fullInfo .full-info-loading').show();
+                $('#fullInfo').dialog('close');
+            },
+            create:   function() {
+                $(this).closest('.ui-dialog').on('keydown', function(ev) {
+                    if (ev.keyCode === $.ui.keyCode.ESCAPE) {
+                        $('#fullInfo').dialog('close');
+                    }
+                });
+            },
+            closeOnEscape: false,
+            buttons: [
+                {
+                    text:  'Close',
+                    click: function() {
+                        $('#fullInfo').dialog('close');
+                    },
+                }
+            ]
+        });
+    },
+    drawChart: function() {
+        if (typeof FullInfo.serviceData.chart === 'undefined') {
+            return;
+        }
+
+        let chartData = FullInfo.getChartData();
+        let palette = {
+            "palette": {
+                "area": [
+                    ["#000", "#33FF00"],
+                    ["#000", "#F83838"],
+                    ["#000", "#FFFF00"],
+                    ["#000", "#FF9900"],
+                ]
+            }
+        };
+        let chartConfig = {
+            "graphset": [
+                {
+                    stacked: true,
+                    type: "area",
+                    backgroundColor: "#FFFFFF",
+                    plot: {
+                        marker: { visible: false },
+                        tooltip: {
+                            text: '<div style="text-align: center; line-height: 14px; padding-top: 5px;"><b>%t</b><br><br>%kt<br></div>',
+                            marginTop: '5px',
+                            padding: '5px 15px',
+                            htmlMode: true
+                        },
+                        activeArea: true,
+                        borderWidth: 0,
+                        lineWidth: 0,
+                        aspect: "stepped",
+                        animation: { effect: 'ANIMATION_EXPAND_BOTTOM', method: 'ANIMATION_STRONG_EASE_OUT', sequence: 'ANIMATION_BY_NODE',  speed: 275 },
+                    },
+                    legend: { draggable: false, marginTop: 28 },
+                    plotarea: { marginTopOffset: '0px' },
+                    chart: { marginTop: 30, marginBottom: 40, marginRight: 200 },
+                    scaleY: { visible:false },
+                    scaleX: {
+                        transform: {
+                            type: "date",
+                            all: "%Y-%mm-%dd<br />%H:%i:%s"
+                        },
+                        itemsOverlap: true,
+                        step: "minute",
+                        minValue: FullInfo.chartFrom,
+                        maxValue: FullInfo.chartTo,
+                        zooming: true,
+                    },
+                    series: chartData
+                }
+            ]
+        };
+
+        $('#full-info-chart').show();
+
+        zingchart.render({
+            id: 'full-info-chart',
+            data: chartConfig,
+            height: '250px',
+            defaults: palette
+        });
+    },
+    getChartData: function() {
+        var result = {
+            warning: [],
+            critical: [],
+            ok: [],
+            unknown: [],
+        };
+
+        if (!Object.keys(FullInfo.serviceData.chart.chart).length) {
+            result.ok.push([FullInfo.chartFrom, 1]);
+            result.ok.push([FullInfo.chartTo, 1]);
+        } else {
+            var first = true;
+            var prevState = null;
+
+            for (var key in FullInfo.serviceData.chart.chart) {
+                var value = FullInfo.serviceData.chart.chart[key];
+                var ts = value.ts * 1000;
+                var state = value.state;
+
+                if (first) {
+                    first = false;
+
+                    if (FullInfo.chartFrom != ts) {
+                        result.ok.push([FullInfo.chartFrom, 1]);
+                        result.warning.push([FullInfo.chartFrom, 0]);
+                        result.critical.push([FullInfo.chartFrom, 0]);
+                        result.unknown.push([FullInfo.chartFrom, 0]);
+
+                        prevState = 0;
+                    }
+                }
+
+                if (prevState === null) {
+                    prevState = state;
+                }
+
+                var ok = (prevState == 0) ? 1 : 0;
+                var warning = (prevState == 1) ? 1 : 0;
+                var critical = (prevState == 2) ? 1 : 0;
+                var unknown = (prevState == 3) ? 1 : 0;
+
+                result.ok.push([ts - 1, ok]);
+                result.warning.push([ts - 1, warning]);
+                result.critical.push([ts - 1, critical]);
+                result.unknown.push([ts - 1, unknown]);
+
+
+                var ok = (state == 0) ? 1 : 0;
+                var warning = (state == 1) ? 1 : 0;
+                var critical = (state == 2) ? 1 : 0;
+                var unknown = (state == 3) ? 1 : 0;
+
+                result.ok.push([ts, ok]);
+                result.warning.push([ts, warning]);
+                result.critical.push([ts, critical]);
+                result.unknown.push([ts, unknown]);
+
+                prevState = state;
+            }
+
+            var ok = (prevState == 0) ? 1 : 0;
+            var warning = (prevState == 1) ? 1 : 0;
+            var critical = (prevState == 2) ? 1 : 0;
+            var unknown = (prevState == 3) ? 1 : 0;
+
+            result.ok.push([FullInfo.chartTo - 1, ok]);
+            result.warning.push([FullInfo.chartTo - 1, warning]);
+            result.critical.push([FullInfo.chartTo - 1, critical]);
+            result.unknown.push([FullInfo.chartTo - 1, unknown]);
+        }
+
+        var series = [
+            {
+                values: result.ok,
+                text: 'OK',
+                alphaArea: 1
+            },
+            {
+                values: result.critical,
+                text: 'CRITICAL',
+                alphaArea: 1
+            },
+            {
+                values: result.warning,
+                text: 'WARNING',
+                alphaArea: 1
+            },
+            {
+                values: result.unknown,
+                text: 'UNKNOWN',
+                alphaArea: 1
+            }
+        ];
+
+        return series;
+    }
+};
 Recheck = {
     recheckTimer: null,
     recheckStatus: 1,
@@ -4058,7 +4511,7 @@ Grouping = {
                 result += '<td class="abb"><span title="'+ item.abbreviation.name +'">'+ item.abbreviation.abb +'</span></td>';
 
                 //host
-                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="'+ item.host.url +'" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
+                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="javascript:void(0)" class="show-full-host-info">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
 
                 //service
                 var unAck = (item.service.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
@@ -4085,7 +4538,7 @@ Grouping = {
                     result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
-                        '		<li><a href="'+ item.service.url +'" class="service-name">'+ item.service.name +'</a></li>' +
+                        '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ item.service.name +'</a></li>' +
                         recheck +
                         notes  +
                         '	</ul>' +
@@ -4095,7 +4548,7 @@ Grouping = {
                     result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
-                        '		<li><a href="'+ item.service.url +'" class="service-name">'+ item.service.name +'</a></li>' +
+                        '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ item.service.name +'</a></li>' +
                         notes  +
                         '		<li>'  +
                         qAck  +

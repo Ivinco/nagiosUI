@@ -12,6 +12,7 @@ class xml
         $this->timeoutTabs = [];
         $this->memcacheFullName = '';
         $this->hosts = [];
+        $this->linksList = [];
         $this->getDataFromMemcache = true;
 
         global $memcacheEnabled;
@@ -168,7 +169,11 @@ class xml
     {
         return $this->hosts;
     }
-    public function setAllToMemcache($hosts)
+    public function returnFullInfo()
+    {
+        return $this->linksList;
+    }
+    public function setAllToMemcache($hosts, $fullInfo)
     {
         $start = time();
         logText($this->currentTab . ": started");
@@ -193,6 +198,20 @@ class xml
                         $this->hosts[$host][$service] = $alert;
                         $this->addToVerificateCheck($host, $service);
                         $this->checkBackendStatus((int)$alert['last_check']);
+                    }
+                }
+            }
+        }
+
+        foreach ($fullInfo as $list) {
+            foreach ($list as $host => $item) {
+                foreach ($item as $service => $alert) {
+                    if (!isset($this->linksList[$host])) {
+                        $this->linksList[$host] = [];
+                    }
+
+                    if (!isset($this->linksList[$host][$service])) {
+                        $this->linksList[$host][$service] = $alert;
                     }
                 }
             }
@@ -254,9 +273,11 @@ class xml
 
         if (count($errorsText) < count($this->currentTabList)) {
             $data = serialize($this->generateXml());
+            $fullInfo = serialize($this->linksList);
 
             $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 3600);
             $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 3600);
+            $this->memcache->set("{$this->memcacheFullName}_full_info", $fullInfo, 0, 3600);
         }
 
         if ($errorsText) {
@@ -876,7 +897,30 @@ class xml
         $this->addHistoryData($host, $service, $data);
         $this->checkBackendStatus((int)$data['last_check']);
 
+
+        $this->linksList[$host]['host data'] = [
+            'status_info' => $data['plugin_output'],
+            'last_check'  => (int)$data['last_check'],
+            'date'        => $this->getLastCheckDate($data['last_check']),
+            'acked'       => (int)$data['problem_has_been_acknowledged'],
+            'scheduled'   => (int)$data['scheduled_downtime_depth'],
+            'rta'         => (isset($data['performance_data']['rta'])) ? $data['performance_data']['rta'] : '',
+            'pl'          => (isset($data['performance_data']['pl']))  ? $data['performance_data']['pl']  : '',
+            'tab'         => $this->currentTabTmp,
+        ];
+
         foreach ($data['services'] as $service => $serviceData) {
+            $this->linksList[$host][$service] = [
+                'status_info' => $serviceData['plugin_output'],
+                'last_check'  => (int)$serviceData['last_check'],
+                'date'        => $this->getLastCheckDate($serviceData['last_check']),
+                'acked'       => (int)$serviceData['problem_has_been_acknowledged'],
+                'scheduled'   => (int)$serviceData['scheduled_downtime_depth'],
+                'rta'         => (isset($serviceData['performance_data']['rta'])) ? $serviceData['performance_data']['rta'] : '',
+                'pl'          => (isset($serviceData['performance_data']['pl']))  ? $serviceData['performance_data']['pl']  : '',
+                'tab'         => $this->currentTabTmp,
+            ];
+
             $this->addServiceToList($host, $service, $serviceData);
         }
     }

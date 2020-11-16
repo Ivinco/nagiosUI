@@ -815,3 +815,5 @@ table.dataTable thead .no-border-th {
 .alert-details-table tr:nth-child(even) {
     background: #e0e0e0;
 }
+
+#full-info-chart-license-text { display: none; }

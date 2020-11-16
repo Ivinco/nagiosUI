@@ -34,7 +34,7 @@ $history  = [];
 $servers  = returnServers($server, $serversList);
 
 foreach ($servers as $item) {
-    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, getDateForDB($date));
+    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $utils->getDateForDB($date));
 }
 
 $all = [
@@ -73,32 +73,6 @@ echo json_encode($history);
 http_response_code(200);
 die;
 
-function getDateForDB($ts) {
-    global $utils;
-
-    if ($utils->timeCorrectionType == $utils::BROWSER_TYPE_NAME) {
-        $ts -= $utils->timeCorrectionDiff * 60;
-    }
-
-    $ts -= getDiffToDB();
-    $ts += getDiffToUTC();
-    $date = new DateTime("@{$ts}");
-
-    return $date->format('Y-m-d H:i:s');
-}
-function getDiffToDB() {
-    return strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
-}
-function getDiffToUTC() {
-    global $utils;
-
-    date_default_timezone_set($utils->validateTimeZone($utils->timeCorrectionType));
-    $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
-    date_default_timezone_set($utils->default_time_zone);
-
-    return $diff;
-}
-
 function returnServers($server, $serversList) {
     $servers = [];
     if (!$server || $server == 'All') {
@@ -133,7 +107,7 @@ function returnTimestamp($date, $format) {
 function getDateDiff() {
     global $utils;
 
-    return $utils->timeCorrectionDiff * 60 + getDiffToDB() - getDiffToUTC();
+    return $utils->timeCorrectionDiff * 60 + $utils->getDiffToDB() - $utils->getDiffToUTC();
 }
 function returnCorrectedDate($requestDate, $format = 'Y-m-d H:i:s') {
     global $utils;
