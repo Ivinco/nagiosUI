@@ -899,6 +899,7 @@ class xml
 
 
         $this->linksList[$host]['host data'] = [
+            'state'       => (int)$data['current_state'],
             'status_info' => $data['plugin_output'],
             'last_check'  => (int)$data['last_check'],
             'date'        => $this->getLastCheckDate($data['last_check']),
@@ -911,6 +912,7 @@ class xml
 
         foreach ($data['services'] as $service => $serviceData) {
             $this->linksList[$host][$service] = [
+                'state'       => (int)$serviceData['current_state'],
                 'status_info' => $serviceData['plugin_output'],
                 'last_check'  => (int)$serviceData['last_check'],
                 'date'        => $this->getLastCheckDate($serviceData['last_check']),

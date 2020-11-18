@@ -229,6 +229,23 @@
         </ol>
     </div>
 </div>
+<div id="fullInfoHolder" style="display: none; padding: 0 0 50px 0; font-size: 15px; clear: both;">
+    <h3></h3>
+    <div class="full-info-error" style="display: none;"></div>
+    <div class="full-info-data"  style="display: none;"></div>
+    <table id="full-info-table"  style="display: none;">
+        <thead>
+            <tr>
+                <th class="abb-th"></th>
+                <th class="host-th">Host</th>
+                <th class="service-th">Service</th>
+                <th class="status-th">Status</th>
+                <th class="last_check-th">Last Check</th>
+                <th class="status_information-th">Status Information</th>
+            </tr>
+        </thead>
+    </table>
+</div>
 <div id="historyContent" style="display: none; padding: 0 0 50px 0; font-size: 15px; clear: both;">
     <div class="historyHeading" style="margin: 0 0 0 0; padding: 20px 0 0 0;">
         <table class="historyInput" cellpadding="0" cellspacing="0" border="0">
@@ -279,7 +296,7 @@
     <script src="js/datetimepicker.min.js"></script>
     <script src="js/zingchart.min.js"></script>
 <?php
-if ((isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_GET['stats'])) || (isset($_GET['emergency']) && trim($_GET['emergency']))) { ?>
+if ((isset($_GET['info']) && trim($_GET['info'])) || (isset($_GET['t']) && trim($_GET['t'])) || (isset($_GET['stats']) && trim($_GET['stats'])) || (isset($_GET['emergency']) && trim($_GET['emergency']))) { ?>
     <script src="js/jquery-ui-timepicker-addon.js"></script>
 <?php }
 
@@ -308,6 +325,8 @@ if (isset($_GET['emergency']) && trim($_GET['emergency'])) { ?>
                 Emergency.init();
             } else if (getParameterByName('users')) {
                 Users.init();
+            } else if (getParameterByName('info')) {
+                FullInfo.init();
             } else {
                 Search.init();
                 Grouping.init();

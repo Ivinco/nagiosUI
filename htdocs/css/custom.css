@@ -1,38 +1,50 @@
 html { font-family: arial, sans-serif; font-size: 10.66px; }
-#mainTable { background-color: #fff; font-family: arial, sans-serif; margin: 0; border: 0; padding: 2px; font-size: 10.66px; width: 100% !important; text-align: start; border-spacing: 2; table-layout: fixed; }
-#mainTable tr { color: #000; }
-#mainTable th { background-color: #f7f7f7; color: #000; text-align: left; vertical-align: middle; font-size: 13px; font-weight: bold; white-space: nowrap; padding: 3px; border: 0 !important; }
+#mainTable, #full-info-table { background-color: #fff; font-family: arial, sans-serif; margin: 0; border: 0; padding: 2px; font-size: 10.66px; width: 100% !important; text-align: start; border-spacing: 2; table-layout: fixed; }
+#mainTable tr, #full-info-table tr { color: #000; }
+#mainTable th, #full-info-table th { background-color: #f7f7f7; color: #000; text-align: left; vertical-align: middle; font-size: 13px; font-weight: bold; white-space: nowrap; padding: 3px; border: 0 !important; }
 #mainTable th.sorting { cursor: pointer; }
-#mainTable td { padding: 3px; vertical-align: middle; }
+#mainTable td, #full-info-table td { padding: 3px; vertical-align: middle; }
 #mainTable td.service.WARNING,
 #mainTable td.duration.WARNING,
 #mainTable td.status_information.WARNING,
 #mainTable td.comment.WARNING,
 #mainTable td.last_check.WARNING,
-#mainTable td.more.WARNING { background-color: rgb(254, 255, 193); }
+#mainTable td.more.WARNING,
+#full-info-table td.service.WARNING,
+#full-info-table td.status_information.WARNING,
+#full-info-table td.last_check.WARNING { background-color: rgb(254, 255, 193); }
 #mainTable td.service.UNKNOWN,
 #mainTable td.duration.UNKNOWN,
 #mainTable td.status_information.UNKNOWN,
 #mainTable td.comment.UNKNOWN,
 #mainTable td.last_check.UNKNOWN,
-#mainTable td.more.UNKNOWN { background-color: rgb(255, 218, 159); }
+#mainTable td.more.UNKNOWN,
+#full-info-table td.service.UNKNOWN,
+#full-info-table td.status_information.UNKNOWN,
+#full-info-table td.last_check.UNKNOWN { background-color: rgb(255, 218, 159); }
 #mainTable td.service.OK,
 #mainTable td.duration.OK,
 #mainTable td.status_information.OK,
 #mainTable td.comment.OK,
 #mainTable td.last_check.OK,
 #mainTable td.more.OK,
-#mainTable td.PENDING { background-color: rgb(219, 219, 219); }
+#mainTable td.PENDING,
+#full-info-table td.service.OK,
+#full-info-table td.status_information.OK,
+#full-info-table td.last_check.OK { background-color: rgb(219, 219, 219); }
 #mainTable td.service.CRITICAL,
 #mainTable td.duration.CRITICAL,
 #mainTable td.status_information.CRITICAL,
 #mainTable td.comment.CRITICAL,
 #mainTable td.last_check.CRITICAL,
-#mainTable td.more.CRITICAL { background-color: rgb(255, 187, 187); }
-#mainTable td.status.OK       { background-color: rgb(51, 255, 0); }
-#mainTable td.status.UNKNOWN  { background-color: rgb(255, 153, 0); }
-#mainTable td.status.WARNING  { background-color: rgb(255, 255, 0); }
-#mainTable td.status.CRITICAL { background-color: rgb(248, 56, 56); }
+#mainTable td.more.CRITICAL,
+#full-info-table td.service.CRITICAL,
+#full-info-table td.status_information.CRITICAL,
+#full-info-table td.last_check.CRITICAL { background-color: rgb(255, 187, 187); }
+#mainTable td.status.OK, #full-info-table td.status.OK       { background-color: rgb(51, 255, 0); }
+#mainTable td.status.UNKNOWN, #full-info-table td.status.UNKNOWN  { background-color: rgb(255, 153, 0); }
+#mainTable td.status.WARNING, #full-info-table td.status.WARNING  { background-color: rgb(255, 255, 0); }
+#mainTable td.status.CRITICAL, #full-info-table td.status.CRITICAL { background-color: rgb(248, 56, 56); }
 #mainTable td.CRITICAL.origWARNING {
   background: rgb(248, 56, 56); /* Old browsers */
   background: -moz-linear-gradient(-45deg, rgb(248, 56, 56) 75%, rgb(255, 255, 0) 25%); /* FF3.6+ */
@@ -67,25 +79,48 @@ copy
 copy
 }
 
-#mainTable .abb,                #mainTable .abb-th                { width:  12px !important; overflow: hidden; text-align: center; }
-#mainTable .host,               #mainTable .host-th               { width:  87px !important; word-break: break-all; }
-#mainTable .service,            #mainTable .service-th            { width: 327px !important; word-break: break-all; }
-#mainTable .status,             #mainTable .status-th             { width:  66px !important; white-space: nowrap; }
-#mainTable .last_check,         #mainTable .last_check-th         { width: 100px !important; white-space: nowrap; }
+#mainTable .abb,
+#mainTable .abb-th,
+#full-info-table .abb,
+#full-info-table .abb-th { width:  12px !important; overflow: hidden; text-align: center; }
+#mainTable .host,
+#mainTable .host-th { width:  87px !important; word-break: break-all; }
+#full-info-table .host,
+#full-info-table .host-th { width:  120px !important; word-break: break-all; }
+#mainTable .service,
+#mainTable .service-th,
+#full-info-table .service,
+#full-info-table .service-th{ width: 327px !important; word-break: break-all; }
+#mainTable .status,
+#mainTable .status-th,
+#full-info-table .status,
+#full-info-table .status-th { width:  66px !important; white-space: nowrap; }
+#mainTable .last_check,
+#mainTable .last_check-th,
+#full-info-table .last_check,
+#full-info-table .last_check-th{ width: 100px !important; white-space: nowrap; }
 #mainTable .duration-sec,       #mainTable .duration-sec-th       { width:   0px !important; display: none; } 
 #mainTable .duration,           #mainTable .duration-th           { width:  87px !important; white-space: nowrap; } 
-#mainTable .status_information, #mainTable .status_information-th { width:  auto !important; }
+#mainTable .status_information,
+#mainTable .status_information-th,
+#full-info-table .status_information,
+#full-info-table .status_information-th { width:  auto !important; }
 #mainTable .more,               #mainTable .more-th               { width:  19px !important; white-space: nowrap; padding: 0; display: none; text-align: center; }
 #mainTable .comment                                               { width: 267px !important; display: table-cell; position: relative; }
-#mainTable td.host, #mainTable td.abb { background-color: rgb(219, 219, 219); }
-#mainTable td.status_information { word-break: break-all; }
+#mainTable td.host,
+#mainTable td.abb,
+#full-info-table td.host,
+#full-info-table td.abb { background-color: rgb(219, 219, 219); }
+#mainTable td.status_information,
+#full-info-table td.status_information{ word-break: break-all; }
 #mainTable .comment span { display: block; word-break: break-all; }
 #mainTable .status .downtime_id { color: #fff; cursor: pointer; text-shadow: 0px 0px 4px rgba(0, 0, 0, 1); }
 #mainTable .status .downtime_id span { display: none; }
 #mainTable .more button { width: 19px; height: 19px; padding: 0 4px 4px 4px; }
 #mainTable .more-info-icon { display: none; width: 19px; height: 19px; background: url('../images/all_icons.png') no-repeat -133px 0; margin: 12px 3px 0 0; padding: 0; cursor: pointer; }
 #mainTable .more-comment-icon { display: none; width: 19px; height: 19px; background: url('../images/all_icons.png') no-repeat -190px 0; margin: 12px 3px 0 0; padding: 0; cursor: pointer; }
-#mainTable td.abb span { font-weight: bold; font-size: 15px; }
+#mainTable td.abb span, #full-info-table td.abb span { font-weight: bold; font-size: 15px; }
+#full-info-table_info {display: none;}
 
 #mainTable .group-list { cursor: pointer; }
 #mainTable .group-list > td { border-top: 1px solid #000; }
@@ -119,11 +154,11 @@ copy
 #ext_search .list-recheck-icon  { background: url('../images/all_icons.png') no-repeat -114px 0; }
 #ext_search .list-edit-icon     { background: url('../images/all_icons.png') no-repeat -228px 0; }
 
-#mainTable .likeTable, .history-table .likeTable { display: table; width: 100%; }
-#mainTable .likeTable ul, .history-table .likeTable ul { display: table-row; list-style: none; margin: 0; padding: 0; }
-#mainTable .likeTable ul li, .history-table .likeTable ul li { display: table-cell; vertical-align: middle; }
-#mainTable .likeTable ul li:not(:first-child), .history-table .likeTable ul li:not(:first-child) { width: 19px; }
-#mainTable .likeTable ul li:first-child, .history-table .likeTable ul li:first-child { width: 100%; }
+#mainTable .likeTable, .history-table .likeTable, #full-info-table  .likeTable { display: table; width: 100%; }
+#mainTable .likeTable ul, .history-table .likeTable ul, #full-info-table .likeTable ul { display: table-row; list-style: none; margin: 0; padding: 0; }
+#mainTable .likeTable ul li, .history-table .likeTable ul li, #full-info-table .likeTable ul li { display: table-cell; vertical-align: middle; }
+#mainTable .likeTable ul li:not(:first-child), .history-table .likeTable ul li:not(:first-child), #full-info-table .likeTable ul li:not(:first-child) { width: 19px; }
+#mainTable .likeTable ul li:first-child, .history-table .likeTable ul li:first-child, #full-info-table .likeTable ul li:first-child { width: 100%; }
 #mainTable .likeTable .list-unack-icon,
 #mainTable .likeTable .list-downtime-icon,
 #mainTable .likeTable .list-notes-icon,
@@ -135,18 +170,22 @@ copy
 #mainTable .edit_acknowledgeIt,
 #mainTable .edit_acknowledgeGroup,
 #mainTable .edit_scheduleIt,
-#mainTable .edit_scheduleGroup            { width: 19px; height: 19px; display: inline-block; margin: 0 0 0 0; padding: 0; cursor: pointer; }
+#mainTable .edit_scheduleGroup,
+#full-info-table .likeTable .list-ack-icon,
+#full-info-table .likeTable .list-sched-icon { width: 19px; height: 19px; display: inline-block; margin: 0 0 0 0; padding: 0; cursor: pointer; }
 #mainTable .likeTable .list-unack-icon    { background: url('../images/all_icons.png') no-repeat    0px 0; }
 #mainTable .likeTable .list-downtime-icon { background: url('../images/all_icons.png') no-repeat  -19px 0; }
 #mainTable .likeTable .list-notes-icon    { background: url('../images/all_icons.png') no-repeat  -38px 0; }
 #mainTable .likeTable .list-qack-icon     { background: url('../images/all_icons.png') no-repeat  -57px 0; }
-#mainTable .likeTable .list-ack-icon      { background: url('../images/all_icons.png') no-repeat  -76px 0; }
+#mainTable .likeTable .list-ack-icon,
+#full-info-table .likeTable .list-ack-icon       { background: url('../images/all_icons.png') no-repeat  -76px 0; }
 #mainTable .edit_planned_comment,
 #mainTable .edit_acknowledgeIt,
 #mainTable .edit_acknowledgeGroup,
 #mainTable .edit_scheduleIt,
 #mainTable .edit_scheduleGroup            { background: url('../images/all_icons.png') no-repeat -228px 0; }
-#mainTable .likeTable .list-sched-icon    { background: url('../images/all_icons.png') no-repeat  -95px 0; }
+#mainTable .likeTable .list-sched-icon,
+#full-info-table .likeTable .list-sched-icon{ background: url('../images/all_icons.png') no-repeat  -95px 0; }
 #mainTable .likeTable .list-recheck-icon  { background: url('../images/all_icons.png') no-repeat -114px 0; }
 
 #mainTable .likeTable .list-ack-icon.unAcknowledgeIt,

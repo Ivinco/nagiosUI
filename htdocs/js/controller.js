@@ -166,7 +166,7 @@ Search.changeNagiosComment = function(comment) {
 
     return replacedText;
 }
-Search.allDataTable       = (getParameterByName('emergency') || getParameterByName('t') || getParameterByName('stats') || getParameterByName('users')) ? false : $('#mainTable').DataTable({
+Search.allDataTable       = (getParameterByName('info') || getParameterByName('emergency') || getParameterByName('t') || getParameterByName('stats') || getParameterByName('users')) ? false : $('#mainTable').DataTable({
 		'paging':      false,
 		'ordering':    true,
 		'order':       Search.orderBy[Search.currentTab],
@@ -2911,23 +2911,408 @@ FullInfo = {
     isHost: false,
     hostThis: null,
     serviceThis: null,
+    ctrlIsPressed: false,
+    fullHostsList: null,
     init: function() {
-        $(document).on('click', '.show-full-host-info', function() {
-            FullInfo.isHost      = true;
-            FullInfo.hostThis    = $(this);
-            FullInfo.serviceThis = null;
+        if (FullInfo.isInfo()) {
+            $('#full-info-table, #fullInfoHolder .full-info-data, #fullInfoHolder .full-info-error').hide();
 
-            FullInfo.showHostData(FullInfo.hostThis);
+            if (!getParameterByName('host')) {
+                $('#fullInfoHolder h3').text('Hosts list');
+                $('#full-info-table').html('').show();
+                FullInfo.drawFullHostsList();
+            } else if (getParameterByName('host') && !getParameterByName('service')) {
+                $('#fullInfoHolder h3').html('Host: ' + getParameterByName('host') + ' details<div style="float: right;"><a href="?info=1" style="font-weight: normal; font-size: 13px; color: #000;">Back to hosts list</a></div>');
+                $('#full-info-table').html('').show();
+                FullInfo.drawHostsList();
+            } else if (getParameterByName('host') && getParameterByName('service')) {
+                $('#fullInfoHolder h3').html('Service '+ getParameterByName('service') +' on '+ getParameterByName('host') +' information<div style="float: right;"><a href="?info=1&host='+ encodeURIComponent(getParameterByName('host')) +'" style="font-weight: normal; font-size: 13px; color: #000;">Back to hosts details</a></div>');
+                FullInfo.host    = getParameterByName('host');
+                FullInfo.service = getParameterByName('service')
+                FullInfo.drawServiceDetails();
+            }
+        } else {
+            FullInfo.drawDialog();
+        }
+
+        FullInfo.events();
+    },
+    getStateText: function(state) {
+        if (state == 1) {
+            return 'WARNING';
+        }
+
+        if (state == 2) {
+            return 'CRITICAL';
+        }
+
+        if (state == 3) {
+            return 'UNKNOWN';
+        }
+
+        return 'OK';
+    },
+    drawHostsList: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(Search.currentServerTab),
+                'host':                 encodeURIComponent(getParameterByName('host')),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
+            success: function(data){
+                $('#loading').hide();
+                $('#fullInfoHolder').show();
+
+                if (typeof data.error !== 'undefined') {
+                    $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
+                    return;
+                }
+
+                FullInfo.fullHostsList = data;
+                FullInfo.drawHostDetails();
+                FullInfo.drawFullServiceData();
+            }
+        });
+    },
+    drawFullHostsList: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(Search.currentServerTab),
+                'hosts_list':           1,
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
+            success: function(data) {
+                $('#loading').hide();
+                $('#fullInfoHolder').show();
+                FullInfo.fullHostsList = data;
+                FullInfo.drawFullHostData();
+            }
+        });
+    },
+    drawFullHostData: function() {
+        if (typeof FullInfo.fullHostsList.error !== 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: ' + FullInfo.fullHostsList.error).show();
+            return;
+        }
+
+        if (typeof FullInfo.fullHostsList.hosts_list === 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: no data to draw hosts list.').show();
+            return;
+        }
+
+        $('#full-info-table').html('' +
+            '        <thead>\n' +
+            '            <tr>\n' +
+            '                <th class="abb-th"></th>\n' +
+            '                <th class="host-th">Host</th>\n' +
+            '                <th class="status-th">Status</th>\n' +
+            '                <th class="last_check-th">Last Check</th>\n' +
+            '                <th class="status_information-th">Status Information</th>\n' +
+            '            </tr>\n' +
+            '        </thead>');
+
+        var data = [];
+
+        for (var key in FullInfo.fullHostsList.hosts_list) {
+            var value = FullInfo.fullHostsList.hosts_list[key];
+
+            data.push({
+                abbreviation: {
+                    abb: value['tab'].charAt(0).toUpperCase(),
+                    name: value['tab']
+                },
+                host: {
+                    name: value['host']
+                },
+                status: {
+                    name: FullInfo.getStateText(value['state'])
+                },
+                last: {
+                    name: value['date']
+                },
+                info: {
+                    name: value['status_info']
+                }
+            });
+        }
+
+        $('#full-info-table').DataTable({
+            'searching':   false,
+            'paging':      false,
+            'ordering':    false,
+            'data':        data,
+            'columns':     [
+                {
+                    data:      'abbreviation',
+                    className: 'abb',
+                    render: function (data, type, full, meta) {
+                        return '<span title="'+ data.name +'">'+ data.abb +'</span>';
+                    },
+                },
+                {
+                    data:      'host',
+                    className: 'host',
+                    render: function ( data, type, full, meta ) {
+                        return '<a href="?info=1&host='+ encodeURIComponent(data.name) +'">'+ data.name +'</a>';
+                    },
+                },
+                {
+                    data:      'status',
+                    className: 'status',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+                {
+                    data: 'last',
+                    className: 'last_check',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+                {
+                    data:      'info',
+                    className: 'status_information main',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+            ],
+            'createdRow': function(row, data, index) {
+                if (data.status.name) {
+                    $(row).find('.status, .last_check, .status_information').addClass(data.status.name);
+                }
+            },
+        });
+    },
+    drawHostDetails: function() {
+        if (typeof FullInfo.fullHostsList.error !== 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: ' + FullInfo.fullHostsList.error).show();
+            return;
+        }
+
+        if (typeof FullInfo.fullHostsList.check === 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: no data to show host details.').show();
+            return;
+        }
+
+        FullInfo.host = getParameterByName('host');
+
+        var html = '<hr />';
+        html += '<table style="width: 600px; font-size: 13px; line-height: 150%;">';
+        html = FullInfo.getHostTable(FullInfo.fullHostsList, html);
+        html += '</table>';
+        html += '<hr />';
+        html += '<h3>Checks for '+ FullInfo.host +'</h3>';
+
+        $('.full-info-data').show().html(html);
+    },
+    drawFullServiceData: function() {
+        if (typeof FullInfo.fullHostsList.error !== 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: ' + FullInfo.fullHostsList.error).show();
+            return;
+        }
+
+        if (typeof FullInfo.fullHostsList.chart === 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: no data to draw services list.').show();
+            return;
+        }
+
+        $('#full-info-table').html('' +
+            '        <thead>\n' +
+            '            <tr>\n' +
+            '                <th class="abb-th"></th>\n' +
+            '                <th class="host-th">Host</th>\n' +
+            '                <th class="service-th">Service</th>\n' +
+            '                <th class="status-th">Status</th>\n' +
+            '                <th class="last_check-th">Last Check</th>\n' +
+            '                <th class="status_information-th">Status Information</th>\n' +
+            '            </tr>\n' +
+            '        </thead>');
+
+        var data = [];
+
+        for (var key in FullInfo.fullHostsList.chart) {
+            var value = FullInfo.fullHostsList.chart[key];
+
+            data.push({
+                abbreviation: {
+                    abb: value['tab'].charAt(0).toUpperCase(),
+                    name: value['tab']
+                },
+                host: {
+                    name: value['host']
+                },
+                service: {
+                    name:  value['service'],
+                    host:  value['host'],
+                    acked: value['acked'],
+                    sched: value['scheduled']
+                },
+                status: {
+                    name: FullInfo.getStateText(value['state'])
+                },
+                last: {
+                    name: value['date']
+                },
+                info: {
+                    name: value['status_info']
+                }
+            });
+        }
+
+        $('#full-info-table').DataTable({
+            'searching':   false,
+            'paging':      false,
+            'ordering':    false,
+            'data':        data,
+            'columns':     [
+                {
+                    data:      'abbreviation',
+                    className: 'abb',
+                    render: function (data, type, full, meta) {
+                        return '<span title="'+ data.name +'">'+ data.abb +'</span>';
+                    },
+                },
+                {
+                    data:      'host',
+                    className: 'host',
+                    render: function ( data, type, full, meta ) {
+                        return '<a href="?info=1&host='+ encodeURIComponent(data.name) +'">'+ data.name +'</a>';
+                    },
+                },
+                {
+                    data:      'service',
+                    className: 'service',
+                    render: function ( data, type, full, meta ) {
+                        var acked = (data.acked) ? '<li><span class="list-ack-icon icons" alt="Acknowledged" title="Acknowledged" style="cursor: auto;"></span></li>' : '';
+                        var sched = (data.sched) ? '<li><span class="list-sched-icon icons" alt="Scheduled Downtime" title="Scheduled Downtime" style="cursor: auto;"></span></li>' : '';
+
+                        return '<div class="likeTable"><ul><li><a href="?info=1&host='+ encodeURIComponent(data.host) +'&service='+ encodeURIComponent(data.name) +'">'+ data.name +'</a></li>' +
+                            acked +
+                            sched +
+                            '</ul></div>';
+                    },
+                },
+                {
+                    data:      'status',
+                    className: 'status',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+                {
+                    data: 'last',
+                    className: 'last_check',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+                {
+                    data:      'info',
+                    className: 'status_information main',
+                    render: function ( data, type, full, meta ) {
+                        return data.name;
+                    },
+                },
+            ],
+            'createdRow': function(row, data, index) {
+                if (data.status.name) {
+                    $(row).find('.service, .status, .last_check, .status_information').addClass(data.status.name);
+                }
+            },
+        });
+    },
+    drawServiceDetails: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(Search.currentServerTab),
+                'host':                 encodeURIComponent(FullInfo.host),
+                'service':              encodeURIComponent(FullInfo.service),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset(),
+                'from':                 moment.utc(FullInfo.periodFrom).unix(),
+                'to':                   moment.utc(FullInfo.periodTo).unix(),
+            },
+            success: function(data){
+                $('#loading').hide();
+                $('#fullInfoHolder').show();
+
+                if (typeof data.error !== 'undefined') {
+                    $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
+                    return;
+                }
+
+                FullInfo.serviceData = data;
+                FullInfo.chartFrom   = data.chart.from;
+                FullInfo.chartTo     = data.chart.to;
+                FullInfo.drawServiceTable();
+                FullInfo.drawDatesSelect();
+                FullInfo.drawChart();
+            }
+        });
+    },
+    drawServiceTable: function() {console.log(FullInfo.serviceData);
+        if (typeof FullInfo.serviceData.check === 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: no data to show host details.').show();
+            return;
+        }
+
+        var html = '<hr />';
+        html += '<table style="width: 600px; font-size: 13px; line-height: 150%;">';
+        html = FullInfo.getServiceTable(FullInfo.serviceData, html);
+        html += '</table>';
+        html += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none; border-top: 1px solid #000;border-bottom: 1px solid #000; margin-top: 20px; padding-bottom: 12px;" id="full-calendar_switch"></table>';
+        html += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none;" id="full-info-chart"></table>';
+
+        $('.full-info-data').show().html(html);
+    },
+    events: function() {
+        $(document).keydown(function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                FullInfo.ctrlIsPressed = true;
+            }
+        });
+
+        $(document).keyup(function() {
+            FullInfo.ctrlIsPressed = false;
+        });
+
+        $(document).on('click', '.show-full-host-info', function() {
+            if (FullInfo.ctrlIsPressed) {
+                window.open('?info=1&host=' + encodeURIComponent($(this).text()),'_blank');
+            } else {
+                FullInfo.isHost      = true;
+                FullInfo.hostThis    = $(this);
+                FullInfo.serviceThis = null;
+
+                FullInfo.showHostData(FullInfo.hostThis);
+            }
 
             return false;
         });
 
         $(document).on('click', '.show-full-service-info', function() {
-            FullInfo.isHost      = false;
-            FullInfo.hostThis    = null;
-            FullInfo.serviceThis = $(this);
+            if (FullInfo.ctrlIsPressed) {
+                FullInfo.host    = $(this).closest('tr').find('.show-full-host-info').text();
+                FullInfo.service = $(this).closest('tr').attr('data-service');
 
-            FullInfo.showServiceData(FullInfo.serviceThis);
+                window.open('?info=1&host=' + encodeURIComponent($(this).closest('tr').find('.show-full-host-info').text()) + '&service=' + encodeURIComponent($(this).closest('tr').attr('data-service')),'_blank');
+            } else {
+                FullInfo.isHost      = false;
+                FullInfo.hostThis    = null;
+                FullInfo.serviceThis = $(this);
+
+                FullInfo.showServiceData(FullInfo.serviceThis);
+            }
 
             return false;
         });
@@ -2951,18 +3336,27 @@ FullInfo = {
             FullInfo.periodTo   = (item.attr('data-to') != 'custom')   ? item.attr('data-to')   : $('#period_to_date').val();
         });
 
-        $(document).on('click', '#filter_period', function() {
-            $('.full-info-loading').show();
-            $('.full-info-data, #full-calendar_switch, #full-info-chart').html('').hide();
+        $(document).on('click', '#filter_period, #period_refresh', function() {
+            if (FullInfo.isInfo()) {
+                $('#loading').show();
+                $('.full-info-data, .full-info-table').html('');
+                $('#fullInfoHolder').hide();
 
-            if (FullInfo.isHost) {
-                FullInfo.showHostData(FullInfo.hostThis);
+                FullInfo.drawServiceDetails();
             } else {
-                FullInfo.showServiceData(FullInfo.serviceThis);
+                $('.full-info-loading').show();
+                $('.full-info-data, #full-calendar_switch, #full-info-chart').html('').hide();
+
+                if (FullInfo.isHost) {
+                    FullInfo.showHostData(FullInfo.hostThis);
+                } else {
+                    FullInfo.showServiceData(FullInfo.serviceThis);
+                }
             }
         });
-
-        FullInfo.drawDialog();
+    },
+    isInfo: function() {
+        return (getParameterByName('info'));
     },
     showServiceData: function(service) {
         FullInfo.host    = service.closest('tr').find('.show-full-host-info').text();
@@ -3009,7 +3403,8 @@ FullInfo = {
 
         html += '<td style="width: 240px;">To: <input type="text" name="period_to_date" id="period_to_date" class="text hasDatepicker" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
 
-        html += '<td><input type="button" value="draw" name="filter_period" id="filter_period"></td>';
+        html += '<td style="width: 80px;"><input type="button" value="draw" name="filter_period" id="filter_period"></td>';
+        html += '<td><span style="float: left; width: 19px; height: 19px; background: url(../images/all_icons.png) no-repeat -114px 0; cursor: pointer;" id="period_refresh"></span></td>';
 
         html += '</tr>';
 
@@ -3081,6 +3476,30 @@ FullInfo = {
             }
         });
     },
+    getHostTable: function(data, dialog) {
+        if (typeof data.check !== 'undefined') {
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            dialog += '<tr><td><b>Status Information</b></td><td>'+ data.check.status_info +'</td></tr>';
+            dialog += '<tr><td><b>Performance Data</b></td><td>rta: '+ data.check.rta +'; pl: '+ data.check.pl +'</td></tr>';
+            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((data.check.acked) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ data.check.date +'</td></tr>';
+        }
+
+        return dialog;
+    },
+    getServiceTable: function(data, dialog) {
+        if (typeof data.check !== 'undefined') {
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            dialog += '<tr><td><b>Service</b></td><td>'+ FullInfo.service +'</td></tr>';
+            dialog += '<tr><td><b>Status Information</b></td><td>'+ data.check.status_info +'</td></tr>';
+            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((data.check.acked) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ data.check.date +'</td></tr>';
+        }
+
+        return dialog;
+    },
     drawHostData: function() {
         $('#fullInfo .full-info-loading').hide();
 
@@ -3090,14 +3509,8 @@ FullInfo = {
             dialog += '<tr><td><b>Error</b></td><td>'+ FullInfo.hostData.error +'</td></tr>';
         }
 
-        if (typeof FullInfo.hostData.check !== 'undefined') {
-            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
-            dialog += '<tr><td><b>Status Information</b></td><td>'+ FullInfo.hostData.check.status_info +'</td></tr>';
-            dialog += '<tr><td><b>Performance Data</b></td><td>rta: '+ FullInfo.hostData.check.rta +'; pl: '+ FullInfo.hostData.check.pl +'</td></tr>';
-            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((FullInfo.hostData.check.scheduled) ? "yes" : "no") +'</td></tr>';
-            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((FullInfo.hostData.check.acked) ? "yes" : "no") +'</td></tr>';
-            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ FullInfo.hostData.check.date +'</td></tr>';
-        }
+        dialog += '<tr><td colspan="2" align="right"><a href="?info=1&host='+ encodeURIComponent(FullInfo.host) +'" target="_blank">All checks for this host</a></td></tr>'
+        dialog = FullInfo.getHostTable(FullInfo.hostData, dialog);
 
         $('#fullInfo .full-info-data').show().html(dialog);
     },
@@ -3110,14 +3523,7 @@ FullInfo = {
             dialog += '<tr><td><b>Error</b></td><td>'+ FullInfo.serviceData.error +'</td></tr>';
         }
 
-        if (typeof FullInfo.serviceData.check !== 'undefined') {
-            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
-            dialog += '<tr><td><b>Service</b></td><td>'+ FullInfo.service +'</td></tr>';
-            dialog += '<tr><td><b>Status Information</b></td><td>'+ FullInfo.serviceData.check.status_info +'</td></tr>';
-            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((FullInfo.serviceData.check.scheduled) ? "yes" : "no") +'</td></tr>';
-            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((FullInfo.serviceData.check.acked) ? "yes" : "no") +'</td></tr>';
-            dialog += '<tr><td><b>Last Check Time</b></td><td>'+ FullInfo.serviceData.check.date +'</td></tr>';
-        }
+        dialog = FullInfo.getServiceTable(FullInfo.serviceData, dialog);
 
         $('#fullInfo .full-info-data').show().html(dialog);
     },

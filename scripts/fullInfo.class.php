@@ -28,14 +28,74 @@ class fullInfo
         $this->returnData();
     }
 
+    public function getFullHostsList()
+    {
+        $this->setServer();
+        $this->setMemcacheName();
+
+        if (!$this->memcacheFullName) {
+            $this->returnError('Memcache is disabled');
+        }
+
+        $this->getData();
+        $this->returnFullHostsListData();
+    }
+    private function returnFullHostsListData()
+    {
+        $list = [];
+
+        foreach ($this->data as $server => $data) {
+            if (isset($data['host data'])) {
+                $check         = $data['host data'];
+                $check['host'] = $server;
+                $check['date'] = $this->utils->returnCorrectedDate($check['date'], $check['tab']);
+
+                $list[] = $check;
+            }
+        }
+
+        usort($list, function ($a, $b) {
+            return strcmp($a['host'], $b['host']);
+        });
+
+        echo json_encode(['hosts_list' => $list]);
+    }
+
     private function returnData()
     {
         $check = ($this->service) ? $this->getCheck($this->service) : $this->getCheck('host data');
-        $chart = ($this->service) ? $this->getServiceData() : [];
+        $chart = ($this->service) ? $this->getServiceData()         : $this->getChecksList();
 
         echo json_encode(['check' => $check, 'chart' => $chart]);
     }
 
+    private function getChecksList()
+    {
+        $list = [];
+
+        if (!isset($this->data[$this->host])) {
+            $this->returnError('Checks for '. $this->host .' not found');
+        }
+
+        foreach ($this->data[$this->host] as $service => $data) {
+            if ($service == 'host data') {
+                continue;
+            }
+
+            $check            = $data;
+            $check['service'] = $service;
+            $check['host']    = $this->host;
+            $check['date']    = $this->utils->returnCorrectedDate($check['date'], $check['tab']);
+
+            $list[] = $check;
+        }
+
+        usort($list, function ($a, $b) {
+            return strcmp($a['service'], $b['service']);
+        });
+
+        return $list;
+    }
     private function getServiceData()
     {
         $this->setDates();
@@ -155,6 +215,8 @@ class fullInfo
 
         $check = $this->data[$this->host][$service];
         $check['date'] = $this->utils->returnCorrectedDate($check['date'], $check['tab']);
+
+        $this->server = $check['tab'];
 
         return $check;
     }
