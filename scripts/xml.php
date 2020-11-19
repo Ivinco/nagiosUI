@@ -910,10 +910,17 @@ class xml
             'tab'         => $this->currentTabTmp,
         ];
 
+        $usersArray = $this->db->returnUsersList();
+
         foreach ($data['services'] as $service => $serviceData) {
+            $comments        = $this->returnCommentData($serviceData, $service, $host);
+            $plugin_output   = nl2br(htmlentities(str_replace(array('<br>', '<br/>'), array("\n", "\n"), $serviceData['plugin_output']), ENT_XML1));
+            $last_check_date = $this->getLastCheckDate($serviceData['last_check'], 'm-d-Y H:i:s');
+            $durationSec     = time() - (int)$serviceData['last_state_change'];
+
             $this->linksList[$host][$service] = [
                 'state'       => (int)$serviceData['current_state'],
-                'status_info' => $serviceData['plugin_output'],
+                'status_info' => $plugin_output,
                 'last_check'  => (int)$serviceData['last_check'],
                 'date'        => $this->getLastCheckDate($serviceData['last_check']),
                 'acked'       => (int)$serviceData['problem_has_been_acknowledged'],
@@ -921,7 +928,17 @@ class xml
                 'rta'         => (isset($serviceData['performance_data']['rta'])) ? $serviceData['performance_data']['rta'] : '',
                 'pl'          => (isset($serviceData['performance_data']['pl']))  ? $serviceData['performance_data']['pl']  : '',
                 'tab'         => $this->currentTabTmp,
+                'notesUrl'    => $this->returnNotesUrl($host, $service, $this->currentTabTmp),
+                'comments'    => $comments,
+                'last_check_date' => $last_check_date,
+                'userAvatar'      => (isset($usersArray[$comments['ackLastAuthor']]))   ? md5($usersArray[$comments['ackLastAuthor']])   : '',
+                'scheduserAvatar' => (isset($usersArray[$comments['schedLastAuthor']])) ? md5($usersArray[$comments['schedLastAuthor']]) : '',
+                'durationSec'     => $durationSec,
+                'duration'        => $this->duration($durationSec, false),
             ];
+            $this->linksList[$host][$service]['comments']['ackComment'] = $this->returnCorrectedComments($this->linksList[$host][$service]['comments']['ackComment'], $this->currentTabTmp);
+            $this->linksList[$host][$service]['comments']['schedComment'] = $this->returnCorrectedComments($this->linksList[$host][$service]['comments']['schedComment'], $this->currentTabTmp);
+
 
             $this->addServiceToList($host, $service, $serviceData);
         }
@@ -951,6 +968,21 @@ class xml
 
         $this->addHistoryData($host, $service, $data);
         $this->checkBackendStatus((int)$data['last_check']);
+    }
+    private function returnCorrectedComments($comment, $tab) {
+        if (!$comment) {
+            return "";
+        }
+
+        $commentTmp = explode('<br /><br />', $comment);
+
+        foreach ($commentTmp as $key => $value) {
+            $parts = explode('<br />added: ', $value);
+            $parts[1] = $this->utils->returnCorrectedDate($parts[1], $tab, 'M j H:i', true);
+            $commentTmp[$key] = implode('<br />added: ', $parts);
+        }
+
+        return implode('<br /><br />', $commentTmp);
     }
     private function returnCommentData($data, $service, $host)
     {

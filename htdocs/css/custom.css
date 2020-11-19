@@ -12,7 +12,9 @@ html { font-family: arial, sans-serif; font-size: 10.66px; }
 #mainTable td.more.WARNING,
 #full-info-table td.service.WARNING,
 #full-info-table td.status_information.WARNING,
-#full-info-table td.last_check.WARNING { background-color: rgb(254, 255, 193); }
+#full-info-table td.last_check.WARNING,
+#full-info-table td.duration.WARNING,
+#full-info-table td.comment.WARNING { background-color: rgb(254, 255, 193); }
 #mainTable td.service.UNKNOWN,
 #mainTable td.duration.UNKNOWN,
 #mainTable td.status_information.UNKNOWN,
@@ -21,7 +23,9 @@ html { font-family: arial, sans-serif; font-size: 10.66px; }
 #mainTable td.more.UNKNOWN,
 #full-info-table td.service.UNKNOWN,
 #full-info-table td.status_information.UNKNOWN,
-#full-info-table td.last_check.UNKNOWN { background-color: rgb(255, 218, 159); }
+#full-info-table td.last_check.UNKNOWN,
+#full-info-table td.duration.UNKNOWN,
+#full-info-table td.comment.UNKNOWN { background-color: rgb(255, 218, 159); }
 #mainTable td.service.OK,
 #mainTable td.duration.OK,
 #mainTable td.status_information.OK,
@@ -31,7 +35,9 @@ html { font-family: arial, sans-serif; font-size: 10.66px; }
 #mainTable td.PENDING,
 #full-info-table td.service.OK,
 #full-info-table td.status_information.OK,
-#full-info-table td.last_check.OK { background-color: rgb(219, 219, 219); }
+#full-info-table td.last_check.OK,
+#full-info-table td.duration.OK,
+#full-info-table td.comment.OK { background-color: rgb(219, 219, 219); }
 #mainTable td.service.CRITICAL,
 #mainTable td.duration.CRITICAL,
 #mainTable td.status_information.CRITICAL,
@@ -40,7 +46,9 @@ html { font-family: arial, sans-serif; font-size: 10.66px; }
 #mainTable td.more.CRITICAL,
 #full-info-table td.service.CRITICAL,
 #full-info-table td.status_information.CRITICAL,
-#full-info-table td.last_check.CRITICAL { background-color: rgb(255, 187, 187); }
+#full-info-table td.last_check.CRITICAL,
+#full-info-table td.duration.CRITICAL,
+#full-info-table td.comment.CRITICAL { background-color: rgb(255, 187, 187); }
 #mainTable td.status.OK, #full-info-table td.status.OK       { background-color: rgb(51, 255, 0); }
 #mainTable td.status.UNKNOWN, #full-info-table td.status.UNKNOWN  { background-color: rgb(255, 153, 0); }
 #mainTable td.status.WARNING, #full-info-table td.status.WARNING  { background-color: rgb(255, 255, 0); }
@@ -100,20 +108,24 @@ copy
 #full-info-table .last_check,
 #full-info-table .last_check-th{ width: 100px !important; white-space: nowrap; }
 #mainTable .duration-sec,       #mainTable .duration-sec-th       { width:   0px !important; display: none; } 
-#mainTable .duration,           #mainTable .duration-th           { width:  87px !important; white-space: nowrap; } 
+#mainTable .duration,
+#mainTable .duration-th,
+#full-info-table .duration,
+#full-info-table .duration-th { width:  87px !important; white-space: nowrap; }
 #mainTable .status_information,
 #mainTable .status_information-th,
 #full-info-table .status_information,
 #full-info-table .status_information-th { width:  auto !important; }
 #mainTable .more,               #mainTable .more-th               { width:  19px !important; white-space: nowrap; padding: 0; display: none; text-align: center; }
-#mainTable .comment                                               { width: 267px !important; display: table-cell; position: relative; }
+#mainTable .comment,
+#full-info-table .comment { width: 267px !important; display: table-cell; position: relative; }
 #mainTable td.host,
 #mainTable td.abb,
 #full-info-table td.host,
 #full-info-table td.abb { background-color: rgb(219, 219, 219); }
 #mainTable td.status_information,
 #full-info-table td.status_information{ word-break: break-all; }
-#mainTable .comment span { display: block; word-break: break-all; }
+#mainTable .comment span, #full-info-table .comment span { display: block; word-break: break-all; }
 #mainTable .status .downtime_id { color: #fff; cursor: pointer; text-shadow: 0px 0px 4px rgba(0, 0, 0, 1); }
 #mainTable .status .downtime_id span { display: none; }
 #mainTable .more button { width: 19px; height: 19px; padding: 0 4px 4px 4px; }
@@ -171,11 +183,13 @@ copy
 #mainTable .edit_acknowledgeGroup,
 #mainTable .edit_scheduleIt,
 #mainTable .edit_scheduleGroup,
+#full-info-table .likeTable .list-notes-icon,
 #full-info-table .likeTable .list-ack-icon,
 #full-info-table .likeTable .list-sched-icon { width: 19px; height: 19px; display: inline-block; margin: 0 0 0 0; padding: 0; cursor: pointer; }
 #mainTable .likeTable .list-unack-icon    { background: url('../images/all_icons.png') no-repeat    0px 0; }
 #mainTable .likeTable .list-downtime-icon { background: url('../images/all_icons.png') no-repeat  -19px 0; }
-#mainTable .likeTable .list-notes-icon    { background: url('../images/all_icons.png') no-repeat  -38px 0; }
+#mainTable .likeTable .list-notes-icon,
+#full-info-table .likeTable .list-notes-icon { background: url('../images/all_icons.png') no-repeat  -38px 0; }
 #mainTable .likeTable .list-qack-icon     { background: url('../images/all_icons.png') no-repeat  -57px 0; }
 #mainTable .likeTable .list-ack-icon,
 #full-info-table .likeTable .list-ack-icon       { background: url('../images/all_icons.png') no-repeat  -76px 0; }

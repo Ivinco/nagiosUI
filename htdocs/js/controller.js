@@ -226,7 +226,7 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
 				data:      'host',
 				className: 'host',
 				render: function ( data, type, full, meta ) {
-					return '<a data-tab="'+ data.tab +'" data-host="'+ data.host +'" href="javascript:void(0)" class="show-full-host-info">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
+					return '<a data-tab="'+ data.tab +'" data-host="'+ data.host +'" href="?info=1&host='+ encodeURIComponent(data.name) +'" class="show-full-host-info" target="_blank">'+ data.name +'</a><span class="hide-more"><br /><span class="more-info-icon"></span><span class="more-comment-icon"></span></span>';
 				},
 			},
             {
@@ -258,7 +258,7 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
                             return '' +
                                 '<div class="likeTable">' +
                                 '	<ul>' +
-                                '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ data.name +'</a></li>' +
+                                '		<li><a href="?info=1&host='+ encodeURIComponent(data.host) +'&service='+ encodeURIComponent(data.original) +'" class="service-name show-full-service-info" target="_blank">'+ data.name +'</a></li>' +
                                 recheck +
                                 notes  +
                                 '	</ul>' +
@@ -268,7 +268,7 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
 						return '' +
 							'<div class="likeTable">' +
 							'	<ul>' +
-							'		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ data.name +'</a></li>' +
+							'		<li><a href="?info=1&host='+ encodeURIComponent(data.host) +'&service='+ encodeURIComponent(data.original) +'" class="service-name show-full-service-info" target="_blank">'+ data.name +'</a></li>' +
 									notes  +
 							'		<li>'  +
 										qAck  +
@@ -3132,7 +3132,9 @@ FullInfo = {
             '                <th class="service-th">Service</th>\n' +
             '                <th class="status-th">Status</th>\n' +
             '                <th class="last_check-th">Last Check</th>\n' +
+            '                <th class="duration-th">Duration</th>\n' +
             '                <th class="status_information-th">Status Information</th>\n' +
+            '                <th class="comment-th">Comment</th>\n' +
             '            </tr>\n' +
             '        </thead>');
 
@@ -3150,10 +3152,12 @@ FullInfo = {
                     name: value['host']
                 },
                 service: {
-                    name:  value['service'],
-                    host:  value['host'],
-                    acked: value['acked'],
-                    sched: value['scheduled']
+                    name:   value['service'],
+                    host:   value['host'],
+                    acked:  value['acked'],
+                    sched:  value['scheduled'],
+                    notes:  value['notesUrl'],
+                    avatar: (value['userAvatar']) ? value['userAvatar'] : value['scheduserAvatar'],
                 },
                 status: {
                     name: FullInfo.getStateText(value['state'])
@@ -3161,8 +3165,17 @@ FullInfo = {
                 last: {
                     name: value['date']
                 },
+                duration: {
+                    name:  value['duration'],
+                    end:   value['comments']['schedEnd'],
+                    sched: value['scheduled'],
+                },
                 info: {
                     name: value['status_info']
+                },
+                comment: {
+                    acked: value['comments']['ackComment'],
+                    sched: value['comments']['schedComment'],
                 }
             });
         }
@@ -3191,10 +3204,14 @@ FullInfo = {
                     data:      'service',
                     className: 'service',
                     render: function ( data, type, full, meta ) {
-                        var acked = (data.acked) ? '<li><span class="list-ack-icon icons" alt="Acknowledged" title="Acknowledged" style="cursor: auto;"></span></li>' : '';
-                        var sched = (data.sched) ? '<li><span class="list-sched-icon icons" alt="Scheduled Downtime" title="Scheduled Downtime" style="cursor: auto;"></span></li>' : '';
+                        var acked  = (data.acked)  ? '<li><span class="list-ack-icon icons" alt="Acknowledged" title="Acknowledged" style="cursor: auto;"></span></li>' : '';
+                        var sched  = (data.sched)  ? '<li><span class="list-sched-icon icons" alt="Scheduled Downtime" title="Scheduled Downtime" style="cursor: auto;"></span></li>' : '';
+                        var notes  = (data.notes)  ? '<li><a href="'+ data.notes +'" target="_blank" class="list-notes-icon"></a></li>' : '';
+                        var avatar = (data.avatar) ? '<li><img class="icons" src="https://www.gravatar.com/avatar/'+ data.avatar +'?size=20" width="19" height="19" /></li>' : '';
 
                         return '<div class="likeTable"><ul><li><a href="?info=1&host='+ encodeURIComponent(data.host) +'&service='+ encodeURIComponent(data.name) +'">'+ data.name +'</a></li>' +
+                            notes +
+                            avatar +
                             acked +
                             sched +
                             '</ul></div>';
@@ -3215,16 +3232,39 @@ FullInfo = {
                     },
                 },
                 {
+                    data: 'duration',
+                    className: 'duration',
+                    render: function ( data, type, full, meta ) {
+                        if (data.sched) {
+                            return '<span title="Check triggered" style="cursor: pointer;">' + data.name + '</span><br /><span title="Remaining downtime" style="cursor: pointer;">' + data.end + '</span>';
+                        }
+
+                        return data.name;
+                    }
+                },
+                {
                     data:      'info',
                     className: 'status_information main',
                     render: function ( data, type, full, meta ) {
                         return data.name;
                     },
                 },
+                {
+                    data: 'comment',
+                    className: 'comment',
+                    render: function ( data, type, full, meta ) {
+                        return '<div class="likeTable">' +
+                            '<ul>' +
+                            '<li class="ack text">' + data.acked + '</li>' +
+                            '<li class="sched text">' + data.sched + '</li>' +
+                            '</ul>' +
+                            '</div>';
+                    }
+                },
             ],
             'createdRow': function(row, data, index) {
                 if (data.status.name) {
-                    $(row).find('.service, .status, .last_check, .status_information').addClass(data.status.name);
+                    $(row).find('.service, .status, .last_check, .duration, .status_information, .comment').addClass(data.status.name);
                 }
             },
         });
