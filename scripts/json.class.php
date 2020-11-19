@@ -169,6 +169,7 @@ class json
                 ),
                 'service'   => array(
                     'name'  => $service,
+                    'host'  => $host,
                     'url'   => $serviceUrl,
                     'unAck' => ($acked && $tempCommen != 'temp') ? true : false,
                     'down'  => ($sched && $schedPlanned) ? true : false,
