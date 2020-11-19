@@ -3533,8 +3533,14 @@ FullInfo = {
             dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
             dialog += '<tr><td><b>Service</b></td><td>'+ FullInfo.service +'</td></tr>';
             dialog += '<tr><td><b>Status Information</b></td><td>'+ data.check.status_info +'</td></tr>';
-            dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
-            dialog += '<tr><td><b>Acknowledged?</b></td><td>'+ ((data.check.acked) ? "yes" : "no") +'</td></tr>';
+            dialog += '<tr><td valign="top"><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
+            if (data.check.scheduled && data.check["comments"]["schedComment"]) {
+                dialog += '<tr><td valign="top" style="white-space: nowrap;"><b>Scheduled downtime comment</b></td><td>'+ data.check["comments"]["schedComment"] +'</td></tr>';
+            }
+            dialog += '<tr><td valign="top"><b>Acknowledged?</b></td><td>'+ ((data.check.acked) ? "yes" : "no") +'</td></tr>';
+            if (data.check.acked && data.check["comments"]["ackComment"]) {
+                dialog += '<tr><td valign="top" style="white-space: nowrap;"><b>Acknowledgment comment</b></td><td>'+ data.check["comments"]["ackComment"] +'</td></tr>';
+            }
             dialog += '<tr><td><b>Last Check Time</b></td><td>'+ data.check.date +'</td></tr>';
         }
 
