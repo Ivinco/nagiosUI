@@ -209,6 +209,16 @@ class db
         ";
         $this->mysql->query($notes_urls_alter);
 
+        $notes_urls_alter = "
+            ALTER TABLE
+                {$this->notes_urls}
+            ADD CONSTRAINT
+                `hostServiceServer`
+            UNIQUE
+                (`host`, `service`, `server`)
+        ";
+        $this->mysql->query($notes_urls_alter);
+
 
         $this->checks = $this->database['prefix'] . "checks";
         $checks = "
@@ -1289,7 +1299,7 @@ class db
 
         if ($host && $service && $url && $server) {
             $sql = "
-                INSERT INTO 
+                INSERT IGNORE INTO 
                     {$this->notes_urls}
                 SET 
                     `host`    = '{$host}',
