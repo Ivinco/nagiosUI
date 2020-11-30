@@ -1224,8 +1224,9 @@ class db
 
         return $list;
     }
-    public function notesUrlsNagiosApi($server) {
+    public function notesUrlsNagiosApi($server, $cron = false) {
         $server = $this->mysql->real_escape_string($server);
+        $url    = (!$cron) ? " AND `url` != ' '" : "";
 
         $sql = "
             SELECT 
@@ -1233,9 +1234,8 @@ class db
             FROM 
                 `{$this->notes_urls}`
             WHERE
-                    `server` = '{$server}'
-                AND
-                    `url` != ' '
+                `server` = '{$server}'
+                {$url}
         ";
 
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);

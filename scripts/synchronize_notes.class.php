@@ -99,7 +99,7 @@ class synchronizeNotes
             if ($newNotesList) {
                 $this->syncList[$server] = [
                     'newNotes' => $newNotesList,
-                    'oldNotes' => $this->db->notesUrlsNagiosApi($server),
+                    'oldNotes' => $this->db->notesUrlsNagiosApi($server, true),
                 ];
             }
         }
