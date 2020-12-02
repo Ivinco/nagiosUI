@@ -245,7 +245,7 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
 							sched = (data.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ data.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
                         var recheckStyle = '';
-                        var recheckTitle = 'Refresh Service Status';
+                        var recheckTitle = 'Force recheck';
                         var recheckClass = '';
                         if (data.recheck) {
                             recheckClass = ' rotateRecheck';
@@ -614,7 +614,7 @@ Search.extension = function () {
 		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="https://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
 		$('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
 		$('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
-		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Refresh Services Status" title="Refresh Services Status"></span>');
+		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Force recheck" title="Force recheck"></span>');
 		$('#ext_search').append('<span id="edit_acknowledge" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
 		$('#ext_search').append('<span id="edit_scheduled" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
 	}
@@ -808,7 +808,7 @@ Search.addParameterToUrl = function(parameter, value) {
 
 Search.tmpHideIcon = function(item, type) {
     if (type == 'recheckIt') {
-        item.find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
+        item.find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Force recheck in progress').attr('alt', 'Force recheck in progress').addClass('rotateRecheck');
     } else {
         item.find('.icons.'+ type).hide();
     }
@@ -856,8 +856,8 @@ Search.tempHideButtons = function (key) {
         }
 
         if (type == 'recheckIt') {
-            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
-            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Refresh Service Status in progress').attr('alt', 'Refresh Service Status in progress').addClass('rotateRecheck');
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Force recheck in progress').attr('alt', 'Force recheck in progress').addClass('rotateRecheck');
+            $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Force recheck in progress').attr('alt', 'Force recheck in progress').addClass('rotateRecheck');
         } else {
             $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type).hide();
             $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').hide();
@@ -4534,7 +4534,7 @@ Grouping = {
             }
 
             if (recheck == this.listGroups[key].children.length) {
-                $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .recheckItGroup').css("opacity", 0.4).css("cursor", "default").attr("title", "Refresh Service Status in progress").attr("alt", "Refresh Service Status in progress").attr('data-recheck', 'true').addClass('rotateRecheck');
+                $('#mainTable thead tr[data-group="'+ key +'"][data-group-type="parent"] .recheckItGroup').css("opacity", 0.4).css("cursor", "default").attr("title", "Force recheck in progress").attr("alt", "Force recheck in progress").attr('data-recheck', 'true').addClass('rotateRecheck');
             }
         }
     },
@@ -4920,7 +4920,7 @@ Grouping = {
             '				<li>' + serviceValue + '</li>' + quickAck +
             ackIconBlock +
             schedIconBlock +
-            '				<li><span class="icons recheckItGroup list-recheck-icon" alt="Refresh Service Status" title="Refresh Service Status"></span></li>' +
+            '				<li><span class="icons recheckItGroup list-recheck-icon" alt="Force recheck" title="Force recheck"></span></li>' +
             '			</ul>' +
             '		</div>' +
             '	</td>' +
@@ -4976,7 +4976,7 @@ Grouping = {
                     sched = (item.service.schedPlanned) ? '<li><span class="list-sched-icon icons scheduleIt" data-id="'+ item.service.downId +'" alt="Schedule Downtime for this Service" title="Schedule Downtime for this Service"></span></li>' : '';
 
                 var recheckStyle = '';
-                var recheckTitle = 'Refresh Service Status';
+                var recheckTitle = 'Force recheck';
                 var recheckClass = '';
                 if (item.service.recheck) {
                     recheckClass = ' rotateRecheck';
