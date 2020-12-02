@@ -41,15 +41,6 @@ class emergencyList
         return $this;
     }
 
-    //$list     = (isset($_GET['list'])      && $_GET['list'])      ? $_GET['list']      : '';
-    //id: null,
-    //    limit: 20,
-    //    page: 1,
-    //    from: null,
-    //    to: null,
-
-    //list
-
     private function setParams()
     {
         $this->list   = (isset($_GET['list'])   &&        $_GET['list'])   ?        $_GET['list']   : '';
@@ -116,10 +107,9 @@ class emergencyList
     {
         $this->tz = urldecode($this->tz);
         $this->tz = $this->getTimeZoneWithAliases($this->tz);
-        $this->diff = 0;
 
-        if ($this->tz == self::BROWSER_TYPE_NAME && isset($_GET['diff'])) {
-            $this->diff = (int) $_GET['time_correction_diff'];
+        if ($this->tz != self::BROWSER_TYPE_NAME) {
+            $this->diff = 0;
         }
     }
     private function getTimeZoneWithAliases($tz)
