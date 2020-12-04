@@ -3610,8 +3610,8 @@ FullInfo = {
             autoOpen: false,
             modal:    true,
             width:    windowWidth,
-            position: { my: "center center", at: "center top+200"},
             open:     function() {
+                $(this).parent().css('position', 'fixed');
                 $('body').css("overflow", "hidden");
                 $('#fullInfo .full-info-data, #full-info-chart, #full-calendar_switch').html('').hide();
                 $('#fullInfo .full-info-loading').show();
@@ -3623,6 +3623,7 @@ FullInfo = {
                 $('#fullInfo').dialog('close');
             },
             create:   function() {
+                $(this).parent().css('position', 'fixed');
                 $(this).closest('.ui-dialog').on('keydown', function(ev) {
                     if (ev.keyCode === $.ui.keyCode.ESCAPE) {
                         $('#fullInfo').dialog('close');
