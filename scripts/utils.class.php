@@ -117,13 +117,10 @@ class utils
 
         return $ts;
     }
-    public function getDateForDB($ts) {
-        if ($this->timeCorrectionType == $this::BROWSER_TYPE_NAME) {
-            $ts -= $this->timeCorrectionDiff * 60;
+    public function getDateForDB($ts, $correct = true) {
+        if ($correct) {
+            $ts = $this->correctTs($ts);
         }
-
-        $ts -= $this->getDiffToDB();
-        $ts += $this->getDiffToUTC();
         $date = new DateTime("@{$ts}");
 
         return $date->format('Y-m-d H:i:s');

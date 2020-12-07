@@ -11,6 +11,7 @@ class stats
     private $emergenciesList = [];
     private $summaryReportName = 'Summary report';
     private $nobodysReportName = 'Nobody\'s shift';
+    private $calendarTZ = 'UTC';
 
     function __construct($lastYear = false)
     {
@@ -19,6 +20,7 @@ class stats
         global $db;
         
         $this->db          = $db;
+        $this->utils       = new utils();
         $this->serversList = $serversList;
         $this->usersList   = $this->db->usersListStatsPage();
         $this->usersList   = $this->clearUsersList();
@@ -62,7 +64,8 @@ class stats
             'usersList'      => $users,
             'groupByService' => 2,
             'groupByHost'    => 11,
-            'timeZone'        => $this->timeZone,
+            'timeZone'       => $this->timeZone,
+            'timeZonesList'  => $this->utils->getTimeZonesList(),
         ];
     }
 
@@ -177,15 +180,6 @@ class stats
         }
 
         return 0;
-    }
-    private function returnDateForDb($timestamp) {
-        $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
-        $timestamp -= $diff;
-
-        $date = new DateTime("@{$timestamp}");
-        $date->setTimezone(new DateTimeZone('UTC'));
-
-        return $date->format('Y-m-d H:i:s');
     }
 
     private function getStats()
@@ -913,6 +907,9 @@ class stats
         if (time() < $this->to) {
             $this->to = time();
         }
+
+        $this->from = $this->utils->correctTs($this->from);
+        $this->to   = $this->utils->correctTs($this->to);
     }
     private function setServers($server, $serversList) {
         $servers = [];
@@ -928,8 +925,9 @@ class stats
     }
     private function getStatsDataFromDb()
     {
-        $from = $this->returnDateForDb($this->from);
-        $to   = $this->returnDateForDb($this->to);
+        $from = $this->utils->getDateForDB($this->from, false);
+        $to   = $this->utils->getDateForDB($this->to, false);
+
         $this->history = $this->db->historyGetUnfinishedAlertsWithPeriod($from, $to);
         $this->emergencies = $this->db->getEmergenciesList(1000, 0, $from, $to);
 

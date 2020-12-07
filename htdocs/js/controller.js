@@ -5866,6 +5866,7 @@ History = {
 };
 Stats = {
     timeZone: localStorage.getItem('timeZone'),
+    timeZonesList: [],
     selectedUsers: null,
     selectedFrom: null,
     selectedTo: null,
@@ -6614,8 +6615,30 @@ Stats = {
                 Stats.groupByService = data.groupByService;
                 Stats.groupByHost    = data.groupByHost;
                 Stats.tz             = data.timeZone;
+                Stats.timeZonesList  = data.timeZonesList;
+                Stats.drawTimeZonesList();
                 Stats.drawTabsList();
                 Stats.drawSelects();
+            }
+        });
+    },
+    drawTimeZonesList: function() {
+        var tzList = '';
+
+        $(Stats.timeZonesList).each(function (key, value) {
+            var selected = (Stats.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
+            tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>TZ: '+ value +'</option>';
+        });
+
+        $('#timeZoneBlock').css('clear', 'both').show();
+        $('#timeZoneSelect').html(tzList);
+        $('#timeZoneSelect').selectmenu({
+            select: function (event, data) {
+                if (Stats.timeZone != data.item.value) {
+                    localStorage.setItem('timeZone', data.item.value);
+                    Stats.timeZone = localStorage.getItem('timeZone');
+                    Stats.drawStats();
+                }
             }
         });
     },
