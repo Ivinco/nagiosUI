@@ -343,9 +343,7 @@ class emergency
         <Gather numDigits="1" timeout="2" action="'. $this->emergency['domain'] .'twilio.php?type=digit&amp;emergencyId='. $this->hash .'&amp;name='. urlencode($nagios_name) .'">
                 <Say voice="alice" language="'. $this->emergency['twilio']['language'] .'">'. $this->emergency['twilio']['listenMusicText'] .'</Say>
                 <Play>'. $this->emergency['twilio']['musicLink'] .'</Play>
-                <Say voice="alice" language="'. $this->emergency['twilio']['language'] .'">'. $this->emergency['twilio']['decisionText'] .'</Say>
         </Gather>
-        <Redirect>'. $this->emergency['domain'] .'twilio.php?type=ack&amp;emergencyId='.$this->hash.'&amp;name='.urlencode($nagios_name).'</Redirect>
 </Response>';
 
         return base64_encode(json_encode($xml));
