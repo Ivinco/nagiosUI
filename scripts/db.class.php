@@ -11,11 +11,12 @@ class db
         global $emergencyConfig;
 
         $this->emergencyConfig = $emergencyConfig;
-        $this->database = $database;
-        $this->infoRecordMark = $infoRecordMark;
+        $this->database        = $database;
+        $this->infoRecordMark  = $infoRecordMark;
+        $this->dbPrefix        = $database['prefix'];
 
         $this->connect();
-        $this->createTables();
+        $this->setTableNames();
     }
 
     private function connect()
@@ -28,12 +29,8 @@ class db
         }
 
         if (!$this->mysql->select_db($this->database['db'])) {
-            if (!$this->mysql->query("CREATE DATABASE IF NOT EXISTS ". $this->database['db'])) {
-                echo "CREATE DATABASE IF NOT EXISTS ". $this->database['db'];
-                echo "Couldn't create database (". $this->database['db'] ."): " . $this->mysql->error;
-            }
-
-            $this->mysql->select_db($this->database['db']);
+            logText("DB not exists. Please run: /scripts/setup_db.php");
+            exit();
         }
     }
     public function reconnect()
@@ -44,270 +41,18 @@ class db
     {
         $this->mysql->close();
     }
-    private function createTables()
+    private function setTableNames()
     {
-        $this->nagios_external_commands_log = $this->database['prefix'] . "nagios_external_commands_log";
-        $nagios_external_commands_log = "
-            CREATE TABLE IF NOT EXISTS `". $this->nagios_external_commands_log ."` (
-                `logged`  TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `host`    VARCHAR(255) NOT NULL,
-                `service` VARCHAR(255) NOT NULL,
-                `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') DEFAULT NULL,
-                `author`  VARCHAR(255) NOT NULL,
-                `comment` VARCHAR(255) NOT NULL,
-                `server`  VARCHAR(255) NOT NULL
-            )
-        ";
-        if ($this->mysql->query($nagios_external_commands_log) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $nagios_external_commands_log_alter = "
-            ALTER TABLE
-                {$this->nagios_external_commands_log}
-            CHANGE
-                `command` `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') NULL DEFAULT NULL;
-        ";
-        $this->mysql->query($nagios_external_commands_log_alter);
-
-        $this->planned_log = $this->database['prefix'] . "planned_log";
-        $planned_log = "
-            CREATE TABLE IF NOT EXISTS `". $this->planned_log ."` (
-                `logged`  TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `host`    VARCHAR(255)  NOT NULL,
-                `service` VARCHAR(255)  NOT NULL,
-                `status`  VARCHAR(255)  NOT NULL,
-                `comment` VARCHAR(1000) NOT NULL,
-                `time`    INT           NOT NULL,
-                `end`     INT           NOT NULL,
-                `date`    VARCHAR(255)  NOT NULL,
-                `user`    VARCHAR(255)  NOT NULL,
-                `normal`  INT           NOT NULL,
-                `list`    TEXT          NOT NULL,
-                `server`  VARCHAR(255)  NOT NULL,
-                `enabled` TINYINT       NOT NULL DEFAULT 1,
-                `deleted` TIMESTAMP     NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `remove`  TINYINT       NOT NULL DEFAULT 0
-            )
-        ";
-        if ($this->mysql->query($planned_log) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $planned_log_alter = "
-            ALTER TABLE
-                {$this->planned_log}
-            ADD COLUMN
-                `enabled` TINYINT    NOT NULL DEFAULT 1, 
-            ADD COLUMN 
-                `deleted` TIMESTAMP  NOT NULL DEFAULT '0000-00-00 00:00:00';
-        ";
-        $this->mysql->query($planned_log_alter);
-
-        $planned_log_alter = "
-            ALTER TABLE
-                {$this->planned_log}
-            ADD COLUMN
-                `remove`  TINYINT    NOT NULL DEFAULT 0;
-        ";
-        $this->mysql->query($planned_log_alter);
-
-        $this->planned_templates = $this->database['prefix'] . "planned_templates";
-        $planned_templates = "
-            CREATE TABLE IF NOT EXISTS `". $this->planned_templates ."` (
-                `name`    VARCHAR(255) NOT NULL,
-                `host`    VARCHAR(255) NOT NULL,
-                `service` VARCHAR(255) NOT NULL,
-                `status`  VARCHAR(255) NOT NULL,
-                `time`    INT          NOT NULL,
-                `comment` VARCHAR(255) NOT NULL,
-                `normal`  INT          NOT NULL,
-                `server`  VARCHAR(255) NOT NULL
-            )
-        ";
-        if ($this->mysql->query($planned_templates) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $this->users_list = $this->database['prefix'] . "users_list";
-        $users_list = "
-            CREATE TABLE IF NOT EXISTS `". $this->users_list ."` (
-                `name`   VARCHAR(255) NOT NULL,
-                `email`  VARCHAR(255) NOT NULL,
-                `server` VARCHAR(255) NOT NULL,
-                `full_name`   VARCHAR(255) NOT NULL,
-                `full_access` TINYINT DEFAULT 0 NOT NULL,
-                `super_user` TINYINT DEFAULT 0 NOT NULL
-            )
-        ";
-        if ($this->mysql->query($users_list) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-        $users_list_alter = "
-            ALTER TABLE
-                {$this->users_list}
-            ADD
-                `full_access` TINYINT DEFAULT 0 NOT NULL;
-        ";
-        $this->mysql->query($users_list_alter);
-
-        $users_list_alter1 = "
-            ALTER TABLE
-                {$this->users_list}
-            ADD
-                `full_name` VARCHAR(255) NOT NULL;
-        ";
-        $this->mysql->query($users_list_alter1);
-
-        $users_list_alter2 = "
-            ALTER TABLE
-                {$this->users_list}
-            ADD
-                `super_user` TINYINT DEFAULT 0 NOT NULL;
-        ";
-        $this->mysql->query($users_list_alter2);
-
-        $this->access_list = $this->database['prefix'] . "access_list";
-        $access_list = "
-            CREATE TABLE IF NOT EXISTS `". $this->access_list ."` (
-                `user`    VARCHAR(255) NOT NULL,
-                `service` VARCHAR(255) NOT NULL,
-                `server`  VARCHAR(255) NOT NULL
-            )
-        ";
-        if ($this->mysql->query($access_list) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $this->notes_urls = $this->database['prefix'] . "notes_urls";
-        $notes_urls = "
-            CREATE TABLE IF NOT EXISTS `". $this->notes_urls ."` (
-                `service_or_host` VARCHAR(255) NOT NULL,
-                `host`         VARCHAR(255) NOT NULL,
-                `service`      VARCHAR(255) NOT NULL,
-                `url`          VARCHAR(255) NOT NULL,
-                `server`       VARCHAR(255) NOT NULL
-            )
-        ";
-        if ($this->mysql->query($notes_urls) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $notes_urls_alter = "
-            ALTER TABLE
-                {$this->notes_urls}
-            ADD COLUMN
-                `host`         VARCHAR(255) NOT NULL,
-            ADD COLUMN 
-                `service`      VARCHAR(255) NOT NULL;
-        ";
-        $this->mysql->query($notes_urls_alter);
-
-        $notes_urls_alter = "
-            ALTER TABLE
-                {$this->notes_urls}
-            ADD CONSTRAINT
-                `hostServiceServer`
-            UNIQUE
-                (`host`, `service`, `server`)
-        ";
-        $this->mysql->query($notes_urls_alter);
-
-
-        $this->checks = $this->database['prefix'] . "checks";
-        $checks = "
-            CREATE TABLE IF NOT EXISTS `". $this->checks ."` (
-                `id`      INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                `server`  VARCHAR(255) NOT NULL,
-                `host`    VARCHAR(255) NOT NULL,
-                `service` VARCHAR(255) NOT NULL,
-                PRIMARY KEY (`id`)
-            )
-        ";
-        if ($this->mysql->query($checks) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $this->history = $this->database['prefix'] . "history";
-        $history = "
-            CREATE TABLE IF NOT EXISTS `". $this->history ."` (
-                `date`     DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `check_id` INT UNSIGNED NOT NULL,
-                `severity` ENUM('unhandled','quick_acked','acked','sched','planned_downtime') NOT NULL,
-                `state`    ENUM('ok','warning','critical','unknown') NOT NULL,
-                `user`     VARCHAR(255),
-                `comment`  TEXT,
-                `output`   VARCHAR(1024) NOT NULL,
-                PRIMARY KEY (`date`, `check_id`)
-            )
-        ";
-        if ($this->mysql->query($history) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $history_alter = "
-            ALTER TABLE
-                {$this->history}
-            CHANGE
-                `output` `output` VARCHAR(1024) NOT NULL;
-        ";
-        $this->mysql->query($history_alter);
-
-
-        $this->emergency = $this->database['prefix'] . "emergency";
-        $emergency = "
-            CREATE TABLE IF NOT EXISTS `". $this->emergency ."` (
-                `logged`                TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `id`                    CHAR(32)     NOT NULL DEFAULT '',
-                `host`                  VARCHAR(255) NOT NULL,
-                `service`               VARCHAR(255) NOT NULL,
-                `history`               BLOB,
-                `updated`               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                `investigation`         TEXT,
-                `output`                TEXT,
-                `updated_investigation` TIMESTAMP    NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `prevention`            TEXT,
-                `updated_prevention`    TIMESTAMP    NULL     DEFAULT NULL,
-                `author_prevention`     VARCHAR(255)          DEFAULT NULL,
-                `author_investigation`  VARCHAR(255)          DEFAULT NULL,
-                `author`                VARCHAR(255)          DEFAULT NULL,
-                `link`                  TEXT,
-                PRIMARY KEY (`id`)
-            )
-        ";
-        if ($this->mysql->query($emergency) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
-
-        $this->stats = $this->database['prefix'] . "stats";
-        $stats = "
-            CREATE TABLE IF NOT EXISTS `". $this->stats ."` (
-                `logged`             TIMESTAMP          NOT NULL DEFAULT '0000-00-00 00:00:00',
-                `unhandled_critical` SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
-                `unhandled_warning`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
-                `unhandled_unknown`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
-                `acked`              SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
-                `sched`              SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
-                `longest_critical`   MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-                `longest_warning`    MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-                `longest_unknown`    MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
-                PRIMARY KEY (`logged`)
-            )
-        ";
-
-        if ($this->mysql->query($stats) !== true) {
-            echo "Error creating table: " . $this->mysql->error;
-            exit();
-        }
+        $this->nagios_external_commands_log = $this->dbPrefix . "nagios_external_commands_log";
+        $this->planned_log                  = $this->dbPrefix . "planned_log";
+        $this->planned_templates            = $this->dbPrefix . "planned_templates";
+        $this->users_list                   = $this->dbPrefix . "users_list";
+        $this->access_list                  = $this->dbPrefix . "access_list";
+        $this->notes_urls                   = $this->dbPrefix . "notes_urls";
+        $this->checks                       = $this->dbPrefix . "checks";
+        $this->history                      = $this->dbPrefix . "history";
+        $this->emergency                    = $this->dbPrefix . "emergency";
+        $this->stats                        = $this->dbPrefix . "stats";
     }
     public function insertIntoStatsTable($stats)
     {
@@ -1420,7 +1165,7 @@ class db
         $serversQuery = '';
 
         if ($server != 'All') {
-            $serversQuery = " AND `server` IN ('{$server}')";
+            $serversQuery = " AND `server` like '%{$server}%'";
         }
 
         $sql = "SELECT `name` FROM {$this->users_list} WHERE `full_access` = 1 {$serversQuery}";

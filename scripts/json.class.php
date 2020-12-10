@@ -417,7 +417,7 @@ class json
                 $match = 0;
 
                 foreach($keywords as $keyword){
-                    if (strpos($record['search'], $keyword) !== false) {
+                    if (stripos($record['search'], $keyword) !== false) {
                         $match++;
                     }
                 }

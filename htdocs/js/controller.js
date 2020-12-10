@@ -408,6 +408,8 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
 			$('#infoHolder').show();
 			$('#noData, #loading').hide();
             $('#mainTable, #mainTable_filter, #mainTable_info').toggle(Search.currentTab != 'planned');
+            $('#mainTable_filter input').val(localStorage.getItem('searchValue'));
+            $('#mainTable_filter input').closest('label').removeClass('loading');
 		},
 		'initComplete': function(settings, json) {
             if (Search.currentTab == 'planned') {
@@ -2050,6 +2052,7 @@ Search.init = function() {
 
         if (localStorage.getItem('searchValue') != val) {
             localStorage.setItem('searchValue', val);
+            $(this).closest('label').addClass('loading');
             Search.stopReloads();
 
             Search.allDataTable.ajax.url('json_new.php?current_user='+ $('#userName').text() +'&time_correction_type='+ Search.timeZone +'&time_correction_diff='+ moment().utcOffset() +'&server_tab='+ Search.currentServerTab +'&filter=' + Search.currentTab + '&xsearch=' + localStorage.getItem('searchValue')).load(function () {
@@ -2062,7 +2065,6 @@ Search.init = function() {
             });
         }
     });
-    $('#mainTable_filter input').val(localStorage.getItem('searchValue')).focus();
 
 
     $('#mainTable').on('click', '.recheckIt:not([data-recheck="true"])', function () {
@@ -4964,7 +4966,7 @@ Grouping = {
                 result += '<td class="abb"><span title="'+ item.abbreviation.name +'">'+ item.abbreviation.abb +'</span></td>';
 
                 //host
-                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="javascript:void(0)" class="show-full-host-info">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
+                result += '<td class="host '+ colorClass +'" style="visibility: '+ hostVisibility +';"><a data-tab="'+ item.host.tab +'" data-host="'+ item.host.host +'" href="?info=1&host='+ encodeURIComponent(item.host.name) +'" class="show-full-host-info" target="_blank">'+ item.host.name +'</a><span class="hide-more"><br><span class="more-info-icon"></span><span class="more-comment-icon"></span></span></td>';
 
                 //service
                 var unAck = (item.service.unAck)           ? '<li><span class="list-unack-icon icons unAck" alt="Unacknowledge this Service" title="Unacknowledge this Service"></span></li>' : '',
@@ -4991,7 +4993,7 @@ Grouping = {
                     result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
-                        '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ item.service.name +'</a></li>' +
+                        '		<li><a href="?info=1&host='+ encodeURIComponent(item.host.name) +'&service='+ encodeURIComponent(item.service.original) +'" class="service-name show-full-service-info" target="_blank">'+ item.service.name +'</a></li>' +
                         recheck +
                         notes  +
                         '	</ul>' +
@@ -5001,7 +5003,7 @@ Grouping = {
                     result += '' +
                         '<div class="likeTable">' +
                         '	<ul>' +
-                        '		<li><a href="javascript:void(0)" class="service-name show-full-service-info">'+ item.service.name +'</a></li>' +
+                        '		<li><a href="?info=1&host='+ encodeURIComponent(item.host.name) +'&service='+ encodeURIComponent(item.service.original) +'" class="service-name show-full-service-info" target="_blank">'+ item.service.name +'</a></li>' +
                         notes  +
                         '		<li>'  +
                         qAck  +

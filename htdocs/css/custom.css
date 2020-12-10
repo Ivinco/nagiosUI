@@ -870,3 +870,20 @@ table.dataTable thead .no-border-th {
 }
 
 #full-info-chart-license-text { display: none; }
+
+.dataTables_wrapper .dataTables_filter label.loading:after {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    top: 16px;
+    left: 165px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    animation: inputspinner .6s linear infinite;
+}
+@keyframes inputspinner {
+    to {transform: rotate(360deg);}
+}
