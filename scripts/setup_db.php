@@ -81,18 +81,18 @@ class SetupDB
     {
         $nagios_external_commands_log = "
             CREATE TABLE IF NOT EXISTS `". $this->nagios_external_commands_log ."` (
-                `logged`  TIMESTAMP    NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `logged`  TIMESTAMP    NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `host`    VARCHAR(255) NOT NULL,
                 `service` VARCHAR(255) NOT NULL,
                 `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') DEFAULT NULL,
                 `author`  VARCHAR(255) NOT NULL,
                 `comment` VARCHAR(255) NOT NULL,
                 `server`  VARCHAR(255) NOT NULL,
-                INDEX (`logged`),
-                INDEX (`command`),
-                INDEX (`comment`),
-                INDEX (`host`),
-                INDEX (`service`)
+                INDEX `logged_index`  (`logged`),
+                INDEX `command_index` (`command`),
+                INDEX `comment_index` (`comment`),
+                INDEX `host_index`    (`host`),
+                INDEX `service_index` (`service`)
             )
         ";
         if ($this->mysql->query($nagios_external_commands_log) !== true) {
@@ -104,7 +104,7 @@ class SetupDB
     {
         $planned_log = "
             CREATE TABLE IF NOT EXISTS `". $this->planned_log ."` (
-                `logged`  TIMESTAMP     NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `logged`  TIMESTAMP     NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `host`    VARCHAR(255)  NOT NULL,
                 `service` VARCHAR(255)  NOT NULL,
                 `status`  VARCHAR(255)  NOT NULL,
@@ -117,17 +117,17 @@ class SetupDB
                 `list`    TEXT          NOT NULL,
                 `server`  VARCHAR(255)  NOT NULL,
                 `enabled` TINYINT       NOT NULL DEFAULT 1,
-                `deleted` TIMESTAMP     NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `deleted` TIMESTAMP     NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `remove`  TINYINT       NOT NULL DEFAULT 0,
-                INDEX (`server`),
-                INDEX (`end`),
-                INDEX (`enabled`),
-                INDEX (`remove`),
-                INDEX (`host`),
-                INDEX (`service`),
-                INDEX (`status`),
-                INDEX (`time`),
-                INDEX (`date`)
+                INDEX `server_index`  (`server`),
+                INDEX `end_index`     (`end`),
+                INDEX `enabled_index` (`enabled`),
+                INDEX `remove_index`  (`remove`),
+                INDEX `host_index`    (`host`),
+                INDEX `service_index` (`service`),
+                INDEX `status_index`  (`status`),
+                INDEX `time_index`    (`time`),
+                INDEX `date_index`    (`date`)
             )
         ";
         if ($this->mysql->query($planned_log) !== true) {
@@ -147,7 +147,7 @@ class SetupDB
                 `comment` VARCHAR(255) NOT NULL,
                 `normal`  INT          NOT NULL,
                 `server`  VARCHAR(255) NOT NULL,
-                INDEX (`server`)
+                INDEX `server_index` (`server`)
             )
         ";
         if ($this->mysql->query($planned_templates) !== true) {
@@ -165,8 +165,8 @@ class SetupDB
                 `full_name`   VARCHAR(255) NOT NULL,
                 `full_access` TINYINT DEFAULT 0 NOT NULL,
                 `super_user` TINYINT DEFAULT 0 NOT NULL,
-                INDEX (`full_access`),
-                INDEX (`server`)
+                INDEX `full_access_index` (`full_access`),
+                INDEX `server_index`      (`server`)
             )
         ";
         if ($this->mysql->query($users_list) !== true) {
@@ -181,7 +181,7 @@ class SetupDB
                 `user`    VARCHAR(255) NOT NULL,
                 `service` VARCHAR(255) NOT NULL,
                 `server`  VARCHAR(255) NOT NULL,
-                INDEX (`server`)
+                INDEX `server_index` (`server`)
             )
         ";
         if ($this->mysql->query($access_list) !== true) {
@@ -200,8 +200,8 @@ class SetupDB
                 `server`       VARCHAR(255) NOT NULL,
                 CONSTRAINT `hostServiceServer`
                 UNIQUE (`host`, `service`, `server`),
-                INDEX (`server`),
-                INDEX (`url`)
+                INDEX `server_index` (`server`),
+                INDEX `url_index`    (`url`)
             )
         ";
         if ($this->mysql->query($notes_urls) !== true) {
@@ -218,9 +218,9 @@ class SetupDB
                 `host`    VARCHAR(255) NOT NULL,
                 `service` VARCHAR(255) NOT NULL,
                 PRIMARY KEY (`id`),
-                INDEX (`server`),
-                INDEX (`host`),
-                INDEX (`service`)
+                INDEX `server_index`  (`server`),
+                INDEX `host_index`    (`host`),
+                INDEX `service_index` (`service`)
             )
         ";
         if ($this->mysql->query($checks) !== true) {
@@ -232,7 +232,7 @@ class SetupDB
     {
         $history = "
             CREATE TABLE IF NOT EXISTS `". $this->history ."` (
-                `date`     DATETIME NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `date`     DATETIME NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `check_id` INT UNSIGNED NOT NULL,
                 `severity` ENUM('unhandled','quick_acked','acked','sched','planned_downtime') NOT NULL,
                 `state`    ENUM('ok','warning','critical','unknown') NOT NULL,
@@ -240,8 +240,8 @@ class SetupDB
                 `comment`  TEXT,
                 `output`   VARCHAR(1024) NOT NULL,
                 PRIMARY KEY (`date`, `check_id`),
-                INDEX (`state`),
-                INDEX (`severity`)
+                INDEX `state_index`    (`state`),
+                INDEX `severity_index` (`severity`)
             )
         ";
         if ($this->mysql->query($history) !== true) {
@@ -253,7 +253,7 @@ class SetupDB
     {
         $emergency = "
             CREATE TABLE IF NOT EXISTS `". $this->emergency ."` (
-                `logged`                TIMESTAMP    NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `logged`                TIMESTAMP    NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `id`                    CHAR(32)     NOT NULL DEFAULT '',
                 `host`                  VARCHAR(255) NOT NULL,
                 `service`               VARCHAR(255) NOT NULL,
@@ -261,7 +261,7 @@ class SetupDB
                 `updated`               TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 `investigation`         TEXT,
                 `output`                TEXT,
-                `updated_investigation` TIMESTAMP    NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `updated_investigation` TIMESTAMP    NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `prevention`            TEXT,
                 `updated_prevention`    TIMESTAMP    NULL     DEFAULT NULL,
                 `author_prevention`     VARCHAR(255)          DEFAULT NULL,
@@ -269,8 +269,8 @@ class SetupDB
                 `author`                VARCHAR(255)          DEFAULT NULL,
                 `link`                  TEXT,
                 PRIMARY KEY (`id`),
-                INDEX (`logged`),
-                INDEX (`host`)
+                INDEX `logged_index` (`logged`),
+                INDEX `host_index`   (`host`)
             )
         ";
         if ($this->mysql->query($emergency) !== true) {
@@ -282,7 +282,7 @@ class SetupDB
     {
         $stats = "
             CREATE TABLE IF NOT EXISTS `". $this->stats ."` (
-                `logged`             TIMESTAMP          NOT NULL DEFAULT '1970-01-01 00:00:01',
+                `logged`             TIMESTAMP          NOT NULL DEFAULT '1970-01-01 08:00:00',
                 `unhandled_critical` SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
                 `unhandled_warning`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
                 `unhandled_unknown`  SMALLINT  UNSIGNED NOT NULL DEFAULT 0,
@@ -318,117 +318,77 @@ class SetupDB
 
     private function alterNagiosExternalLogTable()
     {
-        $nagios_external_commands_log_alter = "
-            ALTER TABLE {$this->nagios_external_commands_log}
-            CHANGE `command` `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') NULL DEFAULT NULL,
-            CHANGE `logged` `logged` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',
-            ADD INDEX (`logged`),
-            ADD INDEX (`command`),
-            ADD INDEX (`comment`),
-            ADD INDEX (`host`),
-            ADD INDEX (`service`);
-        ";
-        $this->mysql->query($nagios_external_commands_log_alter);
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} CHANGE `command` `command` ENUM('ack', 'sched', 're-check', 'planned', 'unack', 'unsched') NULL DEFAULT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} CHANGE `logged` `logged` TIMESTAMP NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} ADD INDEX `logged_index`  (`logged`);");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} ADD INDEX `command_index` (`command`);");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} ADD INDEX `comment_index` (`comment`);");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} ADD INDEX `host_index`    (`host`)");
+        $this->mysql->query("ALTER TABLE {$this->nagios_external_commands_log} ADD INDEX `service_index` (`service`);");
     }
     private function alterPlannedLogTable()
     {
-        $planned_log_alter = "
-            ALTER TABLE {$this->planned_log}
-            ADD COLUMN `enabled`     TINYINT    NOT NULL DEFAULT 1, 
-            ADD COLUMN `deleted`     TIMESTAMP  NOT NULL DEFAULT '1970-01-01 00:00:01',
-            ADD COLUMN `remove`      TINYINT    NOT NULL DEFAULT 0,
-            CHANGE `logged` `logged` TIMESTAMP  NOT NULL DEFAULT '1970-01-01 00:00:01',
-            ADD INDEX (`server`),
-            ADD INDEX (`end`),
-            ADD INDEX (`enabled`),
-            ADD INDEX (`remove`),
-            ADD INDEX (`host`),
-            ADD INDEX (`service`),
-            ADD INDEX (`status`),
-            ADD INDEX (`time`),
-            ADD INDEX (`date`);
-        ";
-        $this->mysql->query($planned_log_alter);
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD COLUMN `enabled`       TINYINT    NOT NULL DEFAULT 1");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD COLUMN `deleted`       TIMESTAMP  NOT NULL DEFAULT '1970-01-01 08:00:00'");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD COLUMN `remove`        TINYINT    NOT NULL DEFAULT 0,");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} CHANGE `logged`  `logged`  TIMESTAMP  NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} CHANGE `deleted` `deleted` TIMESTAMP  NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `server_index`  (`server`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `end_index`     (`end`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `enabled_index` (`enabled`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `remove_index`  (`remove`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `host_index`    (`host`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `service_index` (`service`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `status_index`  (`status`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `time_index`    (`time`);");
+        $this->mysql->query("ALTER TABLE {$this->planned_log} ADD INDEX `date_index`    (`date`);");
     }
     private function alterPlannedTemplatesTable()
     {
-        $planned_templates = "
-            ALTER TABLE {$this->planned_templates}
-            ADD INDEX (`server`);
-        ";
-        $this->mysql->query($planned_templates);
+        $this->mysql->query("ALTER TABLE {$this->planned_templates} ADD INDEX `server_index` (`server`);");
     }
     private function alterUsersListTable()
     {
-        $users_list_alter = "
-            ALTER TABLE {$this->users_list}
-            ADD COLUMN `full_access` TINYINT      DEFAULT 0 NOT NULL,
-            ADD COLUMN `full_name`   VARCHAR(255)           NOT NULL,
-            ADD COLUMN `super_user`  TINYINT      DEFAULT 0 NOT NULL,
-            ADD INDEX (`full_access`),
-            ADD INDEX (`server`);
-        ";
-        $this->mysql->query($users_list_alter);
+        $this->mysql->query("ALTER TABLE {$this->users_list} ADD COLUMN `full_access` TINYINT      DEFAULT 0 NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->users_list} ADD COLUMN `full_name`   VARCHAR(255)           NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->users_list} ADD COLUMN `super_user`  TINYINT      DEFAULT 0 NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->users_list} ADD INDEX `full_access_index` (`full_access`)");
+        $this->mysql->query("ALTER TABLE {$this->users_list} ADD INDEX `server_index`      (`server`);");
     }
     private function alterAccessListTable()
     {
-        $access_list = "
-            ALTER TABLE {$this->access_list}
-            ADD INDEX (`server`);
-        ";
-        $this->mysql->query($access_list);
+        $this->mysql->query("ALTER TABLE {$this->access_list} ADD INDEX `server_index` (`server`);");
     }
     private function alterNotesUrlsTable()
     {
-        $notes_urls_alter = "
-            ALTER TABLE {$this->notes_urls}
-            ADD COLUMN `host`         VARCHAR(255) NOT NULL,
-            ADD COLUMN `service`      VARCHAR(255) NOT NULL,
-            ADD CONSTRAINT `hostServiceServer` UNIQUE (`host`, `service`, `server`),
-            ADD INDEX (`server`),
-            ADD INDEX (`url`);
-        ";
-        $this->mysql->query($notes_urls_alter);
+        $this->mysql->query("ALTER TABLE {$this->notes_urls} ADD COLUMN `host`         VARCHAR(255) NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->notes_urls} ADD COLUMN `service`      VARCHAR(255) NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->notes_urls} ADD CONSTRAINT `hostServiceServer` UNIQUE (`host`, `service`, `server`);");
+        $this->mysql->query("ALTER TABLE {$this->notes_urls} ADD INDEX `server_index` (`server`);");
+        $this->mysql->query("ALTER TABLE {$this->notes_urls} ADD INDEX `url_index`    (`url`)''");
     }
     private function alterChecksTable()
     {
-        $checks = "
-            ALTER TABLE {$this->checks}
-            ADD INDEX (`server`),
-            ADD INDEX (`host`),
-            ADD INDEX (`service`);
-        ";
-        $this->mysql->query($checks);
+        $this->mysql->query("ALTER TABLE {$this->checks} ADD INDEX `server_index`  (`server`);");
+        $this->mysql->query("ALTER TABLE {$this->checks} ADD INDEX `host_index`    (`host`);");
+        $this->mysql->query("ALTER TABLE {$this->checks} ADD INDEX `service_index` (`service`);");
     }
     private function alterHistoryTable()
     {
-        $history_alter = "
-            ALTER TABLE {$this->history}
-            CHANGE `output` `output` VARCHAR(1024) NOT NULL,
-            CHANGE `date`   `date`   DATETIME NOT NULL DEFAULT '1970-01-01 00:00:01',
-            ADD INDEX (`state`),
-            ADD INDEX (`severity`);
-            ;
-        ";
-        $this->mysql->query($history_alter);
+        $this->mysql->query("ALTER TABLE {$this->history} CHANGE `output` `output` VARCHAR(1024) NOT NULL;");
+        $this->mysql->query("ALTER TABLE {$this->history} CHANGE `date`   `date`   DATETIME NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->history} ADD INDEX `state_index`    (`state`);");
+        $this->mysql->query("ALTER TABLE {$this->history} ADD INDEX `severity_index` (`severity`);");
     }
     private function alterEmergencyTable()
     {
-        $emergency = "
-            ALTER TABLE {$this->emergency}
-            CHANGE `logged`                `logged`                TIMESTAMP    NOT NULL DEFAULT '1970-01-01 00:00:01',
-            CHANGE `updated_investigation` `updated_investigation` TIMESTAMP    NOT NULL DEFAULT '1970-01-01 00:00:01',
-            ADD INDEX (`logged`),
-            ADD INDEX (`host`);
-        ";
-        $this->mysql->query($emergency);
+        $this->mysql->query("ALTER TABLE {$this->emergency} CHANGE `logged` `logged` TIMESTAMP NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->emergency} CHANGE `updated_investigation` `updated_investigation` TIMESTAMP NOT NULL DEFAULT '1970-01-01 08:00:00';");
+        $this->mysql->query("ALTER TABLE {$this->emergency} ADD INDEX `logged_index` (`logged`);");
+        $this->mysql->query("ALTER TABLE {$this->emergency} ADD INDEX `host_index` (`host`);");
     }
     private function alterStatsTable()
     {
-        $stats = "
-            ALTER TABLE {$this->stats}
-            CHANGE `logged` `logged` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';
-        ";
-        $this->mysql->query($stats);
+        $this->mysql->query("ALTER TABLE {$this->stats} CHANGE `logged` `logged` TIMESTAMP NOT NULL DEFAULT '1970-01-01 08:00:00';");
     }
 }
