@@ -53,7 +53,7 @@ function setAlerts($server) {
     $xml->setCurrentTab($server);
 
     if ($server == 'All') {
-        $xml->setAllToMemcache($hosts, $fullInfo);
+        $xml->addDataAllToMemcache();
     } else {
         $xml->returnXml(false);
         $hosts[] = $xml->returnHosts();

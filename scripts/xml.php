@@ -64,6 +64,9 @@ class xml
             $this->memcacheFullName = "nagiosUI_{$this->memcacheName}_{$this->currentTab}";
         }
     }
+    private function getmemcacheFullName($server) {
+        return "nagiosUI_{$this->memcacheName}_{$server}";
+    }
 
     public function returnXml($isHash)
     {
@@ -246,6 +249,106 @@ class xml
 
         $this->prepareOtherData();
     }
+
+    private function getHostsDataFromMemcache($server)
+    {
+        $serverAlerts = $this->memcache->get($this->getmemcacheFullName($server) . "_full_alerts");
+
+        if ($serverAlerts) {
+            $serverAlerts = unserialize($serverAlerts);
+
+            foreach ($serverAlerts as $host => $item) {
+                foreach ($item as $service => $alert) {
+                    if (!isset($this->hosts[$host])) {
+                        $this->hosts[$host] = [];
+                    }
+
+                    if (!isset($this->hosts[$host][$service])) {
+                        $this->hosts[$host][$service] = $alert;
+                        $this->addToVerificateCheck($host, $service);
+                        $this->checkBackendStatus((int)$alert['last_check']);
+                    }
+                }
+            }
+        }
+    }
+    private function getFullListDromMemcache($server)
+    {
+        $serverFullList = $this->memcache->get($this->getmemcacheFullName($server) . "_full_info");
+
+        if ($serverFullList) {
+            $serverFullList = unserialize($serverFullList);
+
+            foreach ($serverFullList as $host => $item) {
+                foreach ($item as $service => $alert) {
+                    if (!isset($this->linksList[$host])) {
+                        $this->linksList[$host] = [];
+                    }
+
+                    if (!isset($this->linksList[$host][$service])) {
+                        $this->linksList[$host][$service] = $alert;
+                    }
+                }
+            }
+        }
+    }
+    private function getErrorsFromMemcache($server) 
+    {
+        $error = $this->memcache->get($this->getmemcacheFullName($server) . "_errors");
+        if ($error) {
+            $error = json_decode($error);
+            logText($error);
+            $this->memcacheErrors[] = $error;
+        }
+    }
+    private function countAndLogHostsAndServices($start)
+    {
+        $hostsCount = 0;
+        $servicesCount = 0;
+
+        foreach ($this->hosts as $host => $services) {
+            foreach ($services as $service => $attrs) {
+                if ($service != 'FULL HOSTS LIST') {
+                    $servicesCount++;
+                } else {
+                    $hostsCount++;
+                }
+            }
+        }
+
+        logText($this->currentTab . ": finished in ". (time() - $start) ."s. Processed: {$hostsCount} hosts and $servicesCount services.");
+    }
+    public function addDataAllToMemcache()
+    {
+        $this->memcacheErrors = [];
+        $start = time();
+        logText($this->currentTab . ": started");
+
+        $this->setmemcacheFullName();
+
+        $this->currentTabTmp = array_keys($this->serversList);
+        $this->currentTabTmp = end($this->currentTabTmp);
+
+        foreach ($this->serversList as $key => $value) {
+            $this->getHostsDataFromMemcache($key);
+            $this->getFullListDromMemcache($key);
+            $this->getErrorsFromMemcache($key);
+
+            $this->currentTabList[] = $key;
+        }
+
+        $data = serialize($this->generateXml());
+        $fullInfo = serialize($this->linksList);
+
+        $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 3600);
+        $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 3600);
+        $this->memcache->set("{$this->memcacheFullName}_full_info", $fullInfo, 0, 3600);
+
+        $errors = ($this->memcacheErrors) ? json_encode(implode("<br />", $this->memcacheErrors)) : "";
+        $this->memcache->set("{$this->memcacheFullName}_errors", $errors, 0, 3600);
+
+        $this->countAndLogHostsAndServices($start);
+    }
     private function addDataToMemcache()
     {
         $hostsCount = 0;
@@ -264,23 +367,43 @@ class xml
 
         $errorsText = [];
         foreach ($this->errorTabs as $errorTab) {
+            logText("Host is unreachable: ". $this->utils->returnServerHostAndPort($errorTab));
             $errorsText[] = "Host is unreachable: ". $this->utils->returnServerHostAndPort($errorTab);
         }
 
         foreach ($this->timeoutTabs as $timeoutTab) {
+            logText("Error fetching data for: ". $this->utils->returnServerHostAndPort($timeoutTab));
             $errorsText[] = "Error fetching data for: ". $this->utils->returnServerHostAndPort($timeoutTab);
+        }
+
+        if (!count($this->linksList) && !$errorsText) {
+            logText("No data from nagios-api: ". $this->utils->returnServerHostAndPort($this->currentTab));
+            $errorsText[] = "No data from nagios-api: ". $this->utils->returnServerHostAndPort($this->currentTab);
         }
 
         if (count($errorsText) < count($this->currentTabList)) {
             $data = serialize($this->generateXml());
             $fullInfo = serialize($this->linksList);
+            $fullAlerts = serialize($this->hosts);
 
             $this->memcache->set("{$this->memcacheFullName}_verify", md5($this->verificateCheck), 0, 3600);
             $this->memcache->set("{$this->memcacheFullName}_data", $data, 0, 3600);
             $this->memcache->set("{$this->memcacheFullName}_full_info", $fullInfo, 0, 3600);
+
+            $this->memcache->set("{$this->memcacheFullName}_full_alerts_ago", time(), 0, 3600);
+            $this->memcache->set("{$this->memcacheFullName}_full_alerts", $fullAlerts, 0, 3600);
         }
 
         if ($errorsText) {
+            $oldData = (int)$this->memcache->get("{$this->memcacheFullName}_full_alerts_ago");
+            if ($oldData) {
+                foreach ($errorsText as &$error) {
+                    $error .= ". Data is ". (time() - $oldData) ." seconds old.";
+                }
+
+                logText("Data is ". (time() - $oldData) ." seconds old.");
+            }
+
             $this->memcache->set("{$this->memcacheFullName}_errors", json_encode(implode("<br />", $errorsText)), 0, 3600);
         } else {
             $this->memcache->set("{$this->memcacheFullName}_errors", "", 0, 3600);
