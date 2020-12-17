@@ -119,6 +119,38 @@ Search = {
         }).always(function(data) {
             setTimeout(function(){ Search.getServerErrors(); }, 3000);
         });
+    },
+    getTotalTableItems: function() {
+        return Search.tableLength + Grouping.getGroupChildrenLength();
+    },
+    extension: function () {
+        if (localStorage.getItem('searchValue') && Search.getTotalTableItems() && !$('#ext_search').length) {
+            $('#mainTable_filter').after('<div id="ext_search"></div>');
+            $('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
+            $('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="https://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
+            $('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
+            $('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
+            $('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Force recheck" title="Force recheck"></span>');
+            $('#ext_search').append('<span id="edit_acknowledge" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
+            $('#ext_search').append('<span id="edit_scheduled" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
+        }
+        Search.extensionVisibility();
+    },
+    extensionVisibility: function () {
+        if (localStorage.getItem('searchValue') && Search.getTotalTableItems() && Search.currentTab != 'hosts') {
+            $(Search.filterButtons).show();
+
+            var unackedItems = Grouping.countUnackedItems() + $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length;
+            var ackedItems = Grouping.countAckedItems() + $('#mainTable tbody .icons.quickUnAck').length;
+
+            (Search.currentTab != 'acked' && Search.currentTab != 'sched' && unackedItems) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
+            (Search.currentTab != 'acked' && Search.currentTab != 'sched' && ackedItems) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
+            $('#edit_acknowledge').toggle(Search.currentTab == 'acked');
+            $('#edit_scheduled').toggle(Search.currentTab == 'sched');
+        }
+        else {
+            $(Search.filterButtons + ', #edit_acknowledge, #edit_scheduled').hide();
+        }
     }
 }
 
@@ -608,43 +640,6 @@ Search.emptyHosts = function () {
 
         prevHost = $(this).find('a').text();
     });
-}
-Search.extension = function () {
-	if (localStorage.getItem('searchValue') && Search.tableLength && !$('#ext_search').length) {
-		$('#mainTable_filter').after('<div id="ext_search"></div>');
-		$('#ext_search').append('<span id="'+ Search.quickAckButtonId +'" class="list-qack-icon" alt="Quick Acknowledge All" title="Quick Acknowledge All"></span>');
-		$('#ext_search').append('<img id="'+ Search.quickUnAckButtonId +'" src="https://www.gravatar.com/avatar/'+ Search.avatarUrl +'?size=20" width="19" height="19" alt="Quick UnAcknowledge All" title="Quick Unacknowledge All">');
-		$('#ext_search').append('<span id="'+ Search.ackButtonId +'" class="list-ack-icon" alt="Acknowledge All Services" title="Acknowledge All Services"></span>');
-		$('#ext_search').append('<span id="'+ Search.sdButtonId +'" class="list-sched-icon" alt="Schedule Downtime for All Services" title="Schedule Downtime for All Services"></span>');
-		$('#ext_search').append('<span id="'+ Search.recheckButtonId +'" class="list-recheck-icon" alt="Force recheck" title="Force recheck"></span>');
-		$('#ext_search').append('<span id="edit_acknowledge" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
-		$('#ext_search').append('<span id="edit_scheduled" class="list-edit-icon" alt="Edit comment" title="Edit comment"></span>');
-	}
-	Search.extensionVisibility();
-}
-Search.extensionVisibility = function () {
-	if (localStorage.getItem('searchValue') && Search.tableLength) {
-		$(Search.filterButtons).show();
-
-		var subRowsBlue    = $('#mainTable tbody tr .host.blue-text').length,
-			subRowsBrown   = $('#mainTable tbody tr .host.brown-text').length;
-
-		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickAck, #mainTable tbody .icons.quickUnAck:not([src*="'+ Search.avatarUrl +'"])').length) ? $('#'+ Search.quickAckButtonId).show() : $('#'+ Search.quickAckButtonId).hide();
-		(Search.currentTab != 'acked' && Search.currentTab != 'sched' && $('#mainTable tbody .icons.quickUnAck').length) ? $('#'+ Search.quickUnAckButtonId).show() : $('#'+ Search.quickUnAckButtonId).hide();
-		$('#edit_acknowledge').toggle(Search.currentTab == 'acked');
-		$('#edit_scheduled').toggle(Search.currentTab == 'sched');
-
-		if ((subRowsBlue + subRowsBrown) == Search.tableLength) {
-            $('#' + Search.ackButtonId).hide();
-			$('#' + Search.sdButtonId).hide();
-        } else {
-			$('#' + Search.ackButtonId).show();
-			$('#' + Search.sdButtonId).show();
-		}
-	}
-	else {
-		$(Search.filterButtons + ', #edit_acknowledge, #edit_scheduled').hide();
-	}
 }
 Search.addDialog = function() {
 	var dialog = '';
@@ -4493,6 +4488,32 @@ Planned = {
     }
 }
 Grouping = {
+    countUnackedItems: function() {
+        var count = 0;
+
+        for (var key in this.listGroups) {
+            for (var i = 0; i < this.listGroups[key].children.length; i++) {
+                if (this.listGroups[key].children[i].full.service.qAck || this.listGroups[key].children[i].full.service.qUAck != Search.avatarUrl) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    },
+    countAckedItems: function() {
+        var count = 0;
+
+        for (var key in this.listGroups) {
+            for (var i = 0; i < this.listGroups[key].children.length; i++) {
+                if (this.listGroups[key].children[i].full.service.qUAck) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    },
     redrawInfo: function() {
         $('#mainTable thead tr').not(':first').remove();
 
@@ -4759,6 +4780,15 @@ Grouping = {
         this.listGroups[key].data.state          = childrenNewData.state;
         this.listGroups[key].data.status         = childrenNewData.status;
         this.listGroups[key].data.statusOrder    = childrenNewData.statusOrder;
+    },
+    getGroupChildrenLength: function() {
+        var count = 0;
+
+        for (var key in this.listGroups) {
+            count += this.listGroups[key].children.length;
+        }
+
+        return count;
     },
     sortChildren: function() {
         for (var key in this.listGroups) {
