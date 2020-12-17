@@ -121,6 +121,11 @@ class utils
         if ($correct) {
             $ts = $this->correctTs($ts);
         }
+
+        return $this->getDateForDBWithoutCorrection($ts);
+    }
+    public function getDateForDBWithoutCorrection($ts)
+    {
         $date = new DateTime("@{$ts}");
 
         return $date->format('Y-m-d H:i:s');
@@ -152,6 +157,22 @@ class utils
     public function getTimeZonesList()
     {
         return $this->timeZonesList;
+    }
+    public function getTimeZonesWithAliasesList()
+    {
+        $list = array_combine(array_values($this->timeZonesList), $this->timeZonesList);
+
+        if (isset($this->timeZonesListAliases) && $this->timeZonesListAliases) {
+            foreach ($list as $key => &$value) {
+                $alias = array_search($key, $this->timeZonesListAliases);
+
+                if ($alias !== false) {
+                    $value = $alias;
+                }
+            }
+        }
+
+        return $list;
     }
     private function setTimeZonesList($timeZonesList)
     {

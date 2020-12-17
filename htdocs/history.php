@@ -15,6 +15,7 @@ if ($list) {
     $return = [
         'serversList'    => $utils->getServerTabsList(),
         'timeZonesList'  => $utils->getTimeZonesList(),
+        'tzWithAliases'  => $utils->getTimeZonesWithAliasesList(),
         'groupByService' => 2,
         'groupByHost'    => 11
     ];
@@ -34,7 +35,7 @@ $history  = [];
 $servers  = returnServers($server, $serversList);
 
 foreach ($servers as $item) {
-    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $utils->getDateForDB($date));
+    $history[$item] = $db->historyGetUnfinishedAlertsWithDate($item, $utils->getDateForDBWithoutCorrection($date));
 }
 
 $all = [

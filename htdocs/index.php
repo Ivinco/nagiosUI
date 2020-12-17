@@ -293,6 +293,7 @@
 	<script src="js/jquery-ui.min.js"></script>
     <script src="js/datatables.min.js"></script>
 	<script src="js/moment.min.js"></script>
+    <script src="js/moment-timezone.min.js"></script>
     <script src="js/datetimepicker.min.js"></script>
     <script src="js/zingchart.min.js"></script>
 <?php

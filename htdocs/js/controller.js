@@ -5319,6 +5319,7 @@ History = {
     tableData: {},
     serversList: [],
     timeZonesList: [],
+    tzWithAliases: [],
     groupByService: 0,
     groupByHost: 0,
     services: [],
@@ -5337,9 +5338,6 @@ History = {
         }
 
         this.getServersList();
-        this.drawButtons();
-        this.drawDatePickers();
-        this.getHistoryData();
 
         $('#alerts').on('click', function() {
             window.location = window.location.href.split('?')[0];
@@ -5358,7 +5356,7 @@ History = {
             var value = $('#history_date').val();
 
             if (value.length > 10 && Date.parse(value) != 'NaN') {
-                window.location = window.location.href.split('?')[0] + "?t=" + (moment.utc(value).unix());
+                window.location = window.location.href.split('?')[0] + "?t=" + History.getUTCTs();
             }
         });
         $('#normal, #acked, #sched, #EMERGENCY').on('click', function() {
@@ -5462,7 +5460,7 @@ History = {
                     var value = $('#history_date').val();
 
                     if (value.length > 10 && Date.parse(value) != 'NaN') {
-                        window.location = window.location.href.split('?')[0] + "?t=" + (moment.utc(value).unix());
+                        window.location = window.location.href.split('?')[0] + "?t=" + History.timestamp;
                     }
                 }
             }
@@ -5590,7 +5588,28 @@ History = {
             }
         }
 
-        this.date = moment.unix(this.timestamp).utc().format('YYYY-MM-DD HH:mm');
+        History.setInputDate();
+    },
+    setInputDate: function() {
+        History.date = moment.tz(History.timestamp * 1000, History.getTzAlias()).format('YYYY-MM-DD HH:mm');
+    },
+    getUTCTs: function() {
+        var value = $('#history_date').val();
+
+        return moment.tz(value, History.getTzAlias()).unix();
+    },
+    getTzAlias: function() {
+        var tz = null;
+
+        if (History.timeZone in History.tzWithAliases) {
+            tz = History.tzWithAliases[History.timeZone];
+        }
+
+        if (!tz || tz == 'Browser') {
+            tz = moment.tz.guess(true);
+        }
+
+        return tz;
     },
     getServersList: function() {
         $.ajax({
@@ -5600,12 +5619,16 @@ History = {
             success: function(data){
                 History.serversList    = data.serversList;
                 History.timeZonesList  = data.timeZonesList;
+                History.tzWithAliases  = data.tzWithAliases;
                 History.groupByService = parseInt(data.groupByService);
                 History.groupByHost    = parseInt(data.groupByHost);
 
                 History.drawTabsList();
                 History.drawSelects();
                 History.drawTimeZonesList();
+                History.drawButtons();
+                History.drawDatePickers();
+                History.getHistoryData();
             }
         });
     },
