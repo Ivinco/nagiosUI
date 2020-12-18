@@ -860,9 +860,11 @@ Search.tempHideButtons = function (key) {
             $('#mainTable thead tr[data-group="'+ dataKey +'"]').find('.icons.'+ type + 'Group').hide();
         }
     }
-	else if (Search.whatWeChangeObject[key].what == 'all') {
-		var returnArray = [],
-			infoCheck   = false;
+    else if (Search.whatWeChangeObject[key].what == 'all') {
+        var returnArray = [],
+            infoCheck   = false,
+            dataKey     = Search.whatWeChangeObject[key].key,
+            type        = Search.whatWeChangeObject[key].type;
 
 		$('#mainTable tbody tr').each(function() {
 			var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
@@ -901,57 +903,41 @@ Search.tempHideButtons = function (key) {
 			}
 		});
 
-		var groupNames = [];
+        for (var groupKey in Grouping.listGroups) {
+            var item = Grouping.listGroups[groupKey].children;
+            for (var i = 0; i < item.length; i++) {
+                var checkInfo = (infoCheck) ? ((item[i].blueText || item[i].brownText) ? false : true) : true;
 
-		$('#mainTable thead tr').each(function() {
-			var attr = $(this).attr('data-group');
+                if (checkInfo) {
+                    var host        = item[i].host,
+                        service     = item[i].service,
+                        check       = item[i].lastCheck,
+                        isHost      = item[i].isHost,
+                        original    = item[i].full.service.original,
+                        downId      = item[i].full.service.down,
+                        start       = item[i].full.comment.start,
+                        end         = item[i].full.comment.end,
+                        recheck     = item[i].full.service.recheck,
+                        duration    = item[i].full.comment.duration,
+                        tab         = item[i].full.host.tab;
 
-			if (attr && groupNames.indexOf(attr) === -1) {
-				groupNames.push(attr);
-			}
-		});
+                    if (type == 'recheckIt') {
+                        if (!recheck) {
+                            returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
+                        }
+                    } else {
+                        returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration, 'tab': tab });
+                    }
+                }
+            }
 
-		for (var a = 0; a < groupNames.length; a++) {
-            if (Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'].length) {
-				var headerRows = Search.allHeaderRows[Search.currentTab + '_' + groupNames[a] + '_rows'];
-
-				for (var i = 0; i < headerRows.length; i++) {
-					var checkInfo = (infoCheck) ? (($(this).find('td.host').hasClass('blue-text') || $(this).find('td.host').hasClass('brown-text')) ? false : true) : true;
-
-					if (checkInfo) {
-						var row         = headerRows[i],
-							host        = Search.getHost(row),
-							service     = Search.getService(row),
-							check       = Search.getLastCheck(row),
-							isHost      = row.find('.host a').attr('data-host'),
-                            original    = row.attr('data-service'),
-							downId      = (row.find('.service [data-id]').length) ? row.find('.service [data-id]').attr('data-id') : 0,
-							start       = (row.find('.comment .sched.text').attr('data-start')) ? row.find('.comment .sched.text').attr('data-start') : 0,
-							end         = (row.find('.comment .sched.text').attr('data-end')) ? row.find('.comment .sched.text').attr('data-end') : 0,
-							duration    = (row.find('.comment .sched.text').attr('data-duration')) ? row.find('.comment .sched.text').attr('data-duration') : 0;
-
-						if (Search.whatWeChangeObject[key].host && Search.whatWeChangeObject[key].service) {
-							if (host == Search.whatWeChangeObject[key].host && service == Search.whatWeChangeObject[key].service) {
-								Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
-							}
-						} else if (Search.whatWeChangeObject[key].host) {
-							if (host == Search.whatWeChangeObject[key].host) {
-								Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
-							}
-						} else if (Search.whatWeChangeObject[key].service) {
-							if (service == Search.whatWeChangeObject[key].service) {
-								Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-								returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
-							}
-						} else {
-							Search.tmpHideIcon(row, Search.whatWeChangeObject[key].type);
-							returnArray.push({ 'host': host, 'service': original, 'check': check, 'isHost': isHost, 'downId': downId, 'start': start, 'end': end, 'duration': duration });
-						}
-					}
-				}
-			}
+            if (type == 'recheckIt') {
+                $('#mainTable thead tr[data-group="'+ groupKey +'"]').find('.icons.'+ type).css("opacity", 0.4).css("cursor", "default").attr('title', 'Force recheck in progress').attr('alt', 'Force recheck in progress').addClass('rotateRecheck');
+                $('#mainTable thead tr[data-group="'+ groupKey +'"]').find('.icons.'+ type + 'Group').css("opacity", 0.4).css("cursor", "default").attr('title', 'Force recheck in progress').attr('alt', 'Force recheck in progress').addClass('rotateRecheck');
+            } else {
+                $('#mainTable thead tr[data-group="'+ groupKey +'"]').find('.icons.'+ type).hide();
+                $('#mainTable thead tr[data-group="'+ groupKey +'"]').find('.icons.'+ type + 'Group').hide();
+            }
         }
 	}
 	else {
@@ -1352,11 +1338,31 @@ Search.restoreAllData = function(key) {
                         d.service.qUAck = Search.avatarUrl;
                         d.service.qAck  = false;
                         d.service.qAuth = Search.currentUser;
+
+                        if (mainObj.what == 'all') {
+                            for (var groupKey in Grouping.listGroups) {
+                                for (var i = 0; i < Grouping.listGroups[groupKey].children.length; i++) {
+                                    Grouping.listGroups[groupKey].children[i].full.service.qUAck = Search.avatarUrl;
+                                    Grouping.listGroups[groupKey].children[i].full.service.qAck  = false;
+                                    Grouping.listGroups[groupKey].children[i].full.service.qAuth = Search.currentUser;
+                                }
+                            }
+                        }
                     }
                     else if (mainObj.type == 'quickUnAck') {
                         d.service.qUAck = false;
                         d.service.qAck  = true;
                         d.service.qAuth = false;
+
+                        if (mainObj.what == 'all') {
+                            for (var groupKey in Grouping.listGroups) {
+                                for (var i = 0; i < Grouping.listGroups[groupKey].children.length; i++) {
+                                    Grouping.listGroups[groupKey].children[i].full.service.qUAck = false;
+                                    Grouping.listGroups[groupKey].children[i].full.service.qAck  = true;
+                                    Grouping.listGroups[groupKey].children[i].full.service.qAuth = false;
+                                }
+                            }
+                        }
                     }
                     else if (mainObj.type == 'unAck' || mainObj.type == 'unAcknowledgeIt') {
                         d.service.unAck = false;
@@ -1383,10 +1389,7 @@ Search.restoreAllData = function(key) {
                                 $(this).remove();
                             });
 
-                            $('#mainTable thead tr:not(:first)').each(function() {
-                                $(this).remove();
-                                Search.allHeaderRows = {};
-                            });
+                            Grouping.listGroups = {};
 
                             var oldCount = parseInt($('#radio label[for="acked"] em').text()),
                                 newCount = parseInt($('#radio label[for="normal"] em').text());
@@ -1427,28 +1430,17 @@ Search.restoreAllData = function(key) {
                                 }
                             });
 
-                            $('#mainTable thead tr:not(:first)').each(function() {
-                                if (Search.editComment) {
-                                    $(this).find('td.comment .ack.text').html(newComment);
-                                }
-                                else {
-                                    $(this).remove();
-                                    Search.allHeaderRows = {};
-                                }
-                            });
-
                             if (Search.editComment) {
-                                if (Object.keys(Search.allHeaderRows).length) {
-                                    for (var key in Search.allHeaderRows){
-                                        if (Search.allHeaderRows[key].length) {
-                                            for (var i = 0; i < Search.allHeaderRows[key].length; i++) {
-                                                Search.allHeaderRows[key][i].find('td.comment .ack.text').html(newComment);
-                                            }
-                                        }
+                                for (var groupKey in Grouping.listGroups) {
+                                    for (var i = 0; i < Grouping.listGroups[groupKey].children.length; i++) {
+                                        Grouping.listGroups[groupKey].children[i].full.comment.ack   = newComment;
+                                        Grouping.listGroups[groupKey].children[i].full.service.unAck = true;
+                                        Grouping.listGroups[groupKey].children[i].full.service.qAck  = true;
                                     }
                                 }
-                            }
-                            else {
+                            } else {
+                                Grouping.listGroups = {};
+
                                 var oldCount = parseInt($('#radio label[for="' + Search.currentTab + '"] em').text()),
                                     newCount = parseInt($('#radio label[for="acked"] em').text());
 
@@ -1456,8 +1448,17 @@ Search.restoreAllData = function(key) {
                                 $('#radio label[for="acked"] em').text(oldCount + newCount);
                             }
                         }
-                    } else if (mainObj.type == 'recheckIt') {
+                    }
+                    else if (mainObj.type == 'recheckIt') {
                         d.service.recheck  = true;
+
+                        if (mainObj.what == 'all') {
+                            for (var groupKey in Grouping.listGroups) {
+                                for (var i = 0; i < Grouping.listGroups[groupKey].children.length; i++) {
+                                    Grouping.listGroups[groupKey].children[i].full.service.recheck = true;
+                                }
+                            }
+                        }
                     }
                     else if (mainObj.type == 'scheduleIt') {
                         var newComment  = "'"+ $('#downtimeComment').text() +"' by "+ Search.currentUser +"<br>added: "+ commentDate;
@@ -1504,13 +1505,10 @@ Search.restoreAllData = function(key) {
                             });
 
                             if (Search.editComment) {
-                                if (Object.keys(Search.allHeaderRows).length) {
-                                    for (var key in Search.allHeaderRows){
-                                        if (Search.allHeaderRows[key].length) {
-                                            for (var i = 0; i < Search.allHeaderRows[key].length; i++) {
-                                                Search.allHeaderRows[key][i].find('td.comment .sched.text').html(newComment);
-                                            }
-                                        }
+                                for (var groupKey in Grouping.listGroups) {
+                                    var item = Grouping.listGroups[groupKey].children;
+                                    for (var i = 0; i < Grouping.listGroups[groupKey].children; i++) {
+                                        Grouping.listGroups[groupKey].children[i].full.comment.sched = newComment;
                                     }
                                 }
                             }
@@ -1525,16 +1523,15 @@ Search.restoreAllData = function(key) {
                     }
 
                     this.invalidate();
-
-
                 }
             });
         }
 
+        Grouping.redrawInfo();
         Search.checkResizedIcons();
         Search.recheckIcons();
 
-        setTimeout(function(){ localStorage.setItem('canceledReloads', '0'); Search.startReloads(); }, 5000);
+        setTimeout(function(){ localStorage.setItem('canceledReloads', '0'); Search.startReloads(); }, 35000);
 
         $('#dialogAck').dialog('close');
         $('#dialog').dialog('close');
@@ -3297,7 +3294,7 @@ FullInfo = {
             }
         });
     },
-    drawServiceTable: function() {console.log(FullInfo.serviceData);
+    drawServiceTable: function() {
         if (typeof FullInfo.serviceData.check === 'undefined') {
             $('#fullInfoHolder .full-info-error').text('Error: no data to show host details.').show();
             return;
@@ -4522,7 +4519,9 @@ Grouping = {
         this.checkQuickAckIcons();
         this.checkRecheckIcons();
 
-        Search.filterDataTable(localStorage.getItem('searchValue'));
+        if (!localStorage.getItem('canceledReloads')) {
+            Search.filterDataTable(localStorage.getItem('searchValue'));
+        }
     },
     checkQuickAckIcons: function() {
         var count = 0,
@@ -6448,8 +6447,7 @@ Stats = {
     drawAlertsDialogs: function() {
         for (var key in Stats.alertsDialogs) {
             var item = Stats.alertsDialogs[key];
-
-            console.log($('#'+ item));
+            
             $('#'+ item).dialog({
                 autoOpen: false,
                 modal: true,
