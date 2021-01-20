@@ -386,6 +386,55 @@ class db
 
         return $list;
     }
+    public function saveHandledToHistory($text, $idList)
+    {
+        if (!$idList) {
+            return "No date and check_id.";
+        }
+
+        $text = $this->mysql->real_escape_string($text);
+        $datesAndCheckIds = [];
+
+        foreach ($idList as $selector) {
+            $selectorData = explode('___', $selector);
+
+            if (!isset($selectorData[1])) {
+                return "Wrong format for date and check_id.";
+            }
+
+            $check_id = trim($selectorData[0]);
+            $date     = trim($selectorData[1]);
+
+            $check_id = $this->mysql->real_escape_string($check_id);
+            $date     = $this->mysql->real_escape_string($date);
+
+            if (!$check_id || !$date) {
+                return "No date or check_id.";
+            }
+
+            $datesAndCheckIds[] = [
+                'check_id' => $check_id,
+                'date'     => $date,
+            ];
+        }
+
+        foreach ($datesAndCheckIds as $selector) {
+            $sql = "
+                UPDATE
+                    `{$this->history}`
+                SET
+                    `handled` = '{$text}'
+                WHERE
+                        `date`     = '{$selector["date"]}'
+                    AND
+                        `check_id` = {$selector["check_id"]}
+            ";
+
+            $this->mysql->query($sql);
+        }
+
+        return "";
+    }
     public function deleteOldPlanned($server) {
         $time = time();
         $server = $this->mysql->real_escape_string($server);

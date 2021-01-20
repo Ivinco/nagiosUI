@@ -239,6 +239,7 @@ class SetupDB
                 `user`     VARCHAR(255),
                 `comment`  TEXT,
                 `output`   VARCHAR(1024) NOT NULL,
+                `handled`  VARCHAR(1024),
                 PRIMARY KEY (`date`, `check_id`),
                 INDEX `state_index`    (`state`),
                 INDEX `severity_index` (`severity`)
@@ -379,6 +380,7 @@ class SetupDB
         $this->mysql->query("ALTER TABLE {$this->history} CHANGE `date`   `date`   DATETIME NOT NULL DEFAULT '1970-01-01 08:00:00';");
         $this->mysql->query("ALTER TABLE {$this->history} ADD INDEX `state_index`    (`state`);");
         $this->mysql->query("ALTER TABLE {$this->history} ADD INDEX `severity_index` (`severity`);");
+        $this->mysql->query("ALTER TABLE {$this->history} ADD COLUMN `handled`     VARCHAR(1024);");
     }
     private function alterEmergencyTable()
     {

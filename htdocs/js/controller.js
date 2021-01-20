@@ -6020,6 +6020,18 @@ Stats = {
             }
         });
 
+        $(document).on('click', '.edit_how_it_was_handled', function() {
+            Stats.editHowItWasHandled($(this));
+        });
+
+        $(document).on('click', '.close_how_it_was_handled', function() {
+            Stats.closeHowItWasHandled($(this));
+        });
+
+        $(document).on('click', '.save_how_it_was_handled', function() {
+            Stats.saveHowItWasHandled($(this));
+        });
+
         $(document).on('click', '#get-alert-days', function() {
             if (Object.keys(Stats.alerDaysList).length) {
                 Stats.drawAlertDaysTable();
@@ -6298,6 +6310,74 @@ Stats = {
             }
         });
     },
+    textForTextareaHowItWasHandled: function(item) {
+        var text     = item.closest('td').find('.text_how_it_was_handled').html().split('<br /><br />');
+        var textarea = [];
+
+        for (var key in text) {
+            var tmp = text[key].split(': ');
+
+            if (tmp.length > 1) {
+                tmp.shift();
+            }
+
+            textarea.push(tmp.join(': ').replace(/<br ?\/?>/g, "\n"));
+        }
+
+        return textarea.join("\n\n");
+    },
+    editHowItWasHandled: function(item) {
+        item.text('');
+
+        var text    = Stats.textForTextareaHowItWasHandled(item);
+        var old     = item.closest('td').find('.text_how_it_was_handled').html();
+        var idList  = item.closest('tr').find('[data-id-list]').attr('data-id-list');
+        var area    = '<textarea data-old-textarea="'+ encodeURIComponent(text) +'" data-old-value="'+ encodeURIComponent(old) +'" data-id-list="'+ idList +'" style="width: 100%;" rows="3">'+ text +'</textarea>';
+        var buttons = '<br /><p class="show_error" style="display: none; color: red;"></p><input type="button" value="Save" name="save_how_it_was_handled" class="save_how_it_was_handled" style="color: #fff; background-color: #007bff; border-color: #007bff; margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: left;"><input type="button" value="Close" name="close_how_it_was_handled" class="close_how_it_was_handled" style="margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: right;">';
+
+        item.closest('td').html(area + buttons);
+    },
+    closeHowItWasHandled: function(item) {
+        var text = item.closest('td').find('[data-old-value]').attr('data-old-value');
+        item.closest('td').html(Stats.howItWasHandledEditButtonHtml(decodeURIComponent(text)));
+    },
+    saveHowItWasHandled: function(item) {
+        item.closest('td').find('.show_error').hide();
+
+        var oldText = item.closest('td').find('[data-old-textarea]').attr('data-old-textarea');
+        var newText = encodeURIComponent(item.closest('td').find('textarea').val().trim());
+
+        if (oldText == newText) {
+            Stats.closeHowItWasHandled(item);
+            return;
+        }
+
+        $.ajax({
+            type:    'GET',
+            url:     'stats.php',
+            data:    {
+                'user':         encodeURIComponent($('#userName').text()),
+                'save_handled': 1,
+                'comment':      newText,
+                'ids_list':     encodeURIComponent(item.closest('tr').find('[data-id-list]').attr('data-id-list')),
+            },
+            success: function(data){
+                if (typeof data.error !== 'undefined' && data.error) {
+                    item.closest('td').find('.show_error').show().text(data.error);
+                } else {
+                    item.closest('td').html(Stats.howItWasHandledEditButtonHtml(data.text));
+                }
+            }
+        });
+    },
+    howItWasHandledEditButtonHtml: function(text) {
+        var html = '';
+
+        html += '<div style="width: calc(100% - 30px); float: left;" class="text_how_it_was_handled">'+ text +'</div>';
+        html += '<span style="float: right; font-size: 16px; cursor: pointer;" title="edit \'How it was handled\'" class="edit_how_it_was_handled">&#9998;</span>';
+
+        return html;
+    },
     prepareAlertsData: function() {
         var type = Stats.alertsShift;
         Stats.alertDetails = [];
@@ -6323,11 +6403,19 @@ Stats = {
                         var item = alertsList[key];
 
                         if (typeof services[item.service] === "undefined" ) {
-                            services[item.service] = { 'hosts': [] };
+                            services[item.service] = { 'hosts': [], 'output': [], 'handled': [] };
                         }
 
                         if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
                             services[item.service]['hosts'].push(item.host);
+                        }
+
+                        for (var outputKey in item.output) {
+                            services[item.service]['output'].push(key + '___' + item.output[outputKey]);
+                        }
+
+                        for (var handledKey in item.handled) {
+                            services[item.service]['handled'].push(item.handled[handledKey]);
                         }
                     }
                 }
@@ -6354,6 +6442,8 @@ Stats = {
                     'service': service,
                     'hosts':   hosts,
                     'more':    more,
+                    'output':  services[service]['output'],
+                    'handled': services[service]['handled'],
                 });
             }
 
@@ -6405,6 +6495,7 @@ Stats = {
             html += '<tr>';
             html += '<th>Host <span class="change-order" data-order="'+ hostOrder +'">'+ hostArrow +'</span></th>';
             html += '<th>Service <span class="change-order" data-order="'+ serviceOrder +'">'+ serviceArrow +'</span></th>';
+            html += '<th>Output</th>';
             html += '<th>How it was handled</th>';
             html += '</tr>';
 
@@ -6423,11 +6514,37 @@ Stats = {
                     host += item.hosts;
                 }
 
+                var output = '';
+                if (item.output.length) {
+                    var outputRecords = [];
+                    var outputIds     = [];
+
+                    for (var outputKey in item.output) {
+                        var outputItem = item.output[outputKey].split('|||');
+
+                        if (!outputRecords.includes(outputItem[1])) {
+                            outputRecords.push(outputItem[1]);
+                        }
+
+                        outputIds.push(outputItem[0]);
+
+                    }
+
+                    output += '<ul style="margin: 0; padding: 0; list-style: none;" data-id-list="'+ outputIds.join("|||") +'">';
+
+                    for (var outputKey in outputRecords) {
+                        output += '<li style="padding: 3px 0; line-break: anywhere;">'+ outputRecords[outputKey] +'</li>';
+                    }
+
+                    output += '</ul>';
+                }
+
                 if (host) {
                     html += '<tr>';
                     html += '<td>'+ host +'</td>';
                     html += '<td>'+ item.service +'</td>';
-                    html += '<td>&nbsp;</td>';
+                    html += '<td>'+ output +'</td>';
+                    html += '<td valign="top">'+ Stats.howItWasHandledEditButtonHtml(item.handled.join("<br /><br />")) +'</td>';
                     html += '</tr>';
                 }
             }

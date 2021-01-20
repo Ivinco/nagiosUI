@@ -7,6 +7,7 @@ ob_start('ob_gzhandler');
 header('Content-Type: application/json');
 
 $lastYear = (isset($_GET['lastyear']) && $_GET['lastyear']) ? true : false;
+$saveHandled = (isset($_GET['save_handled']));
 
 if ($lastYear) {
     $results = [];
@@ -22,6 +23,10 @@ if ($lastYear) {
         $stats = new stats(true);
         $results[$date] = $stats->returnLastYearStats();
     }
+} else if ($saveHandled) {
+    $stats = new stats(true);
+
+    $results = $stats->saveHandled();
 } else {
     $stats = new stats;
     $results = ($stats->list) ? $stats->returnTabsList() : $stats->returnStats();

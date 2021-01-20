@@ -22,8 +22,6 @@ class stats
         $this->db          = $db;
         $this->utils       = new utils();
         $this->serversList = $serversList;
-        $this->usersList   = $this->db->usersListStatsPage();
-        $this->usersList   = $this->clearUsersList();
         $this->server      = (isset($_GET['server']) && $_GET['server']) ? $_GET['server'] : '';
         $this->list        = (isset($_GET['list'])   && $_GET['list'])   ? $_GET['list']   : '';
         $this->servers     = $this->setServers($this->server, $this->serversList);
@@ -31,24 +29,47 @@ class stats
         $this->lastYear    = $lastYear;
         $this->usersAlerts = [$this->summaryReportName => []];
 
+        $this->setUsersList();
+
         if (!$this->lastYear) {
             $this->calendar = new calendar;
         }
     }
 
-    private function clearUsersList()
+    public function saveHandled()
     {
-        $return = [];
+        $text = (isset($_GET['comment']) && $_GET['comment']) ? $_GET['comment'] : '';
+        $text = urldecode($text);
+        $text = str_replace(["\r\n", "\r", "\n"], "<br />", $text);
+
+        $user = (isset($_GET['user']) && $_GET['user']) ? $_GET['user'] : '';
+        $user = urldecode($user);
+        $user = trim($user);
+
+        $text = $user . ": " . $text;
+
+        $idList = (isset($_GET['ids_list']) && $_GET['ids_list']) ? $_GET['ids_list'] : '';
+        $idList = urldecode($idList);
+        $idList = explode('|||', $idList);
+
+        $error = $this->db->saveHandledToHistory($text, $idList);
+
+        return [
+            'text'     => $text,
+            'ids_list' => $idList,
+            'error'    => $error,
+        ];
+    }
+
+    private function setUsersList()
+    {
+        $this->usersList = $this->db->usersListStatsPage();
 
         foreach ($this->usersList as $server => $data) {
-            if (!in_array($server, array_keys($this->serversList)) || !$server) {
-                continue;
+            if (!$server || !array_key_exists($server, $this->serversList)) {
+                unset($this->usersList[$server]);
             }
-
-            $return[$server] = $data;
         }
-
-        return $return;
     }
     public function returnTabsList()
     {
@@ -392,6 +413,38 @@ class stats
 
         return '';
     }
+    private function setDefaultsForUsersAlerts($full_name, $server, $user_name = null, $summary = false)
+    {
+        if (!isset($this->usersAlerts[$full_name])) {
+            $this->usersAlerts[$full_name] = [];
+        }
+
+        if (!isset($this->usersAlerts[$full_name][$server])) {
+            $this->usersAlerts[$full_name][$server] = [];
+
+            if ($summary) {
+                $this->usersAlerts[$full_name][$server][$user_name] = [];
+            }
+        }
+    }
+    private function returnDefaultArrayForUsersAlerts($host, $service)
+    {
+        return [
+            'host'    => $host,
+            'service' => $service,
+            'comment' => [],
+            'output'  => [],
+            'handled' => [],
+        ];
+    }
+    private function returnCommentOrOutput($item, $array)
+    {
+        if ($item && !in_array($item, $array)) {
+            $array[] = $item;
+        }
+
+        return $array;
+    }
     private function setUsersAlerts($server, $saveUsersData, $alert, $user, $long = false)
     {
         if (!$saveUsersData) {
@@ -403,13 +456,7 @@ class stats
                 }
 
                 if ($user == $full_name) {
-                    if (!isset($this->usersAlerts[$full_name])) {
-                        $this->usersAlerts[$full_name] = [];
-                    }
-
-                    if (!isset($this->usersAlerts[$full_name][$server])) {
-                        $this->usersAlerts[$full_name][$server] = [];
-                    }
+                    $this->setDefaultsForUsersAlerts($full_name, $server);
 
                     if (!isset($this->usersAlerts[$full_name][$server]['long'])) {
                         $this->usersAlerts[$full_name][$server]['long'] = [];
@@ -417,28 +464,24 @@ class stats
 
                     if ($long) {
                         if (!isset($this->usersAlerts[$full_name][$server]['long'][$alert['check_id']])) {
-                            $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']] = [
-                                'host'    => $alert['host'],
-                                'service' => $alert['service'],
-                                'comment' => [],
-                            ];
+                            $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
                         }
 
-                        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'])) {
-                            $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'][] = $alert['comment'];
-                        }
+                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment']);
+
+                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output']);
+
+                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled']);
                     } else {
                         if (!isset($this->usersAlerts[$full_name][$server][$alert['check_id']])) {
-                            $this->usersAlerts[$full_name][$server][$alert['check_id']] = [
-                                'host'    => $alert['host'],
-                                'service' => $alert['service'],
-                                'comment' => [],
-                            ];
+                            $this->usersAlerts[$full_name][$server][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
                         }
 
-                        if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'])) {
-                            $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'][] = $alert['comment'];
-                        }
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment']);
+
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['output']);
+
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled']);
                     }
                 }
             }
@@ -446,13 +489,8 @@ class stats
             return;
         }
 
-        if (!isset($this->usersAlerts[$this->summaryReportName])) {
-            $this->usersAlerts[$this->summaryReportName] = [];
-        }
+        $this->setDefaultsForUsersAlerts($this->summaryReportName, $server, $this->summaryReportName, true);
 
-        if (!isset($this->usersAlerts[$this->summaryReportName][$server])) {
-            $this->usersAlerts[$this->summaryReportName][$server] = [$this->summaryReportName => []];
-        }
 
         if (!isset($this->usersAlerts[$this->summaryReportName][$server]['long'])) {
             $this->usersAlerts[$this->summaryReportName][$server]['long'] = [$this->summaryReportName => []];
@@ -460,28 +498,25 @@ class stats
 
         if ($long) {
             if (!isset($this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']])) {
-                $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']] = [
-                    'host'    => $alert['host'],
-                    'service' => $alert['service'],
-                    'comment' => [],
-                ];
+                $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
             }
 
-            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'])) {
-                $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
-            }
+            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment']);
+
+            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output']);
+
+            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled']);
+
         } else {
             if (!isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']])) {
-                $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']] = [
-                    'host'    => $alert['host'],
-                    'service' => $alert['service'],
-                    'comment' => [],
-                ];
+                $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
             }
 
-            if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'])) {
-                $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'][] = $alert['comment'];
-            }
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment']);
+
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output']);
+
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled']);
         }
 
         if ($alert['user']) {
@@ -497,28 +532,24 @@ class stats
 
             if ($long) {
                 if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']])) {
-                    $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']] = [
-                        'host'    => $alert['host'],
-                        'service' => $alert['service'],
-                        'comment' => [],
-                    ];
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
                 }
 
-                if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'])) {
-                    $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'][] = $alert['comment'];
-                }
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment']);
+
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output']);
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled']);
+
             } else {
                 if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']])) {
-                    $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']] = [
-                        'host'    => $alert['host'],
-                        'service' => $alert['service'],
-                        'comment' => [],
-                    ];
+                    $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
                 }
 
-                if ($alert['comment'] && !in_array($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'])) {
-                    $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'][] = $alert['comment'];
-                }
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment']);
+
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output']);
+
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled']);
             }
         }
     }
