@@ -210,6 +210,179 @@ class stats
         $this->results[$this->summaryReportName] = $this->calculateByServer($this->from, $this->to, $this->summaryReportName, [], $this->history, true);
         $this->getStatsByUser();
         $this->addUsersAlerts();
+        $this->calculateNoShiftDuration();
+    }
+    private function calculateNoShiftDuration()
+    {
+        foreach ($this->usersShifts as $user => $shifts) {
+            foreach ($shifts as $shift) {
+                if (isset($shift['alerts']) && $shift['alerts']) {
+                    foreach ($shift['alerts'] as $server => $alerts) {
+                        foreach ($alerts as $check_id => $list) {
+                            $this->calculateNoShiftDurationByCheckId($user, $server, $check_id, $list, $shift['start'], $shift['finish']);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private function calculateNoShiftDurationByCheckId($shiftUser, $server, $check_id = 0, $alerts = [], $from, $to)
+    {
+        $duration        = 0;
+        $durationLong    = 0;
+        $quickAckStartTs = 0;
+        $quickAckStarted = false;
+        $user            = '';
+        $alertStates     = [];
+        $alertStatesLong = [];
+        $lastAlertState  = '';
+        $alert           = [];
+        $lastComment     = '';
+        $lastOutput      = '';
+
+        foreach ($alerts as $alert) {
+            $ts       = $alert['ts'];
+            $ts       = ($ts > $to)   ? $to   : $ts;
+            $ts       = ($ts < $from) ? $from : $ts;
+            $severity = $alert['severity'];
+            $state    = $alert['state'];
+
+            if ($severity === 'quick_acked' && !$quickAckStarted) {
+                $user = $this->getUserFullName($alert['user'], $server);
+
+                if ($shiftUser === $user) {
+                    $user = '';
+                    continue;
+                }
+
+                if (in_array($state, ['warning', 'critical', 'unknown'])) {
+                    $lastAlertState = $state;
+                }
+
+                $lastComment     = 'temp';
+                $lastOutput      = $alert['date'] . "|||" . $alert['output'];
+                $quickAckStarted = true;
+                $quickAckStartTs = $ts;
+
+                continue;
+            }
+
+            if ($quickAckStarted && in_array($severity, ['acked', 'sched', 'unhandled', 'planned_downtime'])) {
+                $diff = $ts - $quickAckStartTs;
+
+                if ($diff >= 300) {
+                    $alertStatesLong[] = $lastAlertState;
+                    $durationLong += $diff;
+                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput);
+                } else {
+                    $alertStates[] = $lastAlertState;
+                    $duration += $diff;
+                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput);
+                }
+
+                $lastComment     = '';
+                $lastOutput      = '';
+                $quickAckStarted = false;
+                $quickAckStartTs = 0;
+            }
+        }
+
+        if ($quickAckStarted) {
+            $diff = $to - $quickAckStartTs;
+
+            if ($diff >= 300) {
+                $alertStatesLong[] = $lastAlertState;
+                $durationLong += $diff;
+                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput);
+            } else {
+                $alertStates[] = $lastAlertState;
+                $duration += $diff;
+                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput);
+            }
+        }
+
+        if (!$user || (!$duration && !$durationLong)) {
+            return;
+        }
+
+        if ($duration) {
+            $this->results[$user][$server]['worked_no_shift']['quick_acked_time'] += $duration;
+
+            if (!in_array($check_id, $this->results[$user][$server]['worked_no_shift']['check_ids'])) {
+                $this->results[$user][$server]['worked_no_shift']['check_ids'][] = $check_id;
+            }
+
+            $this->calculateNoShiftAlertsCount($user, $server, $alertStates, false);
+        }
+
+        if ($durationLong) {
+            $this->results[$user][$server]['long']['worked_no_shift']['quick_acked_time'] += $durationLong;
+
+            if (!in_array($check_id, $this->results[$user][$server]['long']['worked_no_shift']['check_ids'])) {
+                $this->results[$user][$server]['long']['worked_no_shift']['check_ids'][] = $check_id;
+            }
+
+            $this->calculateNoShiftAlertsCount($user, $server, $alertStatesLong, true);
+        }
+    }
+    private function calculateNoShiftAlertsCount($user, $server, $states, $isLong = false)
+    {
+        $states = array_unique($states);
+
+        if (in_array('warning', $states)) {
+            if ($isLong) {
+                $this->results[$user][$server]['long']['worked_no_shift']['warning_count']++;
+            } else {
+                $this->results[$user][$server]['worked_no_shift']['warning_count']++;
+            }
+        }
+
+        if (in_array('critical', $states)) {
+            if ($isLong) {
+                $this->results[$user][$server]['long']['worked_no_shift']['critical_count']++;
+            } else {
+                $this->results[$user][$server]['worked_no_shift']['critical_count']++;
+            }
+        }
+
+        if (in_array('unknown', $states)) {
+            if ($isLong) {
+                $this->results[$user][$server]['long']['worked_no_shift']['unknown_count']++;
+            } else {
+                $this->results[$user][$server]['worked_no_shift']['unknown_count']++;
+            }
+        }
+    }
+    private function calculateNoShiftSetUsersAlerts($server, $alert, $user, $long = false, $lastComment, $lastOutput)
+    {
+        $comment = ($alert['comment']) ? $alert['comment'] : $lastComment;
+
+        if ($long) {
+            if (!isset($this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']])) {
+                $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
+            }
+
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($comment, $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['comment']);
+
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($lastOutput, $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
+
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
+
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled']);
+
+        } else {
+            if (!isset($this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']])) {
+                $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
+            }
+
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($comment, $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['comment']);
+
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($lastOutput, $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
+
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
+
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled']);
+        }
     }
     private function addUsersAlerts()
     {
@@ -237,6 +410,16 @@ class stats
                             'worked_on_shift'  => 0,
                             'worked_total_list'    => [],
                             'worked_on_shift_list' => [],
+                            'worked_no_shift'  => [
+                                'quick_acked_time' => 0,
+                                'check_ids'        => [],
+                                'warning_count'    => 0,
+                                'critical_count'   => 0,
+                                'unknown_count'    => 0,
+                                'info_count'       => 0,
+                                'emergency_count'  => 0,
+                                'list'             => [],
+                            ],
                         ];
 
                         $this->results[$name][$server]['long'] = $this->results[$name][$server];
@@ -308,6 +491,16 @@ class stats
                     'worked_on_shift'  => 0,
                     'worked_total_list'    => [],
                     'worked_on_shift_list' => [],
+                    'worked_no_shift'  => [
+                        'quick_acked_time' => 0,
+                        'check_ids'        => [],
+                        'warning_count'    => 0,
+                        'critical_count'   => 0,
+                        'unknown_count'    => 0,
+                        'info_count'       => 0,
+                        'emergency_count'  => 0,
+                        'list'             => [],
+                    ],
                 ];
 
                 $stats[$user][$server]['long'] = $stats[$user][$server];
@@ -362,7 +555,6 @@ class stats
     }
     private function findUser($ts, $server, $check_id, $record, $lastAlert)
     {
-        $found = 0;
         foreach ($this->usersShifts as $user => $dates) {
             foreach ($dates as $key => $date) {
                 if ($ts >= $date['start'] && $ts <= $date['finish']) {
@@ -383,7 +575,6 @@ class stats
                     }
 
                     $this->usersShifts[$user][$key]['alerts'][$server][$check_id][] = $record;
-                    $found++;
 
                     break 2;
                 }
@@ -813,6 +1004,16 @@ class stats
                     'worked_on_shift'  => 0,
                     'worked_total_list'    => [],
                     'worked_on_shift_list' => [],
+                    'worked_no_shift'  => [
+                        'quick_acked_time' => 0,
+                        'check_ids'        => [],
+                        'warning_count'    => 0,
+                        'critical_count'   => 0,
+                        'unknown_count'    => 0,
+                        'info_count'       => 0,
+                        'emergency_count'  => 0,
+                        'list'             => [],
+                    ],
                 ];
 
                 $emergency = true;
@@ -831,12 +1032,33 @@ class stats
                     $result['quick_acked_time'] += $stat['quick_acked_time'];
                     $result['reaction_time']    += $stat['reaction_time'];
                     $result['reaction_alerts']  += $stat['reaction_alerts'];
+                    $result['worked_no_shift']['quick_acked_time'] += $stat['worked_no_shift']['quick_acked_time'];
+                    $result['worked_no_shift']['warning_count']    += $stat['worked_no_shift']['warning_count'];
+                    $result['worked_no_shift']['critical_count']   += $stat['worked_no_shift']['critical_count'];
+                    $result['worked_no_shift']['unknown_count']    += $stat['worked_no_shift']['unknown_count'];
+                    $result['worked_no_shift']['emergency_count']  += $stat['worked_no_shift']['emergency_count'];
 
                     if ($emergency) {
                         $result['emergency_count']  += $stat['emergency_count'];
                         $result['emergency_calls']  += $stat['emergency_calls'];
 
                         $emergency = false;
+                    }
+
+                    if (isset($stat['worked_no_shift']['check_ids'])) {
+                        foreach ($stat['worked_no_shift']['check_ids'] as $check_id) {
+                            if (!in_array($check_id, $result['worked_no_shift']['check_ids'])) {
+                                $result['worked_no_shift']['check_ids'][] = $check_id;
+                            }
+                        }
+                    }
+
+                    if (isset($stat['worked_no_shift']['list'])) {
+                        foreach ($stat['worked_no_shift']['list'] as $check_id => $alert) {
+                            if (!isset($result['worked_no_shift']['list'][$check_id])) {
+                                $result['worked_no_shift']['list'][$check_id] = $alert;
+                            }
+                        }
                     }
 
                     if (isset($stat['worked_total_list'])) {

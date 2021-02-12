@@ -6389,13 +6389,102 @@ Stats = {
 
             if (typeof Stats.statsData[user] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab] !== "undefined") {
                 var alertsList = null;
+                var data = Stats.statsData[user][Search.currentServerTab];
 
-                if (!Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab]['long'] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab]['long'][type] !== "undefined") {
-                    alertsList = Stats.statsData[user][Search.currentServerTab]['long'][type];
+                if (Stats.alertsShift == 'worked_total_list') {
+                    if (Stats.longAlertsShift) {
+                        alertsList = data[type];
+
+                        for (var key in data['worked_no_shift']['list']) {
+                            if (typeof alertsList[key] !== 'undefined') {
+                                var newData = data['worked_no_shift']['list'][key];
+
+                                for (var i = 0; i < newData['comment'].length; i++) {
+                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
+                                        alertsList[key]['comment'].push(newData['comment'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['handled'].length; i++) {
+                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
+                                        alertsList[key]['handled'].push(newData['handled'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['output'].length; i++) {
+                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
+                                        alertsList[key]['output'].push(newData['output'][i]);
+                                    }
+                                }
+                            } else {
+                                alertsList[key] = data['worked_no_shift']['list'][key];
+                            }
+                        }
+                    }
+                    else {
+                        alertsList = data['long'][type];
+
+                        for (var key in data['worked_no_shift']['list']) {
+                            if (typeof alertsList[key] !== 'undefined') {
+                                var newData = data['worked_no_shift']['list'][key];
+
+                                for (var i = 0; i < newData['comment'].length; i++) {
+                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
+                                        alertsList[key]['comment'].push(newData['comment'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['handled'].length; i++) {
+                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
+                                        alertsList[key]['handled'].push(newData['handled'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['output'].length; i++) {
+                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
+                                        alertsList[key]['output'].push(newData['output'][i]);
+                                    }
+                                }
+                            } else {
+                                alertsList[key] = data['worked_no_shift']['list'][key];
+                            }
+                        }
+
+                        for (var key in data['long']['worked_no_shift']['list']) {
+                            if (typeof alertsList[key] !== 'undefined') {
+                                var newData = data['long']['worked_no_shift']['list'][key];
+
+                                for (var i = 0; i < newData['comment'].length; i++) {
+                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
+                                        alertsList[key]['comment'].push(newData['comment'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['handled'].length; i++) {
+                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
+                                        alertsList[key]['handled'].push(newData['handled'][i]);
+                                    }
+                                }
+
+                                for (var i = 0; i < newData['output'].length; i++) {
+                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
+                                        alertsList[key]['output'].push(newData['output'][i]);
+                                    }
+                                }
+                            } else {
+                                alertsList[key] = data['long']['worked_no_shift']['list'][key];
+                            }
+                        }
+                    }
                 }
+                else {
+                    if (!Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab]['long'] !== 'undefined' && typeof Stats.statsData[user][Search.currentServerTab]['long'][type] !== "undefined") {
+                        alertsList = Stats.statsData[user][Search.currentServerTab]['long'][type];
+                    }
 
-                if (Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab][type] !== "undefined") {
-                    alertsList = Stats.statsData[user][Search.currentServerTab][type];
+                    if (Stats.longAlertsShift && typeof Stats.statsData[user][Search.currentServerTab][type] !== "undefined") {
+                        alertsList = Stats.statsData[user][Search.currentServerTab][type];
+                    }
                 }
 
                 if (alertsList) {
@@ -6539,12 +6628,23 @@ Stats = {
                     output += '</ul>';
                 }
 
+                var handled = [];
+                if (item.handled.length) {
+                    for (var i = 0; i < item.handled.length; i++) {
+                        var handledRecord = item.handled[i];
+                        if ($.inArray(handledRecord, handled) == -1) {
+                            handled.push(handledRecord);
+                        }
+                    }
+                }
+
+
                 if (host) {
                     html += '<tr>';
                     html += '<td>'+ host +'</td>';
                     html += '<td>'+ item.service +'</td>';
                     html += '<td>'+ output +'</td>';
-                    html += '<td valign="top">'+ Stats.howItWasHandledEditButtonHtml(item.handled.join("<br /><br />")) +'</td>';
+                    html += '<td valign="top">'+ Stats.howItWasHandledEditButtonHtml(handled.join("<br /><br />")) +'</td>';
                     html += '</tr>';
                 }
             }
@@ -6580,6 +6680,62 @@ Stats = {
             });
         }
     },
+    getUniqueKeysFromObject: function(obj1, obj2) {
+        var keys = Object.keys(obj1);
+
+        $(Object.keys(obj2)).each(function (key, value) {
+            if ($.inArray(value, keys) == -1) {
+                keys.push(value);
+            }
+        });
+
+        return keys;
+    },
+    getAlertsCountsForUser: function(data) {
+        var result = {
+            number_of_alerts: 0,
+            quick_ack_alerts_time: 0,
+            total_unhandled_alerts_time: 0,
+            unhandled_alerts_time: 0,
+            reaction_time: 0,
+        };
+
+
+        if (Stats.alertsShift == 'worked_total_list') {
+            if (Stats.longAlertsShift) {
+                result.number_of_alerts  = data['alerts_count'];
+                result.number_of_alerts += Object.keys(data['worked_no_shift']['list']).length;
+
+                result.quick_ack_alerts_time  = data['quick_acked_time'];
+                result.quick_ack_alerts_time += data['worked_no_shift']['quick_acked_time'];
+            }
+            else {
+                var checkIdsList = Stats.getUniqueKeysFromObject(data['worked_no_shift']['list'], data['long']['worked_no_shift']['list']);
+
+                result.number_of_alerts  = data['long']['alerts_count'];
+                result.number_of_alerts += checkIdsList.length;
+
+                result.quick_ack_alerts_time  = data['long']['quick_acked_time'];
+                result.quick_ack_alerts_time += data['worked_no_shift']['quick_acked_time'];
+                result.quick_ack_alerts_time += data['long']['worked_no_shift']['quick_acked_time'];
+            }
+        }
+        else {
+            var source = data;
+
+            if (!Stats.longAlertsShift) {
+                source = data['long'];
+            }
+
+            result.number_of_alerts = source['alerts_count'];
+            result.quick_ack_alerts_time = source['quick_acked_time'];
+            result.total_unhandled_alerts_time = Stats.getAlertDaysHours(source['unhandled_time'], source['quick_acked_time']);
+            result.unhandled_alerts_time = source['unhandled_time'];
+            result.reaction_time = source['reaction_avg'];
+        }
+
+        return result;
+    },
     drawStatsHtml: function() {
         $('.historyText').html('');
         Stats.prepareAlertsData();
@@ -6601,25 +6757,39 @@ Stats = {
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
                 var userData = (!Stats.longAlertsShift) ? Stats.statsData[value][Search.currentServerTab]['long'] : Stats.statsData[value][Search.currentServerTab];
+                var listData = Stats.getAlertsCountsForUser(Stats.statsData[value][Search.currentServerTab]);
 
                 html += '<ul>';
-                html += '<li>Total unhandled alerts time: '+ Stats.getAlertDaysHours(userData['unhandled_time'], userData['quick_acked_time']) +'</li>';
 
-                if (Stats.longAlertsShift) {
-                    html += '<li># of emergencies: '+ userData['emergency_count'] +'</li>';
-                    html += '<li># of emergencies escalated to calls: '+ userData['emergency_calls'] +'</li>';
-
-                    if (value == 'Summary report') {
-                        for (var name in userData['additional']){
-                            html += '<li>'+ name +': '+ userData['additional'][name] +'</li>';
-                        }
+                if (Stats.alertsShift == 'worked_total_list') {
+                    if (value == 'Summary report' || value == 'Nobody\'s shift') {
+                        html += '<li>No stats.</li>';
+                    }
+                    else {
+                        html += '<li>number of alerts: '+ listData.number_of_alerts +'</li>';
+                        html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
                     }
                 }
+                else {
+                    html += '<li>Total unhandled alerts time: '+ listData.total_unhandled_alerts_time +'</li>';
 
-                html += '<li>number of alerts: '+ userData['alerts_count'] +'</li>';
-                html += '<li>unhandled alerts time: '+ Stats.returnDayHour(userData['unhandled_time']) +'</li>';
-                html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(userData['quick_acked_time']) +'</li>';
-                html += '<li>reaction time (avg): '+ Stats.returnDayHour(userData['reaction_avg']) +'</li>';
+                    if (Stats.longAlertsShift) {
+                        html += '<li># of emergencies: '+ userData['emergency_count'] +'</li>';
+                        html += '<li># of emergencies escalated to calls: '+ userData['emergency_calls'] +'</li>';
+
+                        if (value == 'Summary report') {
+                            for (var name in userData['additional']){
+                                html += '<li>'+ name +': '+ userData['additional'][name] +'</li>';
+                            }
+                        }
+                    }
+
+                    html += '<li>number of alerts: '+ listData.number_of_alerts +'</li>';
+                    html += '<li>unhandled alerts time: '+ Stats.returnDayHour(listData.unhandled_alerts_time) +'</li>';
+                    html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
+                    html += '<li>reaction time (avg): '+ Stats.returnDayHour(listData.reaction_time) +'</li>';
+                }
+
                 html += '</ul>';
             } else {
                 html += '<ul>';
@@ -6677,36 +6847,78 @@ Stats = {
 
         $(Stats.selectedUsers).each(function (key, value) {
             result.users.push(value.split(" ").join("\n"));
-            var alertData = null;
+
+            var all_count = 0;
+            var warning_count = 0;
+            var critical_count = 0;
+            var unknown_count = 0;
+            var info_count = 0;
+            var emergency_count = 0;
 
             if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
-                if (Stats.longAlertsShift) {
-                    alertData = Stats.statsData[value][Search.currentServerTab];
-                } else if ('long' in Stats.statsData[value][Search.currentServerTab]) {
-                    alertData = Stats.statsData[value][Search.currentServerTab]['long'];
+                if (Stats.alertsShift == 'worked_total_list') {
+                    if (value != 'Summary report' && value != 'Nobody\'s shift') {
+                        var data = Stats.statsData[value][Search.currentServerTab];
+
+                        if (Stats.longAlertsShift) {
+                            warning_count = data['warning_count'];
+                            warning_count += data['worked_no_shift']['warning_count'];
+                            critical_count = data['critical_count'];
+                            critical_count += data['worked_no_shift']['critical_count'];
+                            unknown_count = data['unknown_count'];
+                            unknown_count += data['worked_no_shift']['unknown_count'];
+                            info_count = data['info_count'];
+                            info_count += data['worked_no_shift']['info_count'];
+                            emergency_count = data['emergency_count'];
+                            emergency_count += data['worked_no_shift']['emergency_count'];
+                            all_count = warning_count + critical_count + unknown_count + info_count;
+                        } else {
+                            warning_count = data['long']['warning_count'];
+                            warning_count += data['long']['worked_no_shift']['warning_count'];
+                            warning_count += data['worked_no_shift']['warning_count'];
+                            critical_count = data['long']['critical_count'];
+                            critical_count += data['long']['worked_no_shift']['critical_count'];
+                            critical_count += data['worked_no_shift']['critical_count'];
+                            unknown_count = data['long']['unknown_count'];
+                            unknown_count += data['long']['worked_no_shift']['unknown_count'];
+                            unknown_count += data['worked_no_shift']['unknown_count'];
+                            info_count = data['long']['info_count'];
+                            info_count += data['long']['worked_no_shift']['info_count'];
+                            info_count += data['worked_no_shift']['info_count'];
+                            emergency_count = data['long']['emergency_count'];
+                            emergency_count += data['long']['worked_no_shift']['emergency_count'];
+                            emergency_count += data['worked_no_shift']['emergency_count'];
+                            all_count = warning_count + critical_count + unknown_count + info_count;
+                        }
+                    }
+                } else {
+                    var alertData = null;
+
+                    if (value in Stats.statsData && Search.currentServerTab in Stats.statsData[value]) {
+                        if (Stats.longAlertsShift) {
+                            alertData = Stats.statsData[value][Search.currentServerTab];
+                        } else if ('long' in Stats.statsData[value][Search.currentServerTab]) {
+                            alertData = Stats.statsData[value][Search.currentServerTab]['long'];
+                        }
+                    }
+
+                    if (alertData) {
+                        warning_count = alertData['warning_count'];
+                        critical_count = alertData['critical_count'];
+                        unknown_count = alertData['unknown_count'];
+                        info_count = alertData['info_count'];
+                        emergency_count = alertData['emergency_count'];
+                        all_count = warning_count + critical_count + unknown_count + info_count;
+                    }
                 }
             }
 
-            if (alertData) {
-                result.all.push(
-                    alertData['warning_count'] +
-                    alertData['critical_count'] +
-                    alertData['unknown_count'] +
-                    alertData['info_count']
-                );
-                result.warning.push(alertData['warning_count']);
-                result.critical.push(alertData['critical_count']);
-                result.unknown.push(alertData['unknown_count']);
-                result.info.push(alertData['info_count']);
-                result.emergency.push(alertData['emergency_count']);
-            } else {
-                result.warning.push(0);
-                result.critical.push(0);
-                result.unknown.push(0);
-                result.info.push(0);
-                result.emergency.push(0);
-                result.all.push(0);
-            }
+            result.warning.push(warning_count);
+            result.critical.push(critical_count);
+            result.unknown.push(unknown_count);
+            result.info.push(info_count);
+            result.emergency.push(emergency_count);
+            result.all.push(all_count);
         });
 
         return result;
