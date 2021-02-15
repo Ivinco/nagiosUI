@@ -6780,14 +6780,14 @@ Stats = {
                     }
                     else {
                         html += '<li>Number of alerts for selected period: '+ listData.number_of_alerts +'</li>';
-                        html += '<li>Alerts in \'quick ack’ state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
+                        html += '<li>Alerts in \'quick ack\' state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
                     }
                 }
                 else {
                     html += '<li>Avg reaction time: '+ Stats.returnDayHour(listData.reaction_time) +'</li>';
                     html += '<li>Number of alerts for selected period: '+ listData.number_of_alerts +'</li>';
                     html += '<li>Total alert-hours: '+ Stats.returnDayHour(listData.unhandled_alerts_time) +'</li>';
-                    html += '<li>Alerts in \'quick ack’ state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
+                    html += '<li>Alerts in \'quick ack\' state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
                     html += '<li>Unhandled alerts time: '+ listData.total_unhandled_alerts_time +'</li>';
 
                     if (Stats.longAlertsShift) {
