@@ -256,18 +256,22 @@
         </table>
         <table class="statsInput" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
             <tr>
+                <td valign="top" style="font-size: 14px; line-height: 130%; padding-bottom: 15px; width: 440px !important;" colspan="2">
+                    <label for="per_admin_report"><input type="radio" id="per_admin_report" name="report_type" value="per_admin_report" checked="checked" />Per-admin report</label>
+                    &nbsp;&nbsp;&nbsp;
+                    <label for="group_report"><input type="radio" id="group_report" name="report_type" value="group_report" />Group report</label>
+                </td>
+                <td colspan="2"></td>
+            </tr>
+            <tr>
                 <td valign="top" style="width: 220px !important;">
-                    <select multiple="" id="usersFilter" size="9" name="usersFilter"></select>
+                    <select multiple="" id="usersFilter" size="8" name="usersFilter"></select>
+                    <select id="calendar_switch"></select>
                 </td>
                 <td valign="top" style="width: 220px !important;">
                     <input type="button" value="Show yearly report" name="get-alert-days" id="get-alert-days" style="color: #fff; background-color: #007bff; border-color: #007bff; font-size: 16px; padding: 3px 8px; border-radius: 3px; cursor: pointer;" />
                 </td>
                 <td colspan="2"></td>
-            </tr>
-            <tr>
-                <td valign="top" colspan="4">
-                    <select id="calendar_switch"></select>
-                </td>
             </tr>
             <tr>
                 <td valign="top" colspan="2" style="padding: 12px 0; font-size: 13px;">

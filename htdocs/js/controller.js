@@ -5926,6 +5926,7 @@ Stats = {
     selectedTo: null,
     serversList: '',
     usersList: '',
+    fullUsersList: '',
     groupByService: 0,
     groupByHost: 0,
     alerDaysList: [],
@@ -5962,6 +5963,10 @@ Stats = {
             Stats.selectedUsers = $('#usersFilter').val();
             Stats.selectedFrom  = $('#stats_from_date').val();
             Stats.selectedTo    = $('#stats_to_date').val();
+
+            if (Stats.reportType != 'per_admin_report') {
+                Stats.selectedUsers = ['Summary report', 'Nobody\'s shift'];
+            }
 
             if (!Stats.selectedUsers) {
                 alert('Please select at least one user.');
@@ -6090,8 +6095,16 @@ Stats = {
         $(document).on('click', '.open-dialog', function() {
             $('#' + $(this).attr('data-id')).dialog('open');
         });
+
+        $(document).on('change', 'input[name=report_type]', function() {
+            Stats.statsData = null;
+            $('.historyText').html('');
+            Stats.prepareUsersLists(this.value);
+            Stats.drawSelects();
+        });
     },
     alertsOrder: 'host',
+    reportType: 'per_admin_report',
     drawAlertDaysTable: function() {
         var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">Yearly report</h4>';
         html += '<table cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 13px; margin: 20px auto;">';
@@ -6766,28 +6779,27 @@ Stats = {
                         html += '<li>No stats.</li>';
                     }
                     else {
-                        html += '<li>number of alerts: '+ listData.number_of_alerts +'</li>';
-                        html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
+                        html += '<li>Number of alerts for selected period: '+ listData.number_of_alerts +'</li>';
+                        html += '<li>Alerts in \'quick ack’ state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
                     }
                 }
                 else {
-                    html += '<li>Total unhandled alerts time: '+ listData.total_unhandled_alerts_time +'</li>';
+                    html += '<li>Avg reaction time: '+ Stats.returnDayHour(listData.reaction_time) +'</li>';
+                    html += '<li>Number of alerts for selected period: '+ listData.number_of_alerts +'</li>';
+                    html += '<li>Total alert-hours: '+ Stats.returnDayHour(listData.unhandled_alerts_time) +'</li>';
+                    html += '<li>Alerts in \'quick ack’ state: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
+                    html += '<li>Unhandled alerts time: '+ listData.total_unhandled_alerts_time +'</li>';
 
                     if (Stats.longAlertsShift) {
-                        html += '<li># of emergencies: '+ userData['emergency_count'] +'</li>';
-                        html += '<li># of emergencies escalated to calls: '+ userData['emergency_calls'] +'</li>';
+                        html += '<li># of emergencies: ' + userData['emergency_count'] + '</li>';
+                        html += '<li># of emergencies escalated to calls: ' + userData['emergency_calls'] + '</li>';
 
                         if (value == 'Summary report') {
-                            for (var name in userData['additional']){
-                                html += '<li>'+ name +': '+ userData['additional'][name] +'</li>';
+                            for (var name in userData['additional']) {
+                                html += '<li>' + name + ': ' + userData['additional'][name] + '</li>';
                             }
                         }
                     }
-
-                    html += '<li>number of alerts: '+ listData.number_of_alerts +'</li>';
-                    html += '<li>unhandled alerts time: '+ Stats.returnDayHour(listData.unhandled_alerts_time) +'</li>';
-                    html += '<li>\'quick ack\' alerts time: '+ Stats.returnDayHour(listData.quick_ack_alerts_time) +'</li>';
-                    html += '<li>reaction time (avg): '+ Stats.returnDayHour(listData.reaction_time) +'</li>';
                 }
 
                 html += '</ul>';
@@ -6805,7 +6817,6 @@ Stats = {
         $('.historyText').html(html);
         $('#grouping-alerts-switch').buttonset();
 
-        Stats.drawChart();
         Stats.drawAlertsDialogs();
     },
     getAlertDaysHours: function(unhandled_time, quick_acked_time) {
@@ -6993,12 +7004,13 @@ Stats = {
             data:    {'list': 'servers'},
             success: function(data){
                 Stats.serversList    = data.serversList;
-                Stats.usersList      = data.usersList;
+                Stats.fullUsersList  = data.usersList;
                 Stats.groupByService = data.groupByService;
                 Stats.groupByHost    = data.groupByHost;
                 Stats.tz             = data.timeZone;
                 Stats.timeZonesList  = data.timeZonesList;
                 Stats.drawTimeZonesList();
+                Stats.prepareUsersLists($("input[name=report_type]").val());
                 Stats.drawTabsList();
                 Stats.drawSelects();
             }
@@ -7065,15 +7077,48 @@ Stats = {
 
         $('.historyHeading').css('padding-top', '0');
     },
+    prepareUsersLists: function(value) {
+        Stats.reportType = value;
+        Stats.usersList  = [];
+        if (Stats.reportType == 'per_admin_report') {
+            $(Stats.fullUsersList).each(function (key, value) {
+                if (value == 'Summary report' || value == 'Nobody\'s shift') {
+                    return;
+                }
+                Stats.usersList.push(value);
+            });
+        } else {
+            Stats.usersList.push('Summary report');
+            Stats.usersList.push('Nobody\'s shift');
+        }
+    },
     drawSelects: function() {
+        if (Stats.reportType == 'per_admin_report') {
+            $('#usersFilter').show();
+            $('#calendar_switch').css('height', 'auto');
+            $('.during_shifts, .during_shift').show();
+        }
+
         $('#usersFilter').html('');
         $(Stats.usersList).each(function (key, value) {
             $('#usersFilter').append('<option value="'+ value +'">'+ value +'</option>');
         });
 
+        if (Stats.reportType != 'per_admin_report') {
+            $('#usersFilter').hide();
+            $('#calendar_switch').css('height', '28px');
+            $('.during_shifts, .during_shift').hide();
+        }
+
+        var itemCalendarSelected = $("#calendar_switch option:selected");
         $('#calendar_switch').html('');
         $(Stats.returnSelectList()).each(function (key, value) {
-            $('#calendar_switch').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'">'+ value.name +'</option>');
+            var selected = '';
+
+            if (itemCalendarSelected && itemCalendarSelected.val() == value.name) {
+                selected = ' selected="selected"';
+            }
+            $('#calendar_switch').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'" '+ selected +'>'+ value.name +'</option>');
         });
 
         $('#grouping option[value="'+ Search.currentGroup +'"]').attr('selected', 'selected');
