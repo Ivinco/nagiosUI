@@ -781,6 +781,7 @@ class stats
         $alertStates     = [];
         $lastState       = null;
         $lastAlert       = null;
+        $ts              = null;
 
         foreach ($alerts as $alert) {
             $ts        = $alert['ts'];
@@ -848,9 +849,9 @@ class stats
         }
 
         if ($lastTs && $quickAckStarted && $lastAlert && $lastQuickAckTs && ($lastTs - $lastQuickAckTs) >= 300) {
-            $stats['unhandled_time'] += ($lastTs - $lastTs);
-            $stats['quick_acked_time'] += ($lastTs - $lastQuickAckTs);
-            $stats['reaction_time'] += ($lastTs - $lastTs);
+            $stats['unhandled_time'] += ($ts - $lastTs);
+            $stats['quick_acked_time'] += ($ts - $lastQuickAckTs);
+            $stats['reaction_time'] += ($ts - $lastTs);
             $stats['reaction_alerts']++;
 
             $this->setUsersAlerts($server, $saveUsersData, $lastAlert, $user, true);

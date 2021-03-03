@@ -6742,7 +6742,7 @@ Stats = {
 
             result.number_of_alerts = source['alerts_count'];
             result.quick_ack_alerts_time = source['quick_acked_time'];
-            result.total_unhandled_alerts_time = Stats.getAlertDaysHours(source['unhandled_time'], source['quick_acked_time']);
+            result.total_unhandled_alerts_time = Stats.getAlertDaysHoursMinutesSeconds(source['unhandled_time'], source['quick_acked_time']);
             result.unhandled_alerts_time = source['unhandled_time'];
             result.reaction_time = source['reaction_avg'];
         }
@@ -6818,6 +6818,40 @@ Stats = {
         $('#grouping-alerts-switch').buttonset();
 
         Stats.drawAlertsDialogs();
+    },
+    getAlertDaysHoursMinutesSeconds: function(unhandled_time, quick_acked_time) {
+        var seconds = unhandled_time - quick_acked_time;
+        var result  = '';
+
+        seconds     = parseInt(seconds, 10);
+        var days    = Math.floor(seconds / (60 * 60 * 24));
+        seconds    -= days * 60 * 60 * 24;
+        var hours   = Math.floor(seconds / (60 * 60));
+        seconds    -= hours * 60 * 60;
+        var minutes = Math.floor(seconds / 60);
+        seconds    -= minutes * 60;
+
+        if (days) {
+            result += days + 'd ';
+        }
+
+        if (hours) {
+            result += hours + 'h ';
+        }
+
+        if (minutes) {
+            result += minutes + 'm ';
+        }
+
+        if (seconds) {
+            result += seconds + 's ';
+        }
+
+        if (!result) {
+            result = 0;
+        }
+
+        return result;
     },
     getAlertDaysHours: function(unhandled_time, quick_acked_time) {
         var seconds = unhandled_time - quick_acked_time;
