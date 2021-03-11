@@ -203,6 +203,18 @@ class stats
         return 0;
     }
 
+    private function getLastOutput($date, $output)
+    {
+        $dates  = $date . "|||";
+        $dates .= $this->utils->returnDateFromDbToRequest($date, $format = 'Y-m-d H:i:s');
+
+        return $dates . "|||" . $output;
+    }
+    private function getLastHandled($date, $handled)
+    {
+        return $this->getLastOutput($date, $handled);
+    }
+
     private function getStats()
     {
         $this->history = [];
@@ -260,7 +272,7 @@ class stats
                 }
 
                 $lastComment     = 'temp';
-                $lastOutput      = $alert['date'] . "|||" . $alert['output'];
+                $lastOutput      = $this->getLastOutput($alert['date'], $alert['output']);
                 $quickAckStarted = true;
                 $quickAckStartTs = $ts;
 
@@ -366,9 +378,9 @@ class stats
 
             $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($lastOutput, $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
 
-            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
 
-            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled']);
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled']);
 
         } else {
             if (!isset($this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']])) {
@@ -379,9 +391,9 @@ class stats
 
             $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($lastOutput, $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
 
-            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
 
-            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled']);
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled']);
         }
     }
     private function addUsersAlerts()
@@ -660,9 +672,9 @@ class stats
 
                         $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['comment']);
 
-                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output']);
+                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['output']);
 
-                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled']);
+                        $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$full_name][$server]['long'][$alert['check_id']]['handled']);
                     } else {
                         if (!isset($this->usersAlerts[$full_name][$server][$alert['check_id']])) {
                             $this->usersAlerts[$full_name][$server][$alert['check_id']] = $this->returnDefaultArrayForUsersAlerts($alert['host'], $alert['service']);
@@ -670,9 +682,9 @@ class stats
 
                         $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['comment']);
 
-                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['output']);
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$full_name][$server][$alert['check_id']]['output']);
 
-                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled']);
+                        $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$full_name][$server][$alert['check_id']]['handled']);
                     }
                 }
             }
@@ -694,9 +706,9 @@ class stats
 
             $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['comment']);
 
-            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output']);
+            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['output']);
 
-            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled']);
+            $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$this->summaryReportName][$server]['long'][$this->summaryReportName][$alert['check_id']]['handled']);
 
         } else {
             if (!isset($this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']])) {
@@ -705,9 +717,9 @@ class stats
 
             $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['comment']);
 
-            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output']);
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['output']);
 
-            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled']);
+            $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$this->summaryReportName][$server][$this->summaryReportName][$alert['check_id']]['handled']);
         }
 
         if ($alert['user']) {
@@ -728,8 +740,8 @@ class stats
 
                 $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['comment']);
 
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output']);
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled']);
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['output']);
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$this->summaryReportName][$server][$full_name]['long'][$alert['check_id']]['handled']);
 
             } else {
                 if (!isset($this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']])) {
@@ -738,9 +750,9 @@ class stats
 
                 $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment'] = $this->returnCommentOrOutput($alert['comment'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['comment']);
 
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output'] = $this->returnCommentOrOutput($alert['date'] . "|||" . $alert['output'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output']);
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['output']);
 
-                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($alert['handled'], $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled']);
+                $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->usersAlerts[$this->summaryReportName][$server][$full_name][$alert['check_id']]['handled']);
             }
         }
     }

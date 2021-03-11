@@ -94,6 +94,15 @@ class utils
 
         return $date->format($format);
     }
+    public function returnDateFromDbToRequest($requestDate, $format = 'm-d-Y H:i:s')
+    {
+        $requestTimeZone = $this->validateTimeZone($this->timeCorrectionType);
+        $date = DateTime::createFromFormat($format, $requestDate, new DateTimeZone($this->default_time_zone));
+        $date->setTimeZone(new DateTimeZone($requestTimeZone));
+        $date->modify($this->timeCorrectionDiff . ' minutes');
+
+        return $date->format($format);
+    }
 
     private function setTimeCorrection()
     {

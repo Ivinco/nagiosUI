@@ -6344,7 +6344,7 @@ Stats = {
 
         var text    = Stats.textForTextareaHowItWasHandled(item);
         var old     = item.closest('td').find('.text_how_it_was_handled').html();
-        var idList  = item.closest('tr').find('[data-id-list]').attr('data-id-list');
+        var idList  = item.closest('td').attr('data-id-list');
         var area    = '<textarea data-old-textarea="'+ encodeURIComponent(text) +'" data-old-value="'+ encodeURIComponent(old) +'" data-id-list="'+ idList +'" style="width: 100%;" rows="3">'+ text +'</textarea>';
         var buttons = '<br /><p class="show_error" style="display: none; color: red;"></p><input type="button" value="Save" name="save_how_it_was_handled" class="save_how_it_was_handled" style="color: #fff; background-color: #007bff; border-color: #007bff; margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: left;"><input type="button" value="Close" name="close_how_it_was_handled" class="close_how_it_was_handled" style="margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: right;">';
 
@@ -6372,7 +6372,7 @@ Stats = {
                 'user':         encodeURIComponent($('#userName').text()),
                 'save_handled': 1,
                 'comment':      newText,
-                'ids_list':     encodeURIComponent(item.closest('tr').find('[data-id-list]').attr('data-id-list')),
+                'ids_list':     encodeURIComponent(item.closest('td').attr('data-id-list')),
             },
             success: function(data){
                 if (typeof data.error !== 'undefined' && data.error) {
@@ -6391,6 +6391,367 @@ Stats = {
 
         return html;
     },
+    returnAlertInfoByCheckId: function(alertsList, data) {
+        for (var key in data) {
+            if (typeof alertsList[key] !== 'undefined') {
+                var newData = data[key];
+
+                for (var i = 0; i < newData['comment'].length; i++) {
+                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
+                        alertsList[key]['comment'].push(newData['comment'][i]);
+                    }
+                }
+
+                for (var i = 0; i < newData['handled'].length; i++) {
+                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
+                        alertsList[key]['handled'].push(newData['handled'][i]);
+                    }
+                }
+
+                for (var i = 0; i < newData['output'].length; i++) {
+                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
+                        alertsList[key]['output'].push(newData['output'][i]);
+                    }
+                }
+            } else {
+                alertsList[key] = data[key];
+            }
+        }
+
+        return alertsList;
+    },
+    returnTsFromOutputDate: function(record) {
+        var parts = record.split('|||');
+        var date  = parts[0];
+
+        return moment(date).unix();
+    },
+    returnStateFromOutput: function(record) {
+        var parts = record.split('|||');
+        var output = parts[2].split(':');
+
+        return output[0];
+    },
+    returnDbDateFromOutput: function(record) {
+        var parts = record.split('|||');
+
+        return parts[0];
+    },
+    returnTzDateFromOutput: function(record) {
+        var parts = record.split('|||');
+
+        return parts[1];
+    },
+    returnOutputText: function(record) {
+        var parts = record.split('|||');
+
+        return parts[2];
+    },
+    getHandled: function(handled, from, to) {
+        var results = [];
+        var outputs = [];
+
+        for (var i in handled) {
+            var record = handled[i];
+            var date   = Stats.returnTsFromOutputDate(record);
+            var output = Stats.returnOutputText(record);
+
+            if (output && date >= from && date <= to && !outputs.includes(output)) {
+                outputs.push(output);
+                results.push(record);
+            }
+        }
+
+        return results;
+    },
+    explodeByOutput: function(alertsList) {
+        for (var key in alertsList) {
+            var item = alertsList[key];
+
+            alertsList[key]['list'] = { 'output': [], 'handled': [] };
+            if (typeof item.handled !== "undefined" && typeof item.output !== "undefined") {
+                item.output.sort();
+
+                var firstDate = 0;
+                var lastDate  = 0;
+                var lastState = '';
+                var outputs   = [];
+                var list      = [];
+
+                for (var i in item.output) {
+                    var record = item.output[i];
+                    var date   = Stats.returnTsFromOutputDate(record);
+                    var state  = lastState = Stats.returnStateFromOutput(record);
+                    var output = Stats.returnOutputText(record);
+
+                    if (!firstDate && state == 'OK') {
+                        continue;
+                    }
+
+                    if (!firstDate) {
+                        firstDate = lastDate = date;
+                    } else {
+                        lastDate = date
+                    }
+
+                    if (!outputs.includes(output)) {
+                        outputs.push(output);
+                        list.push(record);
+                    }
+
+                    if (state == 'OK') {
+                        alertsList[key]['list'].output.push({
+                            'list': list,
+                            'from': firstDate,
+                            'to':   lastDate,
+                        });
+
+                        var handled = Stats.getHandled(item.handled, firstDate, lastDate);
+
+                        alertsList[key]['list'].handled.push({
+                            'list': handled,
+                            'from': firstDate,
+                            'to':   lastDate,
+                        });
+
+                        outputs   = [];
+                        list      = [];
+                        firstDate = 0;
+                        lastDate  = 0;
+                    }
+                }
+
+                if (lastState && lastState != 'OK') {
+                    alertsList[key]['list'].output.push({
+                        'list': list,
+                        'from': firstDate,
+                        'to':   lastDate,
+                    });
+
+                    var handled = Stats.getHandled(item.handled, firstDate, lastDate);
+
+                    alertsList[key]['list'].handled.push({
+                        'list': handled,
+                        'from': firstDate,
+                        'to':   lastDate,
+                    });
+                }
+            }
+        }
+
+        return alertsList;
+    },
+    combineByService: function(alertsList) {
+        var results = [];
+        var alerts  = [];
+
+        for (var key in alertsList) {
+            var item = alertsList[key];
+
+            if (typeof results[item.service] === "undefined" ) {
+                results[item.service] = { 'service': item.service, 'hosts': {}, 'output': {}, 'handled': {} };
+            }
+
+            results[item.service].hosts[key]   = item.host;
+            results[item.service].output[key]  = item.list.output;
+            results[item.service].handled[key] = item.list.handled;
+        }
+
+        for (var key in results) {
+            var item = results[key];
+
+            var checkIds = Object.keys(item.hosts);
+
+            if (checkIds.length > 1) {
+                var splitedList = [];
+                for (var hostKey in item.hosts) {
+                    var host = item.hosts[hostKey];
+
+                    for (var outputKey in item.output[hostKey]) {
+                        var output    = item.output[hostKey][outputKey];
+                        var dateFrom  = output.from;
+                        var dateTo    = output.to;
+                        var dateRange = (dateFrom - 600) + '|||' + (dateTo + 600);
+
+                        var idsList = [];
+                        for (var outputListKey in output.list) {
+                            idsList.push(hostKey + '___' + Stats.returnDbDateFromOutput(output.list[outputListKey]));
+                        }
+
+                        var handledList = [];
+                        for (var handledId in item.handled[hostKey]) {
+                            var handledItem = item.handled[hostKey][handledId];
+                            var handledFrom = handledItem.from;
+                            var handledTo   = handledItem.to;
+
+                            if (dateFrom >= handledFrom && handledTo <= dateTo) {
+                                handledList = handledList.concat(item.handled[hostKey][handledId].list);
+                            }
+                        }
+
+                        if (!Object.keys(splitedList).length) {
+                            splitedList[dateRange] = {
+                                'idList':  idsList,
+                                'hosts':   [host],
+                                'list':    output.list,
+                                'handled': handledList,
+                            }
+
+                            splitedList[dateRange].list.sort();
+                        } else {
+                            var found = false;
+
+                            for (var splitedListKey in splitedList) {
+                                var splitedFrom = parseInt(splitedListKey.split('|||')[0]);
+                                var splitedTo   = parseInt(splitedListKey.split('|||')[1]);
+                                var splitedItem = splitedList[splitedListKey];
+
+                                if (!found && dateFrom >= splitedFrom && dateTo <= splitedTo) {
+                                    splitedList[splitedListKey] = {
+                                        'idList':  splitedItem.idList.concat(idsList),
+                                        'hosts':   splitedItem.hosts.concat([host]),
+                                        'list':    splitedItem.list.concat(output.list),
+                                        'handled': handledList,
+                                    }
+
+                                    splitedList[splitedListKey].list.sort();
+
+                                    found = true;
+                                }
+                            }
+
+                            if (!found) {
+                                splitedList[dateRange] = {
+                                    'idList':  idsList,
+                                    'hosts':   [host],
+                                    'list':    output.list,
+                                    'handled': handledList,
+                                }
+
+                                splitedList[dateRange].list.sort();
+                            }
+                        }
+                    }
+                }
+
+                clearedList = [];
+                for (var splitedListKey in splitedList) {
+                    var splitedItem = splitedList[splitedListKey];
+                    var dateFrom = parseInt(splitedListKey.split('|||')[0]);
+
+                    var handledList = [];
+                    for (var handledKey in splitedItem.handled) {
+                        var handledText = Stats.returnOutputText(splitedItem.handled[handledKey]);
+
+                        if (handledList.indexOf(handledText) == -1) {
+                            handledList.push(handledText);
+                        }
+                    }
+
+                    var outputListTmp = [];
+                    var outputList    = [];
+                    for (var outputKey in splitedItem.list) {
+                        var outputItem = splitedItem.list[outputKey];
+                        var outputText = Stats.returnOutputText(outputItem);
+                        var outputDate = Stats.returnTzDateFromOutput(outputItem);
+
+                        if (outputListTmp.indexOf(outputText) == -1) {
+                            outputListTmp.push(outputText);
+                            outputList.push(outputDate + '|||' + outputText);
+                        }
+                    }
+
+                    clearedList[dateFrom] = {
+                        'handled': handledList,
+                        'hosts':   splitedItem.hosts,
+                        'idList':  splitedItem.idList,
+                        'output':  outputList,
+                    };
+                }
+
+                alerts.push({
+                    'hosts':   Object.values(results[key].hosts).sort(),
+                    'service': key,
+                    'data':    clearedList,
+                });
+            }
+            else {
+                var clearedList = [];
+
+                for (var outputKey in results[key].output) {
+                    for (var oneRecord in results[key].output[outputKey]) {
+                        var outputItem = results[key].output[outputKey][oneRecord];
+                        var dateFrom   = outputItem.from;
+
+                        var idsList       = [];
+                        var outputList    = [];
+                        var outputListTmp = [];
+                        for (var oneOutput in outputItem.list) {
+                            idsList.push(outputKey + '___' + Stats.returnDbDateFromOutput(outputItem.list[oneOutput]));
+
+                            var outputText = Stats.returnOutputText(outputItem.list[oneOutput]);
+                            var outputDate = Stats.returnTzDateFromOutput(outputItem.list[oneOutput]);
+                            if (outputListTmp.indexOf(outputText) == -1) {
+                                outputListTmp.push(outputText);
+                                outputList.push(outputDate + '|||' + outputText);
+                            }
+                        }
+
+                        var handledList = [];
+                        for (var oneHandled in results[key].handled[outputKey][oneRecord].list) {
+                            handledList.push(Stats.returnOutputText(results[key].handled[outputKey][oneRecord].list[oneHandled]));
+                        }
+
+                        clearedList[dateFrom] = {
+                            'handled': handledList,
+                            'hosts':   Object.values(results[key].hosts),
+                            'idList':  idsList,
+                            'output':  outputList,
+                        };
+                    }
+                }
+
+                alerts.push({
+                    'hosts':   Object.values(results[key].hosts).sort(),
+                    'service': key,
+                    'data':    clearedList,
+                });
+            }
+        }
+
+        return alerts;
+    },
+    addMoreToStats: function(services) {
+        var alerts = [];
+
+        for (var service in services) {
+            var more  = [];
+            var hosts = services[service].hosts;
+            var list  = hosts;
+            hosts.sort();
+
+            if (Stats.alertsOrder == '-host') {
+                hosts.reverse();
+            }
+
+            if (hosts.length > 5) {
+                more = hosts;
+                hosts = hosts.length + ' different hosts (details)';
+            } else {
+                hosts = hosts.join(', ');
+            }
+
+            alerts.push({
+                'service': services[service].service,
+                'hosts':   hosts,
+                'more':    more,
+                'data':    services[service].data,
+                'list':    list,
+            });
+        }
+
+        return alerts;
+    },
     prepareAlertsData: function() {
         var type = Stats.alertsShift;
         Stats.alertDetails = [];
@@ -6407,87 +6768,12 @@ Stats = {
                 if (Stats.alertsShift == 'worked_total_list') {
                     if (Stats.longAlertsShift) {
                         alertsList = data[type];
-
-                        for (var key in data['worked_no_shift']['list']) {
-                            if (typeof alertsList[key] !== 'undefined') {
-                                var newData = data['worked_no_shift']['list'][key];
-
-                                for (var i = 0; i < newData['comment'].length; i++) {
-                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
-                                        alertsList[key]['comment'].push(newData['comment'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['handled'].length; i++) {
-                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
-                                        alertsList[key]['handled'].push(newData['handled'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['output'].length; i++) {
-                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
-                                        alertsList[key]['output'].push(newData['output'][i]);
-                                    }
-                                }
-                            } else {
-                                alertsList[key] = data['worked_no_shift']['list'][key];
-                            }
-                        }
+                        alertsList = Stats.returnAlertInfoByCheckId(alertsList, data['worked_no_shift']['list']);
                     }
                     else {
                         alertsList = data['long'][type];
-
-                        for (var key in data['worked_no_shift']['list']) {
-                            if (typeof alertsList[key] !== 'undefined') {
-                                var newData = data['worked_no_shift']['list'][key];
-
-                                for (var i = 0; i < newData['comment'].length; i++) {
-                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
-                                        alertsList[key]['comment'].push(newData['comment'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['handled'].length; i++) {
-                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
-                                        alertsList[key]['handled'].push(newData['handled'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['output'].length; i++) {
-                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
-                                        alertsList[key]['output'].push(newData['output'][i]);
-                                    }
-                                }
-                            } else {
-                                alertsList[key] = data['worked_no_shift']['list'][key];
-                            }
-                        }
-
-                        for (var key in data['long']['worked_no_shift']['list']) {
-                            if (typeof alertsList[key] !== 'undefined') {
-                                var newData = data['long']['worked_no_shift']['list'][key];
-
-                                for (var i = 0; i < newData['comment'].length; i++) {
-                                    if ($.inArray(newData['comment'][i], alertsList[key]['comment']) == -1) {
-                                        alertsList[key]['comment'].push(newData['comment'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['handled'].length; i++) {
-                                    if ($.inArray(newData['handled'][i], alertsList[key]['handled']) == -1) {
-                                        alertsList[key]['handled'].push(newData['handled'][i]);
-                                    }
-                                }
-
-                                for (var i = 0; i < newData['output'].length; i++) {
-                                    if ($.inArray(newData['output'][i], alertsList[key]['output']) == -1) {
-                                        alertsList[key]['output'].push(newData['output'][i]);
-                                    }
-                                }
-                            } else {
-                                alertsList[key] = data['long']['worked_no_shift']['list'][key];
-                            }
-                        }
+                        alertsList = Stats.returnAlertInfoByCheckId(alertsList, data['worked_no_shift']['list']);
+                        alertsList = Stats.returnAlertInfoByCheckId(alertsList, data['long']['worked_no_shift']['list']);
                     }
                 }
                 else {
@@ -6501,65 +6787,24 @@ Stats = {
                 }
 
                 if (alertsList) {
-                    for (var key in alertsList) {
-                        var item = alertsList[key];
-
-                        if (typeof services[item.service] === "undefined" ) {
-                            services[item.service] = { 'hosts': [], 'output': [], 'handled': [] };
-                        }
-
-                        if ($.inArray(item.host, Stats.alertDetails[user][item.service]) == -1) {
-                            services[item.service]['hosts'].push(item.host);
-                        }
-
-                        for (var outputKey in item.output) {
-                            services[item.service]['output'].push(key + '___' + item.output[outputKey]);
-                        }
-
-                        for (var handledKey in item.handled) {
-                            services[item.service]['handled'].push(item.handled[handledKey]);
-                        }
-                    }
+                    alertsList = Stats.explodeByOutput(alertsList);
+                    services   = Stats.combineByService(alertsList);
                 }
             }
 
-            var alerts = [];
-            for (var service in services) {
-                var more  = [];
-                var hosts = services[service]['hosts'];
-                hosts.sort();
-
-                if (Stats.alertsOrder == '-host') {
-                    hosts.reverse();
-                }
-
-                if (hosts.length > 5) {
-                    more = hosts;
-                    hosts = hosts.length + ' different hosts (details)';
-                } else {
-                    hosts = hosts.join(', ');
-                }
-
-                alerts.push({
-                    'service': service,
-                    'hosts':   hosts,
-                    'more':    more,
-                    'output':  services[service]['output'],
-                    'handled': services[service]['handled'],
-                });
-            }
+            var alerts = Stats.addMoreToStats(services);
 
             if (Stats.alertsOrder == 'host') {
-                alerts.sort((a, b) => (a.hosts > b.hosts) ? 1 : -1);
+                alerts.sort((a, b) => (a.hosts.toLowerCase() > b.hosts.toLowerCase()) ? 1 : -1);
             }
             if (Stats.alertsOrder == '-host') {
-                alerts.sort((a, b) => (a.hosts < b.hosts) ? 1 : -1);
+                alerts.sort((a, b) => (a.hosts.toLowerCase() < b.hosts.toLowerCase()) ? 1 : -1);
             }
             if (Stats.alertsOrder == 'service') {
-                alerts.sort((a, b) => (a.service > b.service) ? 1 : -1);
+                alerts.sort((a, b) => (a.service.toLowerCase() > b.service.toLowerCase()) ? 1 : -1);
             }
             if (Stats.alertsOrder == '-service') {
-                alerts.sort((a, b) => (a.service < b.service) ? 1 : -1);
+                alerts.sort((a, b) => (a.service.toLowerCase() < b.service.toLowerCase()) ? 1 : -1);
             }
 
             Stats.alertDetails[user] = alerts;
@@ -6616,48 +6861,64 @@ Stats = {
                     host += item.hosts;
                 }
 
-                var output = '';
-                if (item.output.length) {
-                    var outputRecords = [];
-                    var outputIds     = [];
+                var output   = [];
+                var handled  = [];
+                var idsLists = [];
 
-                    for (var outputKey in item.output) {
-                        var outputItem = item.output[outputKey].split('|||');
+                for (var dataKey in item.data) {
+                    var outputHtml = '';
 
-                        if (!outputRecords.includes(outputItem[1])) {
-                            outputRecords.push(outputItem[1]);
-                        }
-
-                        outputIds.push(outputItem[0]);
-
+                    if (item.list.length != item.data[dataKey].hosts.length) {
+                        outputHtml += '<p><strong>'+ item.data[dataKey].hosts.join(', ') +'</strong></p>';
                     }
 
-                    output += '<ul style="margin: 0; padding: 0; list-style: none;" data-id-list="'+ outputIds.join("|||") +'">';
+                    outputHtml += '<ul style="margin: 0; padding: 0; list-style: none;">';
+                    for (var outputKey in item.data[dataKey].output) {
+                        var outputItem = item.data[dataKey].output[outputKey].split('|||');
 
-                    for (var outputKey in outputRecords) {
-                        output += '<li style="padding: 3px 0; line-break: anywhere;">'+ outputRecords[outputKey] +'</li>';
+                        outputHtml += '<li style="padding: 3px 0; line-break: anywhere;">'+ outputItem.join(': ') +'</li>';
                     }
+                    outputHtml += '</ul>';
+                    output.push(outputHtml);
 
-                    output += '</ul>';
-                }
 
-                var handled = [];
-                if (item.handled.length) {
-                    for (var i = 0; i < item.handled.length; i++) {
-                        var handledRecord = item.handled[i];
+                    var handledHtml = [];
+                    for (var handledKey in item.data[dataKey].handled) {
+                        var handledRecord = item.data[dataKey].handled[handledKey];
+
                         if ($.inArray(handledRecord, handled) == -1) {
-                            handled.push(handledRecord);
+                            handledHtml.push(handledRecord);
                         }
                     }
-                }
+                    handled.push(Stats.howItWasHandledEditButtonHtml(handledHtml.join("<br /><br />")));
 
+
+                    idsLists.push(item.data[dataKey].idList.join('|||'));
+                }
 
                 if (host) {
+                    var count = output.length;
+                    var rowspan = '';
+                    if (count > 1) {
+                        rowspan = ' rowspan="'+ count +'"';
+                    }
                     html += '<tr>';
-                    html += '<td>'+ host +'</td>';
-                    html += '<td>'+ item.service +'</td>';
-                    html += '<td>'+ output +'</td>';
-                    html += '<td valign="top">'+ Stats.howItWasHandledEditButtonHtml(handled.join("<br /><br />")) +'</td>';
+                    html += '<td'+ rowspan +'>'+ host +'</td>';
+                    html += '<td'+ rowspan +'>'+ item.service +'</td>';
+
+                    var rowCount = 1;
+                    for (var itemKey in output) {
+                        html += '<td>'+ output[itemKey] +'</td>';
+                        html += '<td valign="top" data-id-list="'+ idsLists.join("|||") +'">'+ handled[itemKey] +'</td>';
+
+                        if (rowCount < count) {
+                            html += '</tr>';
+                            html += '<tr>';
+
+                            rowCount++;
+                        }
+                    }
+
                     html += '</tr>';
                 }
             }
