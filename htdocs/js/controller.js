@@ -5934,7 +5934,6 @@ Stats = {
     alertsOrder: 'host',
     alertsShift: 'worked_on_shift_list',
     longAlertsShift: false,
-    alertsDialogs: [],
     statsData: null,
     lastPeriod: null,
     tz: null,
@@ -6840,27 +6839,14 @@ Stats = {
 
             html += '<table cellpadding="4" cellspacing="0" border="0" class="alert-details-table">';
             html += '<tr>';
-            html += '<th>Host <span class="change-order" data-order="'+ hostOrder +'">'+ hostArrow +'</span></th>';
-            html += '<th>Service <span class="change-order" data-order="'+ serviceOrder +'">'+ serviceArrow +'</span></th>';
+            html += '<th style="width: 300px;">Service <span class="change-order" data-order="'+ serviceOrder +'">'+ serviceArrow +'</span></th>';
             html += '<th>Output</th>';
             html += '<th>How it was handled</th>';
             html += '</tr>';
 
             for (var key in Stats.alertDetails[user]) {
                 var item = Stats.alertDetails[user][key];
-                var host = '';
-
-                if (item.more.length) {
-                    host += '<span data-id="dialog-'+ key +'" style="cursor: pointer;" class="open-dialog">'+ item.hosts +'</span>';
-                    host += '<div id="dialog-'+ key +'" title="Full hosts list for '+ item.service +'">';
-                    host += item.more.join("<br />");
-                    host += '</div>';
-
-                    Stats.alertsDialogs.push("dialog-"+ key);
-                } else {
-                    host += item.hosts;
-                }
-
+                var host = item.hosts;
                 var output   = [];
                 var handled  = [];
                 var idsLists = [];
@@ -6868,11 +6854,8 @@ Stats = {
                 for (var dataKey in item.data) {
                     var outputHtml = '';
 
-                    if (item.list.length != item.data[dataKey].hosts.length) {
-                        outputHtml += '<p><strong>'+ item.data[dataKey].hosts.join(', ') +'</strong></p>';
-                    }
-
-                    outputHtml += '<ul style="margin: 0; padding: 0; list-style: none;">';
+                    outputHtml += '<p style="margin: 5px 0 3px 0;"><strong>'+ item.data[dataKey].hosts.join(', ') +'</strong></p>';
+                    outputHtml += '<ul style="margin: 0 0 5px 0; padding: 0; list-style: none;">';
                     for (var outputKey in item.data[dataKey].output) {
                         var outputItem = item.data[dataKey].output[outputKey].split('|||');
 
@@ -6880,7 +6863,6 @@ Stats = {
                     }
                     outputHtml += '</ul>';
                     output.push(outputHtml);
-
 
                     var handledHtml = [];
                     for (var handledKey in item.data[dataKey].handled) {
@@ -6892,7 +6874,6 @@ Stats = {
                     }
                     handled.push(Stats.howItWasHandledEditButtonHtml(handledHtml.join("<br /><br />")));
 
-
                     idsLists.push(item.data[dataKey].idList.join('|||'));
                 }
 
@@ -6903,7 +6884,6 @@ Stats = {
                         rowspan = ' rowspan="'+ count +'"';
                     }
                     html += '<tr>';
-                    html += '<td'+ rowspan +'>'+ host +'</td>';
                     html += '<td'+ rowspan +'>'+ item.service +'</td>';
 
                     var rowCount = 1;
@@ -6927,32 +6907,6 @@ Stats = {
         }
 
         return html;
-    },
-    destroyAlertDialogs: function() {
-        for (var key in Stats.alertsDialogs) {
-            var item = Stats.alertsDialogs[key];
-
-            $('#'+ item).dialog('destroy');
-        }
-    },
-    drawAlertsDialogs: function() {
-        for (var key in Stats.alertsDialogs) {
-            var item = Stats.alertsDialogs[key];
-            
-            $('#'+ item).dialog({
-                autoOpen: false,
-                modal: true,
-                position: { my: "center center", at: "center top+200"},
-                closeOnEscape: true,
-                width: 400,
-                buttons: [
-                    {
-                        text: 'OK',
-                        click: function() { $(this).dialog('close'); },
-                    }
-                ]
-            });
-        }
     },
     getUniqueKeysFromObject: function(obj1, obj2) {
         var keys = Object.keys(obj1);
@@ -7017,9 +6971,6 @@ Stats = {
         if (!Stats.selectedUsers || !Stats.selectedUsers.length) {
             return;
         }
-
-        Stats.destroyAlertDialogs();
-        Stats.alertsDialogs = [];
         
         var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">'+ Stats.selectedUsers.join(', ') +' - '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +'</h4>';
         html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
@@ -7077,8 +7028,6 @@ Stats = {
 
         $('.historyText').html(html);
         $('#grouping-alerts-switch').buttonset();
-
-        Stats.drawAlertsDialogs();
     },
     getAlertDaysHoursMinutesSeconds: function(unhandled_time, quick_acked_time) {
         var seconds = unhandled_time - quick_acked_time;
