@@ -5938,6 +5938,16 @@ Stats = {
     lastPeriod: null,
     tz: null,
     alertTab: 'ungrouped',
+    urlData: {
+        stats:  1,
+        users:  '',
+        period: '',
+        from:   '',
+        to:     '',
+        shift:  1,
+        long:   0,
+        group:  0,
+    },
     init: function() {
         if (!Search.currentServerTab) {
             Search.currentServerTab = 'All';
@@ -5980,12 +5990,7 @@ Stats = {
             }
 
             if (Stats.selectedFrom && Stats.selectedTo && Stats.selectedUsers) {
-                if (!Stats.statsData || Stats.lastPeriod != Stats.selectedFrom + '-' + Stats.selectedTo) {
-                    Stats.lastPeriod = Stats.selectedFrom + '-' + Stats.selectedTo
-                    Stats.drawStats();
-                } else {
-                    Stats.drawStatsHtml();
-                }
+                Stats.drawStats();
             }
         });
         $('#calendar_switch').on('change', function() {
@@ -6063,10 +6068,6 @@ Stats = {
             Stats.drawStatsHtml();
         });
 
-        if (Stats.alertsShift == 'worked_on_shift_list') {
-            $('.during_shift').prop('checked', true);
-        }
-
         $(document).on('click', '.during_shifts, .during_shift', function() {
             if (Stats.alertsShift == 'worked_on_shift_list') {
                 $('.during_shift').prop('checked', false);
@@ -6097,6 +6098,7 @@ Stats = {
 
         $(document).on('change', 'input[name=report_type]', function() {
             Stats.statsData = null;
+            Stats.selectedUsers = [];
             $('.historyText').html('');
             Stats.prepareUsersLists(this.value);
             Stats.drawSelects();
@@ -6303,8 +6305,79 @@ Stats = {
 
         alert.closest('td').find('.alert-details').html(html);
     },
+    initUrlParams: function() {
+        var params = Stats.getUrlParams();
+
+        for (var key in params) {
+            if (key in Stats.urlData) {
+                Stats.urlData[key] = params[key]
+            }
+        }
+    },
+    changeDefaultValuesFromUrl: function() {
+        Stats.reportType = (parseInt(Stats.urlData.group) == 0) ? 'per_admin_report' : 'group_report';
+        $("input:radio[name=report_type][value=" + Stats.reportType + "]").attr('checked', 'checked');
+
+        if (Stats.reportType == 'group_report') {
+            Stats.alertsShift = 'worked_on_shift_list';
+            $('.during_shift').prop('checked', true);
+        }
+        else {
+            Stats.alertsShift = (parseInt(Stats.urlData.shift) == 0) ? 'worked_total_list' : 'worked_on_shift_list';
+            $('.during_shift').prop('checked', Stats.alertsShift == 'worked_on_shift_list');
+        }
+
+        Stats.longAlertsShift = (parseInt(Stats.urlData.long) == 0) ? false : true;
+        $('.long_alerts_shift').prop('checked', Stats.longAlertsShift);
+
+    },
+    getUrlParams: function() {
+        return location.search
+            .slice(1)
+            .split('&')
+            .map(p => p.split('='))
+            .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
+    },
+    fillUrlParams: function() {
+        if (Stats.reportType == 'per_admin_report') {
+            Stats.urlData.users = encodeURI($('#usersFilter').val().join(';'));
+            Stats.urlData.shift = (Stats.alertsShift == 'worked_on_shift_list') ? 1 : 0;
+        }
+        else {
+            Stats.urlData.users = '';
+            Stats.urlData.shift = 0;
+        }
+
+        Stats.urlData.long  = (Stats.longAlertsShift) ? 1 : 0;
+        Stats.urlData.group = (Stats.reportType == 'per_admin_report') ? 0 : 1;
+
+        Stats.urlData.period = encodeURI($("#calendar_switch option:selected").val());
+        if (Stats.urlData.period == 'Custom') {
+            Stats.urlData.from = encodeURI($('#stats_from_date').val());
+            Stats.urlData.to   = encodeURI($('#stats_to_date').val());
+        }
+        else {
+            Stats.urlData.from = '';
+            Stats.urlData.to   = '';
+        }
+    },
+    changeUrlPath: function() {
+        Stats.fillUrlParams();
+
+        var url = [];
+        for (var key in Stats.urlData) {
+            if (key != 'stats') {
+                url.push(key + "=" + Stats.urlData[key]);
+            }
+        }
+
+        history.replaceState(null, 'MNU stats', '/?stats=1&' + url.join('&'));
+    },
     drawStats: function() {
+        Stats.changeUrlPath();
+
         $('.historyText').html('<div id="history-loading" style="display: block; float: left;"><div class="sk-circle" style="margin: 0 auto;"><div class="sk-circle1 sk-child"></div><div class="sk-circle2 sk-child"></div><div class="sk-circle3 sk-child"></div><div class="sk-circle4 sk-child"></div><div class="sk-circle5 sk-child"></div><div class="sk-circle6 sk-child"></div><div class="sk-circle7 sk-child"></div><div class="sk-circle8 sk-child"></div><div class="sk-circle9 sk-child"></div><div class="sk-circle10 sk-child"></div><div class="sk-circle11 sk-child"></div><div class="sk-circle12 sk-child"></div></div></div>');
+
         $.ajax({
             type:    'GET',
             url:     'stats.php',
@@ -7254,7 +7327,11 @@ Stats = {
                 Stats.tz             = data.timeZone;
                 Stats.timeZonesList  = data.timeZonesList;
                 Stats.drawTimeZonesList();
-                Stats.prepareUsersLists($("input[name=report_type]").val());
+
+                Stats.initUrlParams();
+                Stats.changeDefaultValuesFromUrl();
+
+                Stats.prepareUsersLists($("input[name=report_type]:checked").val());
                 Stats.drawTabsList();
                 Stats.drawSelects();
             }
@@ -7348,20 +7425,34 @@ Stats = {
             $('#usersFilter').append('<option value="'+ value +'">'+ value +'</option>');
         });
 
+        if (Stats.reportType == 'per_admin_report') {
+            $('#usersFilter').val(decodeURI(Stats.urlData.users).split(';'))
+        }
+
         if (Stats.reportType != 'per_admin_report') {
             $('#usersFilter').hide();
             $('#calendar_switch').css('height', '28px');
             $('.during_shifts, .during_shift').hide();
         }
 
+        var periodsList = Stats.returnSelectList();
         var itemCalendarSelected = $("#calendar_switch option:selected");
+
+        if (!itemCalendarSelected.length) {
+            itemCalendarSelected = Stats.getValidatedPeriod(periodsList, decodeURI(Stats.urlData.period));
+        } else {
+            itemCalendarSelected = itemCalendarSelected.val();
+        }
+
         $('#calendar_switch').html('');
-        $(Stats.returnSelectList()).each(function (key, value) {
+
+        $(periodsList).each(function (key, value) {
             var selected = '';
 
-            if (itemCalendarSelected && itemCalendarSelected.val() == value.name) {
+            if (itemCalendarSelected == value.name) {
                 selected = ' selected="selected"';
             }
+
             $('#calendar_switch').append('<option value="'+ value.name +'" data-from="'+ value.value.from +'" data-to="'+ value.value.to +'" '+ selected +'>'+ value.name +'</option>');
         });
 
@@ -7369,7 +7460,21 @@ Stats = {
         $('#grouping').selectmenu({ disabled: true });
 
         Stats.changePeriodDates();
+        Stats.checkCalendarSwitch();
         Stats.drawDatePickers();
+    },
+    getValidatedPeriod: function(list, value) {
+        var periods = [];
+
+        for (var key in list) {
+            periods.push(list[key].name);
+        }
+
+        if (periods.indexOf(value) !== -1) {
+            return value;
+        }
+
+        return 'Today';
     },
     drawDatePickers: function() {
         var dateTimePickerFromSettings = {
@@ -7392,6 +7497,17 @@ Stats = {
         if (item.val() != 'Custom') {
             $('#stats_from_date').val(item.attr('data-from'));
             $('#stats_to_date').val(item.attr('data-to'));
+        } else {
+            var from = decodeURI(Stats.urlData.from);
+            var to = decodeURI(Stats.urlData.to);
+
+            if (moment(from, "YYYY-MM-DD HH:mm:ss", true).isValid()) {
+                $('#stats_from_date').val(from);
+            }
+
+            if (moment(to, "YYYY-MM-DD HH:mm:ss", true).isValid()) {
+                $('#stats_to_date').val(to);
+            }
         }
     },
     checkCalendarSwitch: function() {

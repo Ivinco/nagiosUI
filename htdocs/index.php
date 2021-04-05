@@ -257,7 +257,7 @@
         <table class="statsInput" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout:fixed; display: table;">
             <tr>
                 <td valign="top" style="font-size: 14px; line-height: 130%; padding-bottom: 15px; width: 440px !important;" colspan="2">
-                    <label for="per_admin_report"><input type="radio" id="per_admin_report" name="report_type" value="per_admin_report" checked="checked" />Per-admin report</label>
+                    <label for="per_admin_report"><input type="radio" id="per_admin_report" name="report_type" value="per_admin_report" />Per-admin report</label>
                     &nbsp;&nbsp;&nbsp;
                     <label for="group_report"><input type="radio" id="group_report" name="report_type" value="group_report" />Group report</label>
                 </td>
