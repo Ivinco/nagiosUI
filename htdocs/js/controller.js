@@ -6437,6 +6437,9 @@ Stats = {
             return;
         }
 
+        var user   = item.closest('td').attr('data-user');
+        var idList = item.closest('td').attr('data-id-list');
+
         $.ajax({
             type:    'GET',
             url:     'stats.php',
@@ -6451,9 +6454,69 @@ Stats = {
                     item.closest('td').find('.show_error').show().text(data.error);
                 } else {
                     item.closest('td').html(Stats.howItWasHandledEditButtonHtml(data.text));
+                    Stats.changeHandledTextInStatsData(user, idList, data.text);
                 }
             }
         });
+    },
+    changeHandledTextInStatsData: function(user, idList, text) {
+        if (user in Stats.statsData) {
+            var ids = idList.split('|||');
+            for (var key in ids) {
+                var id = ids[key].split('___');
+
+                if (0 in id && 1 in id) {
+                    var check_id = id[0];
+                    var date     = id[1];
+
+                    for (var server in Stats.statsData[user]) {
+                        if (check_id in Stats.statsData[user][server]['worked_on_shift_list']) {
+                            for (var handledKey in Stats.statsData[user][server]['worked_on_shift_list'][check_id]['handled']) {
+                                var oldItem = Stats.statsData[user][server]['worked_on_shift_list'][check_id]['handled'][handledKey].split('|||');
+                                if (0 in oldItem && 1 in oldItem && 2 in oldItem && date == oldItem[0]) {
+                                    oldItem[2] = text;
+
+                                    Stats.statsData[user][server]['worked_on_shift_list'][check_id]['handled'][handledKey] = oldItem.join('|||');
+                                }
+                            }
+                        }
+
+                        if (check_id in Stats.statsData[user][server]['worked_total_list']) {
+                            for (var handledKey in Stats.statsData[user][server]['worked_total_list'][check_id]['handled']) {
+                                var oldItem = Stats.statsData[user][server]['worked_total_list'][check_id]['handled'][handledKey].split('|||');
+                                if (0 in oldItem && 1 in oldItem && 2 in oldItem && date == oldItem[0]) {
+                                    oldItem[2] = text;
+
+                                    Stats.statsData[user][server]['worked_total_list'][check_id]['handled'][handledKey] = oldItem.join('|||');
+                                }
+                            }
+                        }
+
+                        if (check_id in Stats.statsData[user][server]['long']['worked_on_shift_list']) {
+                            for (var handledKey in Stats.statsData[user][server]['long']['worked_on_shift_list'][check_id]['handled']) {
+                                var oldItem = Stats.statsData[user][server]['long']['worked_on_shift_list'][check_id]['handled'][handledKey].split('|||');
+                                if (0 in oldItem && 1 in oldItem && 2 in oldItem && date == oldItem[0]) {
+                                    oldItem[2] = text;
+
+                                    Stats.statsData[user][server]['long']['worked_on_shift_list'][check_id]['handled'][handledKey] = oldItem.join('|||');
+                                }
+                            }
+                        }
+
+                        if (check_id in Stats.statsData[user][server]['long']['worked_total_list']) {
+                            for (var handledKey in Stats.statsData[user][server]['long']['worked_total_list'][check_id]['handled']) {
+                                var oldItem = Stats.statsData[user][server]['long']['worked_total_list'][check_id]['handled'][handledKey].split('|||');
+                                if (0 in oldItem && 1 in oldItem && 2 in oldItem && date == oldItem[0]) {
+                                    oldItem[2] = text;
+
+                                    Stats.statsData[user][server]['long']['worked_total_list'][check_id]['handled'][handledKey] = oldItem.join('|||');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     },
     howItWasHandledEditButtonHtml: function(text) {
         var html = '';
@@ -6962,7 +7025,7 @@ Stats = {
                     var rowCount = 1;
                     for (var itemKey in output) {
                         html += '<td>'+ output[itemKey] +'</td>';
-                        html += '<td valign="top" data-id-list="'+ idsLists.join("|||") +'">'+ handled[itemKey] +'</td>';
+                        html += '<td valign="top" data-user="'+ user +'" data-id-list="'+ idsLists.join("|||") +'">'+ handled[itemKey] +'</td>';
 
                         if (rowCount < count) {
                             html += '</tr>';

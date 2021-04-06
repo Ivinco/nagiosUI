@@ -251,6 +251,7 @@ class stats
         $alert           = [];
         $lastComment     = '';
         $lastOutput      = '';
+        $lastHandled     = '';
 
         foreach ($alerts as $alert) {
             $ts       = $alert['ts'];
@@ -273,6 +274,7 @@ class stats
 
                 $lastComment     = 'temp';
                 $lastOutput      = $this->getLastOutput($alert['date'], $alert['output']);
+                $lastHandled     = $this->getLastOutput($alert['date'], $alert['handled']);
                 $quickAckStarted = true;
                 $quickAckStartTs = $ts;
 
@@ -285,15 +287,16 @@ class stats
                 if ($diff >= 300) {
                     $alertStatesLong[] = $lastAlertState;
                     $durationLong += $diff;
-                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput);
+                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput, $lastHandled);
                 } else {
                     $alertStates[] = $lastAlertState;
                     $duration += $diff;
-                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput);
+                    $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput, $lastHandled);
                 }
 
                 $lastComment     = '';
                 $lastOutput      = '';
+                $lastHandled     = '';
                 $quickAckStarted = false;
                 $quickAckStartTs = 0;
             }
@@ -305,11 +308,11 @@ class stats
             if ($diff >= 300) {
                 $alertStatesLong[] = $lastAlertState;
                 $durationLong += $diff;
-                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput);
+                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, true, $lastComment, $lastOutput, $lastHandled);
             } else {
                 $alertStates[] = $lastAlertState;
                 $duration += $diff;
-                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput);
+                $this->calculateNoShiftSetUsersAlerts($server, $alert, $user, false, $lastComment, $lastOutput, $lastHandled);
             }
         }
 
@@ -365,7 +368,7 @@ class stats
             }
         }
     }
-    private function calculateNoShiftSetUsersAlerts($server, $alert, $user, $long = false, $lastComment, $lastOutput)
+    private function calculateNoShiftSetUsersAlerts($server, $alert, $user, $long = false, $lastComment, $lastOutput, $lastHandled)
     {
         $comment = ($alert['comment']) ? $alert['comment'] : $lastComment;
 
@@ -380,6 +383,8 @@ class stats
 
             $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['output']);
 
+            $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($lastHandled, $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled']);
+
             $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->results[$user][$server]['long']['worked_no_shift']['list'][$alert['check_id']]['handled']);
 
         } else {
@@ -392,6 +397,8 @@ class stats
             $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($lastOutput, $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
 
             $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output'] = $this->returnCommentOrOutput($this->getLastOutput($alert['date'], $alert['output']), $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['output']);
+
+            $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($lastHandled, $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled']);
 
             $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled'] = $this->returnCommentOrOutput($this->getLastHandled($alert['date'], $alert['handled']), $this->results[$user][$server]['worked_no_shift']['list'][$alert['check_id']]['handled']);
         }
