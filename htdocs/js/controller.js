@@ -5919,7 +5919,8 @@ History = {
     }
 };
 Stats = {
-    timeZone: localStorage.getItem('timeZone'),
+    timeZone: null,
+    timeDiff: 0,
     timeZonesList: [],
     selectedUsers: null,
     selectedFrom: null,
@@ -6103,6 +6104,13 @@ Stats = {
             Stats.prepareUsersLists(this.value);
             Stats.drawSelects();
         });
+
+        if (Search.getParameterByName('tz')) {
+            Stats.timeZone = Search.getParameterByName('tz');
+        }
+        if (Search.getParameterByName('diff')) {
+            Stats.timeDiff = Search.getParameterByName('diff');
+        }
     },
     alertsOrder: 'host',
     reportType: 'per_admin_report',
@@ -6360,6 +6368,9 @@ Stats = {
             Stats.urlData.from = '';
             Stats.urlData.to   = '';
         }
+
+        Stats.urlData.tz   = encodeURI(Stats.timeZone);
+        Stats.urlData.diff = encodeURI(Stats.timeDiff);
     },
     changeUrlPath: function() {
         Stats.fillUrlParams();
@@ -6384,8 +6395,8 @@ Stats = {
             data:    {
                 'date_from': Stats.selectedFrom,
                 'date_to': Stats.selectedTo,
-                'time_correction_type': this.timeZone,
-                'time_correction_diff': moment().utcOffset(),
+                'time_correction_type': Stats.timeZone,
+                'time_correction_diff': Stats.timeDiff,
                 'from': moment.utc(Stats.selectedFrom).unix(),
                 'to': moment.utc(Stats.selectedTo).unix(),
             },
@@ -7403,6 +7414,14 @@ Stats = {
     drawTimeZonesList: function() {
         var tzList = '';
 
+        if (!Stats.timeZone || Stats.timeZonesList.indexOf(Stats.timeZone) === -1) {
+            Stats.timeZone = localStorage.getItem('timeZone');
+
+            if (!Stats.timeZone) {
+                Stats.timeZone = 'Browser'
+            }
+        }
+
         $(Stats.timeZonesList).each(function (key, value) {
             var selected = (Stats.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
             tzList += '<option value="'+ encodeURI(value) +'" '+ selected +'>TZ: '+ value +'</option>';
@@ -7650,7 +7669,8 @@ Emergency = {
     page: 1,
     from: '',
     to: '',
-    timeZone: localStorage.getItem('timeZone'),
+    timeZone: null,
+    timeDiff: 0,
     timeZonesList: [],
     waveformList: [],
     init: function() {
@@ -7712,6 +7732,12 @@ Emergency = {
         if (Search.getParameterByName('to')) {
             Emergency.to = Search.getParameterByName('to');
         }
+        if (Search.getParameterByName('tz')) {
+            Emergency.timeZone = Search.getParameterByName('tz');
+        }
+        if (Search.getParameterByName('diff')) {
+            Emergency.timeDiff = Search.getParameterByName('diff');
+        }
     },
     drawButtons: function() {
         $('#emergencies').prop('checked', true);
@@ -7739,6 +7765,14 @@ Emergency = {
     },
     drawTimeZonesList: function() {
         var tzList = '';
+
+        if (!Emergency.timeZone || Emergency.timeZonesList.indexOf(Emergency.timeZone) === -1) {
+            Emergency.timeZone = localStorage.getItem('timeZone');
+
+            if (!Emergency.timeZone) {
+                Emergency.timeZone = 'Browser'
+            }
+        }
 
         $(Emergency.timeZonesList).each(function (key, value) {
             var selected = (Emergency.timeZone == encodeURI(value)) ? 'selected="selected"' : '';
@@ -7818,10 +7852,23 @@ Emergency = {
         }
     },
     getList: function() {
+        var params = {
+            id: Emergency.id,
+            limit: Emergency.limit,
+            page: Emergency.page,
+            from: Emergency.from,
+            to: Emergency.to,
+            tz: Emergency.timeZone
+        };
+
+        if (Emergency.timeZone == 'Browser') {
+            params.diff = (Emergency.timeDiff) ? Emergency.timeDiff : moment().utcOffset();
+        }
+
         $.ajax({
             type:    'GET',
             url:     'emergency.php',
-            data:    {id: Emergency.id, limit: Emergency.limit, page: Emergency.page, from: Emergency.from, to: Emergency.to, tz: Emergency.timeZone, diff: moment().utcOffset()},
+            data:    params,
             success: function(data){
                 var waveformList = [];
                 var idsList = [];
@@ -7968,7 +8015,14 @@ Emergency = {
         });
     },
     goTo: function() {
-        window.location.href = '//' + location.host + location.pathname + '?emergency=1&id=' + Emergency.id + '&limit=' + Emergency.limit + '&page=' + Emergency.page + '&from=' + Emergency.from + '&to=' + Emergency.to + '&tz=' + Emergency.timeZone + '&diff=' + moment().utcOffset();
+        var diff = '';
+
+        if (Emergency.timeZone == 'Browser') {
+            diff += '&diff=';
+            diff += (Emergency.timeDiff) ? Emergency.timeDiff : moment().utcOffset();
+        }
+
+        window.location.href = '//' + location.host + location.pathname + '?emergency=1&id=' + Emergency.id + '&limit=' + Emergency.limit + '&page=' + Emergency.page + '&from=' + Emergency.from + '&to=' + Emergency.to + '&tz=' + Emergency.timeZone + diff;
     }
 };
 Users = {

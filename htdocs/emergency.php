@@ -57,6 +57,8 @@ class emergencyList
 
         $this->offset = ($this->page - 1) * $this->limit;
 
+        $this->diff *= -1;
+
         $this->setTimeCorrection();
 
         $this->from = $this->correctDate($this->from);
