@@ -7,3 +7,4 @@ config/client_secret.json
 config/nagios-ui.lck
 config/nagios-ui-synchronize_notes.lck
 config/nagios-ui-emergency.lck
+config/nagios-ui-remove_old_planned.lck
