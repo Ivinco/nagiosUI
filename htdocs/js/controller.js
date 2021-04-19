@@ -1085,6 +1085,7 @@ Search.prepareSendData = function (key) {
 
 		for (var i = 0; i < requestData.length; i++) {
             var downId = requestData[i].downId,
+                tabName = requestData[i].tab,
 				isHost = requestData[i].isHost;
 
 			if (downId) {
@@ -1092,7 +1093,7 @@ Search.prepareSendData = function (key) {
 
 				for (var y = 0; y < downId.length; y++) {
 					if (scheduledIds.indexOf(downId[y]) === -1) {
-						schedulesRequest.push({ 'down_id': downId[y], 'isHost': isHost });
+						schedulesRequest.push({ 'down_id': downId[y], 'isHost': isHost, 'tab': tabName });
 						scheduledIds.push(downId[y]);
 					}
 				}
