@@ -134,8 +134,7 @@ class fullInfo
         $this->toDate   = $this->returnDateForDb($this->to);
     }
     private function returnDateForDb($timestamp) {
-        $diff = strtotime(gmdate("Y-m-d H:i:s")) - strtotime(date("Y-m-d H:i:s"));
-        $timestamp -= $diff;
+        $timestamp = $this->utils->correctTs($timestamp);
 
         $date = new DateTime("@{$timestamp}");
         $date->setTimezone(new DateTimeZone('UTC'));
