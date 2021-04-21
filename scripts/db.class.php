@@ -216,7 +216,7 @@ class db
     public function getLatestActions()
     {
         $list   = [];
-        $sql    = "SELECT * FROM {$this->nagios_external_commands_log} WHERE `logged` > '". date('Y-m-d H:i:s', strtotime('-5 minutes')) ."' AND command != 're-check' ORDER BY logged DESC";
+        $sql    = "SELECT * FROM {$this->nagios_external_commands_log} WHERE `logged` > DATE_SUB(NOW(),INTERVAL 5 MINUTE) AND command != 're-check' ORDER BY logged DESC";
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){

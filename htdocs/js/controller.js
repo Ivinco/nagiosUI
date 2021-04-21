@@ -1086,14 +1086,16 @@ Search.prepareSendData = function (key) {
 		for (var i = 0; i < requestData.length; i++) {
             var downId = requestData[i].downId,
                 tabName = requestData[i].tab,
-				isHost = requestData[i].isHost;
+                hostName = requestData[i].host,
+                serviceName = requestData[i].service,
+				isHost = requestData[i].isHost;console.log(requestData[i]);
 
 			if (downId) {
                 downId = downId.split(',');
 
 				for (var y = 0; y < downId.length; y++) {
 					if (scheduledIds.indexOf(downId[y]) === -1) {
-						schedulesRequest.push({ 'down_id': downId[y], 'isHost': isHost, 'tab': tabName });
+						schedulesRequest.push({ 'down_id': downId[y], 'isHost': isHost, 'tab': tabName, 'host': hostName, 'service': serviceName });
 						scheduledIds.push(downId[y]);
 					}
 				}
@@ -1106,18 +1108,20 @@ Search.prepareSendData = function (key) {
             data:   { data: schedulesRequest, 'type': 'downtime', server: Search.currentServerTab },
         })
         .always(function() {
-            $.ajax({
-                url:    'post.php',
-                method: 'POST',
-                data:   { data: requestData, type: 'scheduleItTime', server: Search.currentServerTab },
-            })
-            .fail(function(jqXHR, textStatus) {
-                alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
-                Search.tempShowButtons(key);
-            })
-            .done(function() {
-                Search.restoreAllData(key);
-            });
+            setTimeout(function(){
+                $.ajax({
+                    url:    'post.php',
+                    method: 'POST',
+                    data:   { data: requestData, type: 'scheduleItTime', server: Search.currentServerTab },
+                })
+                    .fail(function(jqXHR, textStatus) {
+                        alert("Request failed: " + textStatus + ' - ' + jqXHR.statusText + '. Try later.');
+                        Search.tempShowButtons(key);
+                    })
+                    .done(function() {
+                        Search.restoreAllData(key);
+                    });
+            }, 1000);
         });
     }
     else if (Search.whatWeChangeObject[key].type == 'acknowledgeIt' || (Search.whatWeChangeObject[key].type == 'scheduleIt' && !Search.editComment)) {
