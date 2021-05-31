@@ -6375,7 +6375,7 @@ Stats = {
         }
 
         Stats.urlData.tz   = encodeURI(Stats.timeZone);
-        Stats.urlData.diff = encodeURI(Stats.timeDiff);
+        Stats.urlData.diff = encodeURI((!parseInt(Stats.timeDiff)) ? moment().utcOffset() : Stats.timeDiff);
     },
     changeUrlPath: function() {
         Stats.fillUrlParams();
