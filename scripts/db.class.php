@@ -430,7 +430,11 @@ class db
                         `check_id` = {$selector["check_id"]}
             ";
 
-            $this->mysql->query($sql);
+            if (!$this->mysql->query($sql)) {
+                return $this->mysql->error;
+            } else if (!$this->mysql->affected_rows) {
+                return "Record not found for 'check_id': {$selector["check_id"]} and 'date': {$selector["date"]}";
+            }
         }
 
         return "";

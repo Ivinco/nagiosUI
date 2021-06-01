@@ -887,3 +887,23 @@ table.dataTable thead .no-border-th {
 @keyframes inputspinner {
     to {transform: rotate(360deg);}
 }
+
+@keyframes submitspinner {
+    to {transform: rotate(360deg);}
+}
+
+.submitspinner:before {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    top: 13px;
+    left: 100%;
+    width: 15px;
+    height: 15px;
+    margin-top: -10px;
+    margin-left: -20px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    animation: submitspinner .6s linear infinite;
+}

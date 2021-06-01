@@ -6434,16 +6434,25 @@ Stats = {
         var old     = item.closest('td').find('.text_how_it_was_handled').html();
         var idList  = item.closest('td').attr('data-id-list');
         var area    = '<textarea data-old-textarea="'+ encodeURIComponent(text) +'" data-old-value="'+ encodeURIComponent(old) +'" data-id-list="'+ idList +'" style="width: 100%;" rows="3">'+ text +'</textarea>';
-        var buttons = '<br /><p class="show_error" style="display: none; color: red;"></p><input type="button" value="Save" name="save_how_it_was_handled" class="save_how_it_was_handled" style="color: #fff; background-color: #007bff; border-color: #007bff; margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: left;"><input type="button" value="Close" name="close_how_it_was_handled" class="close_how_it_was_handled" style="margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: right;">';
+        var buttons = '<br /><p class="show_success" style="display: none; color: green;"></p><p class="show_error" style="display: none; color: red;"></p><button type="button" value="Save" name="save_how_it_was_handled" class="save_how_it_was_handled" style="color: #fff; background-color: #007bff; border-color: #007bff; margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: left; position: relative;">Save</button><input type="button" value="Close" name="close_how_it_was_handled" class="close_how_it_was_handled" style="margin-top: 4px; padding: 3px 8px; border-radius: 3px; cursor: pointer; float: right;">';
 
         item.closest('td').html(area + buttons);
     },
     closeHowItWasHandled: function(item) {
+        if (item.closest('td').find('.close_how_it_was_handled').filter('[disabled]').length) {
+            return;
+        }
+
         var text = item.closest('td').find('[data-old-value]').attr('data-old-value');
         item.closest('td').html(Stats.howItWasHandledEditButtonHtml(decodeURIComponent(text)));
     },
     saveHowItWasHandled: function(item) {
+        if (item.closest('td').find('.save_how_it_was_handled').filter('[disabled]').length) {
+            return;
+        }
+
         item.closest('td').find('.show_error').hide();
+        item.closest('td').find('.show_success').hide();
 
         var oldText = item.closest('td').find('[data-old-textarea]').attr('data-old-textarea');
         var newText = encodeURIComponent(item.closest('td').find('textarea').val().trim());
@@ -6452,6 +6461,10 @@ Stats = {
             Stats.closeHowItWasHandled(item);
             return;
         }
+
+        item.closest('td').find('textarea').attr("disabled", "disabled");
+        item.closest('td').find('.save_how_it_was_handled').attr("disabled", "disabled").css("padding", "3px 30px 3px 8px").addClass("submitspinner");
+        item.closest('td').find('.close_how_it_was_handled').attr("disabled", "disabled");
 
         var user   = item.closest('td').attr('data-user');
         var idList = item.closest('td').attr('data-id-list');
@@ -6466,13 +6479,22 @@ Stats = {
                 'ids_list':     encodeURIComponent(item.closest('td').attr('data-id-list')),
             },
             success: function(data){
+                item.closest('td').find('textarea').removeAttr("disabled");
+                item.closest('td').find('.save_how_it_was_handled').removeAttr("disabled").css("padding", "3px 8px").removeClass("submitspinner");
+                item.closest('td').find('.close_how_it_was_handled').removeAttr("disabled");
+
                 if (typeof data.error !== 'undefined' && data.error) {
                     item.closest('td').find('.show_error').show().text(data.error);
                 } else {
-                    item.closest('td').html(Stats.howItWasHandledEditButtonHtml(data.text));
-                    Stats.changeHandledTextInStatsData(user, idList, data.text);
+                    item.closest('td').find('textarea, .save_how_it_was_handled, .close_how_it_was_handled').hide();
+                    item.closest('td').find('.show_success').show().text("saved");
+
+                    setTimeout(function(){
+                        item.closest('td').html(Stats.howItWasHandledEditButtonHtml(data.text));
+                        Stats.changeHandledTextInStatsData(user, idList, data.text);
+                    }, 2000);
                 }
-            }
+            },
         });
     },
     changeHandledTextInStatsData: function(user, idList, text) {
