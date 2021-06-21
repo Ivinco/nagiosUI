@@ -7148,6 +7148,10 @@ Stats = {
         
         var html = '<h4 style="font-weight: normal; text-align: center;border-bottom: 1px solid #c5c5c5; padding-bottom: 15px; margin-top: 0;">'+ Stats.selectedUsers.join(', ') +' - '+ Stats.selectedFrom + ' - ' + Stats.selectedTo +'</h4>';
         html += '<table cellpadding="0" cellspacing="0" border="0" style="width: 100%"><tr><td style="vertical-align: top;"><div id="statsChart"></div></td></tr></table>';
+        
+        if (Stats.selectedUsers.indexOf('Summary report') != -1) {
+            Stats.alertsShift = 'worked_on_shift_list';
+        }
 
         $(Stats.selectedUsers).each(function (key, value) {
             if (Stats.selectedUsers.length > 1) {
