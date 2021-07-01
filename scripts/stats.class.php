@@ -1192,10 +1192,6 @@ class stats
         $this->from = $this->getTs('from');
         $this->to   = $this->getTs('to');
 
-        if (time() < $this->to) {
-            $this->to = time();
-        }
-
         $this->from = $this->utils->correctTs($this->from);
         $this->to   = $this->utils->correctTs($this->to);
     }
