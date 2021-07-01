@@ -13,6 +13,8 @@ class stats
     private $nobodysReportName = 'Nobody\'s shift';
     private $calendarTZ = 'UTC';
 
+    const BROWSER_TYPE_NAME = 'Browser';
+
     function __construct($lastYear = false)
     {
         global $serversList;
@@ -763,12 +765,25 @@ class stats
             }
         }
     }
+    private function getEmergencyTs($requestDate, $format = 'Y-m-d H:i:s')
+    {
+        $tz = $this->utils->timeCorrectionType;
+
+        if ($tz === self::BROWSER_TYPE_NAME) {
+            $tz = 'UTC';
+        }
+
+        $date = DateTime::createFromFormat($format, $requestDate, new DateTimeZone($tz));
+        $date->setTimeZone(new DateTimeZone($this->timeZone));
+
+        return $date->getTimestamp();
+    }
     private function getEmergencyCount($from, $to)
     {
         $emergencies = 0;
 
         foreach ($this->emergenciesList as $emergency) {
-            $date = strtotime($emergency['logged']);
+            $date = $this->getEmergencyTs($emergency['logged']);
 
             if ($date >= $from && $date <= $to) {
                 $emergencies++;
@@ -782,7 +797,7 @@ class stats
         $emergencies = 0;
 
         foreach ($this->emergenciesList as $emergency) {
-            $date = strtotime($emergency['logged']);
+            $date = $this->getEmergencyTs($emergency['logged']);
 
             if ($date >= $from && $date <= $to && strpos($emergency['history'], 'call') !== false) {
                 $emergencies++;

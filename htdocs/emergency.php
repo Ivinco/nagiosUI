@@ -88,7 +88,7 @@ class emergencyList
         $this->tz = $this->validateTimeZone($this->tz);
         $date = DateTime::createFromFormat($format, $requestDate, new DateTimeZone($this->timeZone));
         $date->setTimeZone(new DateTimeZone($this->tz));
-        $date->modify($this->diff . ' minutes');
+        $date->modify(($this->diff * -1) . ' minutes');
 
         return $date->format($format);
     }
@@ -112,6 +112,8 @@ class emergencyList
 
         if ($this->tz != self::BROWSER_TYPE_NAME) {
             $this->diff = 0;
+        } else {
+            $this->tz = 'UTC';
         }
     }
     private function getTimeZoneWithAliases($tz)
