@@ -455,8 +455,18 @@ class planned
         return preg_match("/$commandStatus/iu", " " . $status . " ");
     }
 
+    private function markForDeletionEndedPlanned()
+    {
+        $list = $this->db->getEndedPlannedRecords();
+
+        foreach ($list as $item) {
+            $line = implode('___', [$item['host'], $item['service'], $item['status'], $item['server']]);
+            $this->db->removePlanned($line, $item['server']);
+        }
+    }
     public function removeOldPlanned()
     {
+        $this->markForDeletionEndedPlanned();
         $oldPlanned  = $this->db->returnOldPlanned();
         $serversList = array_keys($this->serversList);
 

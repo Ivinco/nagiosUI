@@ -613,6 +613,28 @@ class db
 
         $this->mysql->query($sql);
     }
+    public function getEndedPlannedRecords()
+    {
+        $sql = "
+            SELECT
+                * 
+            FROM
+                 `{$this->planned_log}`
+            WHERE
+                    `deleted` = '1970-01-01 07:00:00'
+                AND 
+                    `end` < UNIX_TIMESTAMP(NOW())
+        ";
+
+        $list   = [];
+        $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
+
+        while ($row = $result->fetch_assoc()){
+            $list[] = $row;
+        }
+
+        return $list;
+    }
     public function returnOldPlanned()
     {
         $sql = "
