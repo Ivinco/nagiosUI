@@ -1591,6 +1591,8 @@ class db
         $list = [];
 
         while ($row = $result->fetch_assoc()){
+            $row['original_date'] = $row['date'];
+
             if ($row['date'] < $from) {
                 $row['date'] = $from;
             }
@@ -1622,6 +1624,7 @@ class db
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){
+            $row['original_date'] = $row['date'];
             $list[$row['check_id'].$row['date']] = $row;
         }
 
@@ -1661,6 +1664,7 @@ class db
         $list = [];
 
         while ($row = $result->fetch_assoc()){
+            $row['original_date'] = $row['date'];
             $row['info'] = false;
             $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
 
@@ -1694,6 +1698,7 @@ class db
         $result = $this->mysql->query($sql, MYSQLI_USE_RESULT);
 
         while ($row = $result->fetch_assoc()){
+            $row['original_date'] = $row['date'];
             $row['info'] = false;
             $infoRecord = $this->returnInfoRecord($row['service'], $row['output']);
 
