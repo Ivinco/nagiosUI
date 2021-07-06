@@ -907,3 +907,41 @@ table.dataTable thead .no-border-th {
     border-top-color: #000;
     animation: submitspinner .6s linear infinite;
 }
+
+.full_info_button {
+    white-space: nowrap;
+    display: inline-block;
+    margin: 0 10px;
+    font-size: 20px;
+    padding: 10px;
+    border-radius: 9px;
+    color: #000;
+    line-height: 150%;
+}
+.full_info_button.CRITICAL {
+    background-color: rgb(248, 56, 56);
+}
+.full_info_button.OK, .full_info_button.INFO.OK {
+    background-color: rgb(51, 255, 0);
+}
+.full_info_button.UNKNOWN {
+    background-color: rgb(255, 153, 0);
+}
+.full_info_button.WARNING {
+    background-color: rgb(255, 255, 0);
+}
+.full_info_button.INFO.WARNING, .full_info_button.INFO.UNKNOWN {
+    background-color: #67a4ff;
+}
+.full_info_button.INFO.CRITICAL {
+    color: #fff;
+    background-color: #ad7e36;
+}
+.full_info_recheck_button {
+    font-size: 50px !important;
+    padding: 0;
+    line-height: 100%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}

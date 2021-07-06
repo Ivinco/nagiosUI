@@ -328,4 +328,23 @@ class utils
 
         return [];
     }
+
+    public function getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS)
+    {
+        $memcacheName = $this->getMemcacheRecheckName($tab, $host, $service, $hostOrService);
+
+        if ($this->memcache && $this->memcache->get($memcacheName) && $this->memcache->get($memcacheName) != $lastCheckS) {
+            $this->memcache->delete($memcacheName);
+        }
+
+        if ($this->memcache->get($this->getMemcacheFullName('All') . "_recheck")) {
+            return true;
+        }
+
+        if ($this->memcache && $this->memcache->get($memcacheName) && $this->memcache->get($memcacheName) == $lastCheckS) {
+            return true;
+        }
+
+        return false;
+    }
 }

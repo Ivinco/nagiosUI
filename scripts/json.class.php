@@ -90,7 +90,7 @@ class json
             $showInNormal    = false;
             $schedPlanned    = true;
             $serviceOriginal = $service;
-            $recheckValue    = $this->getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS);
+            $recheckValue    = $this->utils->getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS);
 
             if (!in_array($tab, $this->userServers)) {
                 continue;
@@ -227,25 +227,6 @@ class json
         $this->plannedData->runActionsFromJson();
     }
 
-    private function getRecheckStatus($host, $service, $tab, $hostOrService, $lastCheckS)
-    {
-        $memcache     = $this->utils->getMemcache();
-        $memcacheName = $this->utils->getMemcacheRecheckName($tab, $host, $service, $hostOrService);
-
-        if ($memcache && $memcache->get($memcacheName) && $memcache->get($memcacheName) != $lastCheckS) {
-            $memcache->delete($memcacheName);
-        }
-
-        if ($memcache->get($this->utils->getMemcacheFullName('All') . "_recheck")) {
-            return true;
-        }
-
-        if ($memcache && $memcache->get($memcacheName) && $memcache->get($memcacheName) == $lastCheckS) {
-            return true;
-        }
-
-        return false;
-    }
     private function changeLatestStatus($host, $service, $acked, $ackComment, $sched, $schComment, $tab)
     {
         $needToReturn = false;

@@ -217,6 +217,12 @@ class fullInfo
 
         $this->server = $check['tab'];
 
+        $infoRecord = $this->db->returnInfoRecord($service, $check['status_info']);
+        $check['info'] = $infoRecord['info'];
+
+        $recheckValue = $this->utils->getRecheckStatus($this->host, $service, $this->server, 'service', $check['last_check']);
+        $check['recheck'] = $recheckValue;
+
         return $check;
     }
 

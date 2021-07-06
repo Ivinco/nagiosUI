@@ -1489,7 +1489,7 @@ class db
 
         return '0';
     }
-    private function returnInfoRecord($service, $status) {
+    public function returnInfoRecord($service, $status) {
         $return = [
             'service' => $service,
             'status'  => $status,

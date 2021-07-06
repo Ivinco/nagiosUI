@@ -2912,6 +2912,9 @@ FullInfo = {
     serviceThis: null,
     ctrlIsPressed: false,
     fullHostsList: null,
+    forceRecheck: false,
+    forceRecheckId: null,
+    forceRecheckLastState: null,
     init: function() {
         if (FullInfo.isInfo()) {
             $('#full-info-table, #fullInfoHolder .full-info-data, #fullInfoHolder .full-info-error').hide();
@@ -2923,18 +2926,127 @@ FullInfo = {
             } else if (getParameterByName('host') && !getParameterByName('service')) {
                 $('#fullInfoHolder h3').html('Host: ' + getParameterByName('host') + ' details<div style="float: right;"><a href="?info=1" style="font-weight: normal; font-size: 13px; color: #000;">Back to hosts list</a></div>');
                 $('#full-info-table').html('').show();
+                FullInfo.host = getParameterByName('host');
+                FullInfo.forceRecheckId = 'full_info_force_recheck_host';
                 FullInfo.drawHostsList();
             } else if (getParameterByName('host') && getParameterByName('service')) {
                 $('#fullInfoHolder h3').html('Service '+ getParameterByName('service') +' on '+ getParameterByName('host') +' information<div style="float: right;"><a href="?info=1&host='+ encodeURIComponent(getParameterByName('host')) +'" style="font-weight: normal; font-size: 13px; color: #000;">Back to hosts details</a></div>');
                 FullInfo.host    = getParameterByName('host');
-                FullInfo.service = getParameterByName('service')
+                FullInfo.service = getParameterByName('service');
+                FullInfo.forceRecheckId = 'full_info_force_recheck';
                 FullInfo.drawServiceDetails();
             }
         } else {
             FullInfo.drawDialog();
         }
 
+        $(document).on('click', '#full_info_force_recheck', function() {
+            if (FullInfo.forceRecheck) {
+                return;
+            }
+
+            FullInfo.setRecheckActive();
+
+            var requestData = [];
+
+            requestData.push({
+                host: FullInfo.host,
+                service: FullInfo.service,
+                isHost: 'service',
+                tab: FullInfo.serviceData.check.tab,
+            });
+
+            $.ajax({
+                url:    'post.php',
+                method: 'POST',
+                data:   { data: requestData, type: 'recheckIt', server: Search.currentServerTab },
+            });
+        });
+
+        $(document).on('click', '#full_info_force_recheck_host', function() {
+            if (FullInfo.forceRecheck) {
+                return;
+            }
+
+            FullInfo.setRecheckActive();
+
+            var tab = (FullInfo.fullHostsList) ? FullInfo.fullHostsList.check.tab : FullInfo.hostData.check.tab;
+
+            var requestData = [];
+
+            requestData.push({
+                host: FullInfo.host,
+                service: 'host data',
+                isHost: 'host',
+                tab: tab,
+            });
+
+            $.ajax({
+                url:    'post.php',
+                method: 'POST',
+                data:   { data: requestData, type: 'recheckIt', server: Search.currentServerTab },
+            });
+        });
+
         FullInfo.events();
+    },
+    updateRecheckButton: function(value) {
+        if (value) {
+            FullInfo.setRecheckActive();
+        } else {
+            FullInfo.setRecheckInactive();
+        }
+    },
+    setRecheckActive: function() {
+        FullInfo.forceRecheck = true;
+        $(document).find('#' + FullInfo.forceRecheckId).attr('disabled', 'disabled');
+        $(document).find('#' + FullInfo.forceRecheckId).attr('title', 'Force recheck in progress.');
+    },
+    setRecheckInactive: function() {
+        FullInfo.forceRecheck = false;
+        $(document).find('#' + FullInfo.forceRecheckId).removeAttr('disabled');
+        $(document).find('#' + FullInfo.forceRecheckId).attr('title', 'Force recheck now.');
+    },
+    verifyRecheckStatus: function() {
+        $.ajax({
+            type:    'GET',
+            url:     'full_info.php',
+            data:    {
+                'server_tab':           encodeURIComponent(Search.currentServerTab),
+                'host':                 encodeURIComponent(FullInfo.host),
+                'service':              encodeURIComponent(FullInfo.service),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset(),
+                'from':                 moment.utc(FullInfo.periodFrom).unix(),
+                'to':                   moment.utc(FullInfo.periodTo).unix(),
+            },
+            success: function(data){
+                if (FullInfo.forceRecheckLastState !== data.check.state) {
+                    FullInfo.applyServiceData(data);
+                } else {
+                    FullInfo.updateRecheckButton(data.check.recheck);
+                }
+            }
+        });
+    },
+    verifyHostsRecheckStatus: function() {
+        $.ajax({
+            type: 'GET',
+            url: 'full_info.php',
+            data: {
+                'server_tab': encodeURIComponent(Search.currentServerTab),
+                'host': encodeURIComponent(getParameterByName('host')),
+                'time_correction_type': FullInfo.timeZone,
+                'time_correction_diff': moment().utcOffset()
+            },
+            success: function (data) {
+                if (FullInfo.forceRecheckLastState !== data.check.state) {
+                    FullInfo.applyHostData(data);
+                } else {
+                    FullInfo.updateRecheckButton(data.check.recheck);
+                }
+            }
+        });
     },
     getStateText: function(state) {
         if (state == 1) {
@@ -2962,19 +3074,27 @@ FullInfo = {
                 'time_correction_diff': moment().utcOffset()
             },
             success: function(data){
-                $('#loading').hide();
-                $('#fullInfoHolder').show();
+                FullInfo.applyHostData(data);
 
-                if (typeof data.error !== 'undefined') {
-                    $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
-                    return;
-                }
-
-                FullInfo.fullHostsList = data;
-                FullInfo.drawHostDetails();
-                FullInfo.drawFullServiceData();
+                setInterval(function() {
+                    FullInfo.verifyHostsRecheckStatus();
+                }, 5000);
             }
         });
+    },
+    applyHostData: function(data) {
+        $('#loading').hide();
+        $('#fullInfoHolder').show();
+
+        if (typeof data.error !== 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
+            return;
+        }
+
+        FullInfo.fullHostsList = data;
+        FullInfo.drawHostDetails();
+        FullInfo.drawFullServiceData();
+        FullInfo.forceRecheckLastState = data.check.state;
     },
     drawFullHostsList: function() {
         $.ajax({
@@ -3282,22 +3402,31 @@ FullInfo = {
                 'to':                   moment.utc(FullInfo.periodTo).unix(),
             },
             success: function(data){
-                $('#loading').hide();
-                $('#fullInfoHolder').show();
+                FullInfo.applyServiceData(data);
 
-                if (typeof data.error !== 'undefined') {
-                    $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
-                    return;
-                }
-
-                FullInfo.serviceData = data;
-                FullInfo.chartFrom   = data.chart.from;
-                FullInfo.chartTo     = data.chart.to;
-                FullInfo.drawServiceTable();
-                FullInfo.drawDatesSelect();
-                FullInfo.drawChart();
+                setInterval(function() {
+                    FullInfo.verifyRecheckStatus();
+                }, 5000);
             }
         });
+    },
+    applyServiceData: function(data) {
+        $('#loading').hide();
+        $('#fullInfoHolder').show();
+
+        if (typeof data.error !== 'undefined') {
+            $('#fullInfoHolder .full-info-error').text('Error: ' + data.error).show();
+            return;
+        }
+
+        FullInfo.serviceData = data;
+        FullInfo.chartFrom   = data.chart.from;
+        FullInfo.chartTo     = data.chart.to;
+        FullInfo.drawServiceTable();
+        FullInfo.drawDatesSelect();
+        FullInfo.drawChart();
+
+        FullInfo.forceRecheckLastState = data.check.state;
     },
     drawServiceTable: function() {
         if (typeof FullInfo.serviceData.check === 'undefined') {
@@ -3306,13 +3435,15 @@ FullInfo = {
         }
 
         var html = '<hr />';
-        html += '<table style="width: 600px; font-size: 13px; line-height: 150%;">';
+        html += '<table style="width: 800px; font-size: 13px; line-height: 150%;">';
         html = FullInfo.getServiceTable(FullInfo.serviceData, html);
         html += '</table>';
         html += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none; border-top: 1px solid #000;border-bottom: 1px solid #000; margin-top: 20px; padding-bottom: 12px;" id="full-calendar_switch"></table>';
         html += '<table style="width: 100%; font-size: 13px; line-height: 150%; display: none;" id="full-info-chart"></table>';
 
         $('.full-info-data').show().html(html);
+
+        FullInfo.updateRecheckButton(FullInfo.serviceData.check.recheck);
     },
     events: function() {
         $(document).keydown(function(e) {
@@ -3326,6 +3457,13 @@ FullInfo = {
         });
 
         $(document).on('click', '.show-full-host-info', function() {
+            FullInfo.forceRecheck = false;
+            FullInfo.forceRecheckId = null;
+            FullInfo.forceRecheckLastState = null;
+
+            FullInfo.host    = $(this).closest('tr').find('.show-full-host-info').text();
+            FullInfo.forceRecheckId = 'full_info_force_recheck_host';
+
             if (FullInfo.ctrlIsPressed) {
                 window.open('?info=1&host=' + encodeURIComponent($(this).text()),'_blank');
             } else {
@@ -3340,10 +3478,15 @@ FullInfo = {
         });
 
         $(document).on('click', '.show-full-service-info', function() {
-            if (FullInfo.ctrlIsPressed) {
-                FullInfo.host    = $(this).closest('tr').find('.show-full-host-info').text();
-                FullInfo.service = $(this).closest('tr').attr('data-service');
+            FullInfo.forceRecheck = false;
+            FullInfo.forceRecheckId = null;
+            FullInfo.forceRecheckLastState = null;
+            
+            FullInfo.host    = $(this).closest('tr').find('.show-full-host-info').text();
+            FullInfo.service = $(this).closest('tr').attr('data-service');
+            FullInfo.forceRecheckId = 'full_info_force_recheck';
 
+            if (FullInfo.ctrlIsPressed) {
                 window.open('?info=1&host=' + encodeURIComponent($(this).closest('tr').find('.show-full-host-info').text()) + '&service=' + encodeURIComponent($(this).closest('tr').attr('data-service')),'_blank');
             } else {
                 FullInfo.isHost      = false;
@@ -3424,6 +3567,7 @@ FullInfo = {
                 FullInfo.drawServiceData();
                 FullInfo.drawDatesSelect();
                 FullInfo.drawChart();
+                FullInfo.updateRecheckButton(data.check.recheck);
             }
         });
     },
@@ -3512,12 +3656,15 @@ FullInfo = {
             success: function(data){
                 FullInfo.hostData = data;
                 FullInfo.drawHostData();
+                FullInfo.updateRecheckButton(data.check.recheck);
             }
         });
     },
     getHostTable: function(data, dialog) {
         if (typeof data.check !== 'undefined') {
-            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td>';
+            dialog += FullInfo.getWarningAndRecheckButton(6, data.check);
+            dialog += '</tr>';
             dialog += '<tr><td><b>Status Information</b></td><td>'+ data.check.status_info +'</td></tr>';
             dialog += '<tr><td><b>Performance Data</b></td><td>rta: '+ data.check.rta +'; pl: '+ data.check.pl +'</td></tr>';
             dialog += '<tr><td><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
@@ -3529,8 +3676,23 @@ FullInfo = {
     },
     getServiceTable: function(data, dialog) {
         if (typeof data.check !== 'undefined') {
-            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td></tr>';
+            var rowsCount = 6;
+            if (data.check.scheduled && data.check["comments"]["schedComment"]) {
+                rowsCount++;
+            }
+            if (data.check.acked && data.check["comments"]["ackComment"]) {
+                rowsCount++;
+            }
+            if (data.check.notesUrl) {
+                rowsCount++;
+            }
+            dialog += '<tr><td><b>Host</b></td><td>'+ FullInfo.host +'</td>';
+            dialog += FullInfo.getWarningAndRecheckButton(rowsCount, data.check);
+            dialog += '</tr>';
             dialog += '<tr><td><b>Service</b></td><td>'+ FullInfo.service +'</td></tr>';
+            if (data.check.notesUrl) {
+                dialog += '<tr><td valign="top" style="white-space: nowrap;"><b>Notes</b></td><td style="word-break: break-all;"><a href="'+  data.check.notesUrl +'" target="_blank">'+ data.check.notesUrl +'</a></td></tr>';
+            }
             dialog += '<tr><td><b>Status Information</b></td><td>'+ data.check.status_info +'</td></tr>';
             dialog += '<tr><td valign="top"><b>Scheduled Downtime?</b></td><td>'+ ((data.check.scheduled) ? "yes" : "no") +'</td></tr>';
             if (data.check.scheduled && data.check["comments"]["schedComment"]) {
@@ -3544,6 +3706,27 @@ FullInfo = {
         }
 
         return dialog;
+    },
+    getWarningAndRecheckButton: function(rowsCount, data, service) {
+        var html = '';
+
+        var info = (data.info) ? 'INFO ' : '';
+        var state = FullInfo.getStateText(data.state);
+
+        html += '<td rowspan="'+ rowsCount +'" style="vertical-align: middle; white-space: nowrap">';
+        html += '<table>';
+        html += '<tr>';
+        html += '<td>';
+        html += '<span class="full_info_button info_critical '+ info +' '+ state +'">'+ info + state +'</span>';
+        html += '</td>';
+        html += '<td>';
+        html += '<button class="full_info_recheck_button" id="'+ FullInfo.forceRecheckId +'" title="Force recheck now">&#128260;</button>';
+        html += '</td>';
+        html += '</tr>';
+        html += '</table>';
+        html +='</td>';
+
+        return html;
     },
     drawHostData: function() {
         $('#fullInfo .full-info-loading').hide();
