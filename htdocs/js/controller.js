@@ -3000,12 +3000,20 @@ FullInfo = {
     setRecheckActive: function() {
         FullInfo.forceRecheck = true;
         $(document).find('#' + FullInfo.forceRecheckId).attr('disabled', 'disabled');
-        $(document).find('#' + FullInfo.forceRecheckId).attr('title', 'Force recheck in progress.');
+        $(document).find('#' + FullInfo.forceRecheckId).closest('td').attr('title', 'Force recheck in progress.');
+        $(document).find('#' + FullInfo.forceRecheckId + ' i').addClass('fa-spin');
+        FullInfo.setTooltipForRecheck();
     },
     setRecheckInactive: function() {
         FullInfo.forceRecheck = false;
         $(document).find('#' + FullInfo.forceRecheckId).removeAttr('disabled');
-        $(document).find('#' + FullInfo.forceRecheckId).attr('title', 'Force recheck now.');
+        $(document).find('#' + FullInfo.forceRecheckId).closest('td').attr('title', 'Force recheck now.');
+        $(document).find('#' + FullInfo.forceRecheckId + ' i').removeClass('fa-spin');
+        FullInfo.setTooltipForRecheck();
+    },
+    setTooltipForRecheck: function() {
+        $(".ui-tooltip").remove();
+        $(".full_info_recheck_btn").closest('td').tooltip({ track: true });
     },
     verifyRecheckStatus: function() {
         $.ajax({
@@ -3021,7 +3029,7 @@ FullInfo = {
                 'to':                   moment.utc(FullInfo.periodTo).unix(),
             },
             success: function(data){
-                if (FullInfo.forceRecheckLastState !== data.check.state) {
+                if (data && FullInfo.forceRecheckLastState !== data.check.state) {
                     FullInfo.applyServiceData(data);
                 } else {
                     FullInfo.updateRecheckButton(data.check.recheck);
@@ -3481,7 +3489,7 @@ FullInfo = {
             FullInfo.forceRecheck = false;
             FullInfo.forceRecheckId = null;
             FullInfo.forceRecheckLastState = null;
-            
+
             FullInfo.host    = $(this).closest('tr').find('.show-full-host-info').text();
             FullInfo.service = $(this).closest('tr').attr('data-service');
             FullInfo.forceRecheckId = 'full_info_force_recheck';
@@ -3582,12 +3590,11 @@ FullInfo = {
         });
         html += '</select></td>';
 
-        html += '<td style="width: 240px;">From: <input type="text" name="period_from_date" id="period_from_date" class="text hasDatepicker" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
+        html += '<td style="width: 240px;">From: <input type="text" name="period_from_date" id="period_from_date" class="text" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
 
-        html += '<td style="width: 240px;">To: <input type="text" name="period_to_date" id="period_to_date" class="text hasDatepicker" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
+        html += '<td style="width: 240px;">To: <input type="text" name="period_to_date" id="period_to_date" class="text" style="font-size: 13px; outline: none; width: 160px;" autocomplete="off"></td>';
 
-        html += '<td style="width: 80px;"><input type="button" value="draw" name="filter_period" id="filter_period"></td>';
-        html += '<td><span style="float: left; width: 19px; height: 19px; background: url(../images/all_icons.png) no-repeat -114px 0; cursor: pointer;" id="period_refresh"></span></td>';
+        html += '<td><input type="button" value="draw" name="filter_period" id="filter_period"></td>';
 
         html += '</tr>';
 
@@ -3719,8 +3726,8 @@ FullInfo = {
         html += '<td>';
         html += '<span class="full_info_button info_critical '+ info +' '+ state +'">'+ info + state +'</span>';
         html += '</td>';
-        html += '<td>';
-        html += '<button class="full_info_recheck_button" id="'+ FullInfo.forceRecheckId +'" title="Force recheck now">&#128260;</button>';
+        html += '<td title="Force recheck now">';
+        html += '<button class="full_info_recheck_btn" type="button" id="'+ FullInfo.forceRecheckId +'" ><i class="fas fa-sync"></i></button>';
         html += '</td>';
         html += '</tr>';
         html += '</table>';
