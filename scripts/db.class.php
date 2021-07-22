@@ -584,7 +584,7 @@ class db
 
         $this->mysql->query($sql);
     }
-    public function removePlanned($id, $server) {
+    public function removePlanned($id) {
         $id = explode('___', $id);
 
         $host    = $this->mysql->real_escape_string($id[0]);
@@ -683,7 +683,7 @@ class db
             $this->mysql->query($sql);
         }
     }
-    public function returnPlannedRecord($id, $server) {
+    public function returnPlannedRecord($id) {
         $id = explode('___', $id);
 
         $host    = $this->mysql->real_escape_string($id[0]);

@@ -96,23 +96,23 @@ class planned
         print_r(json_encode(['file' => $json, 'templates' => $templates, 'servers' => implode(',', $serversList)], true));
     }
     public function editData($id) {
-        $time = null;
-        $end  = null;
-        $date = null;
-
-        if ($this->time > 1) {
-            $time = $this->time;
-            $end  = (time() + $time * 60);
-            $date = date('Y-m-d H:i:s', $end);
+        if ($this->time < 1) {
+            $this->time = 1;
         }
 
-        $this->db->editPlanned($id, $this->host, $this->service, $this->status, $this->comment, $this->normal, $this->postServer, $time, $end, $date);
+        $end = (time() + $this->time * 60);
+
+        $this->line = $id;
+        $this->removeData();
+
+        $this->db->addNewPlanned($this->host, $this->service, $this->status, $this->comment, $this->time, $end, date('Y-m-d H:i:s', $end), $this->user, $this->normal, $this->postServer);
+        $this->logToDb($this->host, $this->service, $this->status, date('Y-m-d H:i:s', $end), $this->user, $this->comment, true);
     }
     public function removeData() {
         $this->removeAlerts = [];
-        $record = $this->db->returnPlannedRecord($this->line, $this->server);
+        $record = $this->db->returnPlannedRecord($this->line);
         $this->logToDb($record['host'], $record['service'], $record['status'], $record['date'], $this->user, $record['comment'], false);
-        $this->db->removePlanned($this->line, $this->server);
+        $this->db->removePlanned($this->line);
         $this->removePlannedMaintenance($this->line);
         $this->removeMultiSchedulePlanned();
     }
@@ -461,7 +461,7 @@ class planned
 
         foreach ($list as $item) {
             $line = implode('___', [$item['host'], $item['service'], $item['status'], $item['server']]);
-            $this->db->removePlanned($line, $item['server']);
+            $this->db->removePlanned($line);
         }
     }
     public function removeOldPlanned()
