@@ -769,7 +769,7 @@ class stats
     {
         $tz = $this->utils->timeCorrectionType;
 
-        if ($tz === self::BROWSER_TYPE_NAME) {
+        if (!$tz || $tz === self::BROWSER_TYPE_NAME) {
             $tz = 'UTC';
         }
 
@@ -831,6 +831,13 @@ class stats
             }
 
             if ($severity == 'unhandled' && $state != 'ok') {
+                if ($quickAckStarted) {
+                    $stats['unhandled_time'] += ($ts - $lastTs);
+                    $stats['quick_acked_time'] += ($ts - $lastQuickAckTs);
+                    $lastQuickAckTs = false;
+                    $quickAckStarted = false;
+                }
+
                 $alertStarted = true;
                 $lastTs = $ts;
             }
@@ -939,6 +946,14 @@ class stats
 
             if ($severity == 'unhandled' && $state != 'ok') {
                 $this->setUsersAlerts($server, $saveUsersData, $alert, $user);
+
+                if ($quickAckStarted) {
+                    $stats['unhandled_time'] += ($ts - $lastTs);
+                    $stats['quick_acked_time'] += ($ts - $lastQuickAckTs);
+                    $lastQuickAckTs = false;
+                    $quickAckStarted = false;
+                }
+
                 $alertStarted = true;
                 $lastTs = $ts;
                 if (in_array($state, ['warning', 'critical', 'unknown'])) {
@@ -1157,7 +1172,7 @@ class stats
 
                         if ($item['finish'] != $shift['finish']) {
                             $this->usersShifts[$this->nobodysReportName][] = [
-                                'start'  => $shift['finish'],
+                                'start'  => $shift['finish'] + 1,
                                 'finish' => $item['finish'],
                             ];
                         }
