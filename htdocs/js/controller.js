@@ -4268,18 +4268,15 @@ Planned = {
             time    = (time && time > 1) ? time : 1200000,
             user    = $('#userName').text();
 
-        if ((!host && !service && !status) || !comment) {
+        let isFilledHostOrServiceOrStatus = Planned.isFilledHostOrServiceOrStatus(host, service, status);
+
+        if (!isFilledHostOrServiceOrStatus || !comment) {
             $('#edit_planned_host, #edit_planned_service, #edit_planned_status, #edit_planned_comment').css('border-color', '#aaa');
 
-            if (!host) {
-                $('#edit_planned_host').css('border-color', 'red');
+            if (!isFilledHostOrServiceOrStatus) {
+                $('#edit_planned_host, #edit_planned_service, #edit_planned_status').css('border-color', 'red');
             }
-            if (!service) {
-                $('#edit_planned_service').css('border-color', 'red');
-            }
-            if (!status) {
-                $('#edit_planned_status').css('border-color', 'red');
-            }
+
             if (!comment) {
                 $('#edit_planned_comment').css('border-color', 'red');
             }
@@ -4330,6 +4327,29 @@ Planned = {
                 });
         }
     },
+    isFilledHostOrServiceOrStatus: function(host, service, status) {
+        let filledHost = false;
+        let filledService = false;
+        let filledStatus = false;
+
+        if (host && host.trim() != '*') {
+            filledHost = true;
+        }
+
+        if (service && service.trim() != '*') {
+            filledService = true;
+        }
+
+        if (status && status.trim() != '*') {
+            filledStatus = true;
+        }
+
+        if (!filledHost && !filledService && !filledStatus) {
+            return false;
+        }
+
+        return true;
+    },
     init: function() {
         $('#planned').on('click', function() {
             if (Search.currentTab == $(this).attr('id')) {
@@ -4361,7 +4381,9 @@ Planned = {
                 normal  = +$('#maintenance-normal').prop('checked'),
                 server  = $('#maintenance-server').val();
 
-            if ((host || service || status) && comment) {
+            let isFilledHostOrServiceOrStatus = Planned.isFilledHostOrServiceOrStatus(host, service, status);
+
+            if (isFilledHostOrServiceOrStatus && comment) {
                 $.ajax({
                     url: 'planned.php?server=' + Search.currentServerTab,
                     method: 'POST',
@@ -4375,7 +4397,7 @@ Planned = {
                         Search.startReloads();
                     });
             } else {
-                if (!host && !service && !status) {
+                if (!isFilledHostOrServiceOrStatus) {
                     $('#maintenance-host').css('border-color', 'red');
                     $('#maintenance-service').css('border-color', 'red');
                     $('#maintenance-status').css('border-color', 'red');
