@@ -213,7 +213,6 @@
 	<div id="userAvatar"><?php echo $userAvatar; ?></div>
 	<div id="nagiosConfigFile"></div>
 	<div id="nagiosPostFile"></div>
-	<div id="nagiosFullListUrl"></div>
 	<div id="updateHash"></div>
 	<div id="groupByService"></div>
 	<div id="groupByHost"></div>

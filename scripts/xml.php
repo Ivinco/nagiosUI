@@ -508,9 +508,7 @@ class xml
                 $xmlContent .= '
 	<alert state="' .           $this->parseToXML($attrs['state']) . '" origState="' . $this->parseToXML($attrs['origState']) . '">
 		<host>' .               $this->parseToXML($host)                            . '</host>
-		<host-url>' .           $this->parseToXML($attrs['full_host_name'])         . '</host-url>
 		<service>' .            $this->parseToXML($service)                         . '</service>
-		<service-url>' .        $this->parseToXML($attrs['full_service_name']) . '</service-url>
 		<notes_url>' .          $this->parseToXML($attrs['notesUrl'])               . '</notes_url>
 		<status>' .             $this->parseToXML($attrs['state'])                  . '</status>
 		<origState>' .          $this->parseToXML($attrs['origState'])              . '</origState>
@@ -546,7 +544,6 @@ class xml
         $xmlContent .= '
 	<hash>'.                 md5($this->verificateCheck)                        .'</hash>
 	<nagios-config-file>json_new.php?returndate=1</nagios-config-file>
-	<nagios-full-list-url>'. $this->parseToXML($this->serversList[$this->currentTabTmp]['fullHostUrl']) .'</nagios-full-list-url>
 	<group-by-service>'.     $this->parseToXML($this->groupByService)           .'</group-by-service>
 	<group-by-host>'.        $this->parseToXML($this->groupByHost)              .'</group-by-host>
 	<backend_status>'.       $this->backendStatus                               .'</backend_status>
@@ -727,18 +724,6 @@ class xml
 
         $xmlStr = htmlspecialchars($htmlStr, ENT_QUOTES | ENT_XML1);
         return $xmlStr;
-    }
-    private function hostUrl($host) {
-        return str_replace('___host___', $host, $this->serversList[$this->currentTabTmp]['hostUrl']);
-    }
-    private function serviceUrl($host, $service) {
-        $service = str_replace('+', ' ', urlencode($this->parseToXML($service)));
-
-        if ($service == 'SERVER IS UP' || $service == 'SERVER+IS+UP') {
-            return $this->hostUrl($host);
-        }
-
-        return str_replace('___host___', $host, str_replace('___service___', $service, $this->serversList[$this->currentTabTmp]['serviceUrl']));
     }
     private function checkBackendStatus($lastCheck)
     {
@@ -989,8 +974,6 @@ class xml
                 'last_check'         => (int)$data['last_check'],
                 'active_enabled'     => 0,
                 'next_check'         => 0,
-                'full_host_name'     => $this->hostUrl($host),
-                'full_service_name'  => $this->serviceUrl($host, $service),
                 'check_command'      => $service,
                 'comments'           => $this->returnCommentData($data, $service, $host),
                 'tab'                => $this->currentTabTmp,
@@ -1010,8 +993,6 @@ class xml
             'last_check'         => (int)$data['last_check'],
             'active_enabled'     => 0,
             'next_check'         => 0,
-            'full_host_name'     => $this->hostUrl($host),
-            'full_service_name'  => $this->serviceUrl($host, $service),
             'check_command'      => $service,
             'comments'           => $this->returnCommentData($data, $service, $host),
             'tab'                => $this->currentTabTmp,
@@ -1081,8 +1062,6 @@ class xml
                 'last_check'         => (int)$data['last_check'],
                 'active_enabled'     => (int)$data['active_checks_enabled'],
                 'next_check'         => 0,
-                'full_host_name'     => $this->hostUrl($host),
-                'full_service_name'  => $this->serviceUrl($host, $service),
                 'check_command'      => $service,
                 'comments'           => $this->returnCommentData($data, $service, $host),
                 'tab'                => $this->currentTabTmp,

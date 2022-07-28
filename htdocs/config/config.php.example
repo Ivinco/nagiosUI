@@ -27,26 +27,17 @@ $calendarId = "googleCalendarId@group.calendar.google.com";
          - array key: will be used as button name in UI, as 'server' in DB for storing/retrieving data
          - 'url': nagios-api url
          - 'port': nagios-api port
-         - 'hostUrl': nagios host url
-         - 'serviceUrl': nagios service url
-         - 'fullHostUrl': nagios full host url
          - 'timeZone': nagios server time zone
 */
 $serversList = [
     'someServer1' => [
         'url'  => 'http://someurl1.com',
         'port' => '8881',
-        'hostUrl' => '/cgi-bin/extinfo.cgi?type=1&host=___host___',
-        'serviceUrl' => '/cgi-bin/extinfo.cgi?type=2&host=___host___&service=___service___',
-        'fullHostUrl' => '/cgi-bin/status.cgi?hostgroup=all&style=hostdetail',
         'timeZone' => 'UTC',
     ],
     'someServer2' => [
         'url'  => 'http://someurl2.com',
         'port' => '8882',
-        'hostUrl' => '/cgi-bin/extinfo.cgi?type=1&host=___host___',
-        'serviceUrl' => '/cgi-bin/extinfo.cgi?type=2&host=___host___&service=___service___',
-        'fullHostUrl' => '/cgi-bin/status.cgi?hostgroup=all&style=hostdetail',
         'timeZone' => 'America/New_York',
     ],
 ];

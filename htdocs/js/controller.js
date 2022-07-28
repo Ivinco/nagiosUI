@@ -454,7 +454,6 @@ Search.allDataTable       = (getParameterByName('info') || getParameterByName('e
 			if (Search.firstLoad) {
                 Search.additional = json.additional;
                 $('#nagiosConfigFile').text(json.additional.nagiosConfigFile);
-				$('#nagiosFullListUrl').text(json.additional.nagiosFullListUrl);
 				$('#updateHash').text(json.additional.updateHash);
 				$('#groupByService').text(json.additional.groupByService);
 				$('#groupByHost').text(json.additional.groupByHost);

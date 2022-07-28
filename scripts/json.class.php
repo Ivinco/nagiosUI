@@ -59,10 +59,8 @@ class json
             $sched           = (!is_array($item['sched']))                ? $item['sched']                : implode(' ', $item['sched']);
             $schComment      = (!is_array($item['sched_comment']))        ? $item['sched_comment']        : implode(' ', $item['sched_comment']);
             $host            = (!is_array($item['host']))                 ? $item['host']                 : implode(' ', $item['host']);
-            $hostUrl         = (!is_array($item['host-url']))             ? $item['host-url']             : implode(' ', $item['host-url']);
             $service         = (!is_array($item['service']))              ? $item['service']              : implode(' ', $item['service']);
             $origState       = (!is_array($item['origState']))            ? $item['origState']            : implode(' ', $item['origState']);
-            $serviceUrl      = (!is_array($item['service-url']))          ? $item['service-url']          : implode(' ', $item['service-url']);
             $notesUrl        = (!is_array($item['notes_url']))            ? $item['notes_url']            : implode(' ', $item['notes_url']);
             $state           = (!is_array($item['@attributes']['state'])) ? $item['@attributes']['state'] : implode(' ', $item['@attributes']['state']);
             $downtimeId      = (!is_array($item['downtime_id']))          ? $item['downtime_id']          : implode(' ', $item['downtime_id']);
@@ -163,14 +161,12 @@ class json
                 ),
                 'host'      => array(
                     'name'  => $host,
-                    'url'   => $hostUrl,
                     'host'  => $hostOrService,
                     'tab'   => $tab,
                 ),
                 'service'   => array(
                     'name'  => $service,
                     'host'  => $host,
-                    'url'   => $serviceUrl,
                     'unAck' => ($acked && $tempCommen != 'temp') ? true : false,
                     'down'  => ($sched && $schedPlanned) ? true : false,
                     'notes' => $notesUrl,
@@ -302,7 +298,6 @@ class json
     private function formatAdditional() {
         $this->additional = array(
             'nagiosConfigFile'  => $this->fullData['nagios-config-file'],
-            'nagiosFullListUrl' => $this->fullData['nagios-full-list-url'],
             'updateHash'        => $this->fullData['hash'],
             'groupByService'    => $this->fullData['group-by-service'],
             'groupByHost'       => $this->fullData['group-by-host'],

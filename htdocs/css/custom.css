@@ -265,7 +265,7 @@ copy
 .ui-selectmenu-menu.ui-front.ui-selectmenu-open { left: auto; right: 8px; }
 .ui-button-text-only .ui-button-text { padding: .4em .5em; }
 
-#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #nagiosFullListUrl, #updateHash, #userAvatar, #mainTable .hide-more, #mainTable .for-order, #mainTable .type-th, #serviceDialog, #commentDialog, #groupByService, #groupByHost { display: none; }
+#lastUpdated, #timeShift, #downtimeComment, #dialog, #openDialogServerTime, #userName, #nagiosConfigFile, #nagiosPostFile, #updateHash, #userAvatar, #mainTable .hide-more, #mainTable .for-order, #mainTable .type-th, #serviceDialog, #commentDialog, #groupByService, #groupByHost { display: none; }
 
 table.dataTable thead .no-border-th {
   background: #fff !important;
