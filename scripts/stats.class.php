@@ -769,7 +769,7 @@ class stats
     {
         $tz = $this->utils->timeCorrectionType;
 
-        if (!$tz || $tz === self::BROWSER_TYPE_NAME) {
+        if (!$tz || strtolower($tz) === strtolower(self::BROWSER_TYPE_NAME)) {
             $tz = 'UTC';
         }
 
