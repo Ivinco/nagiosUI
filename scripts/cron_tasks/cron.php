@@ -10,7 +10,7 @@ if ($memcacheEnabled) {
     $lockFile = $lockPath . $lockName . ".lck";
 
     while (false === lock($lockFile)) {
-        logText("Couldn't lock the file!");
+        //logText("Couldn't lock the file!");
         exit(1);
     }
 }
