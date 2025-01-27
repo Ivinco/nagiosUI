@@ -217,7 +217,7 @@ class planned
                             $return[] = [
                                 'type'    => $type,
                                 'author'  => $plan['user'],
-                                'email'   => $usersArray[$plan['user']],
+                                'email'   => $usersArray[$plan['user']] ?? '',
                                 'comment' => $plan['comment'],
                                 'date'    => ($type == 'old') ? $plan['list'][$host][$service][$status] : time(),
                                 'normal'  => $plan['normal'],
