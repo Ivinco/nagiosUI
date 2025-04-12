@@ -289,6 +289,9 @@ class emergency
         return $adminData;
     }
     private function sendEmail($alert) {
+        //disable email notification for so-called emergency events
+        return true;
+        
         if (in_array($alert['state'], array("CRITICAL", "WARNING"))) $body = "Emergency has happened:";
         else if ($alert['state'] == "OK") $body = "Emergency has been solved:";
         else return false;
